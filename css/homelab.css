@@ -1,0 +1,404 @@
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: #0b1118;
+      color: #e8f7ef;
+      font: 14px system-ui, Segoe UI, sans-serif;
+      overflow: hidden
+    }
+
+    canvas {
+      display: block;
+      touch-action: none
+    }
+
+    button,
+    input {
+      font: inherit
+    }
+
+    button {
+      cursor: pointer;
+      border: 1px solid #487967;
+      background: #1a3d34;
+      color: #eafff4;
+      border-radius: 9px;
+      padding: 9px 12px
+    }
+
+    button:hover {
+      background: #27624d
+    }
+
+    button.active {
+      background: #4ee4a0;
+      color: #062219
+    }
+
+    #hud {
+      position: fixed;
+      left: 14px;
+      top: 14px;
+      background: #0a161eea;
+      border: 1px solid #335a50;
+      border-radius: 15px;
+      padding: 14px;
+      max-width: 300px;
+      box-shadow: 0 10px 35px #0006
+    }
+
+    h1 {
+      font-size: 18px;
+      color: #7af9b4;
+      margin: 0 0 6px
+    }
+
+    p {
+      margin: 5px 0;
+      color: #b5cbc4;
+      font-size: 12px;
+      line-height: 1.5
+    }
+
+    #toolbar {
+      position: fixed;
+      right: 14px;
+      top: 14px;
+      width: 310px;
+      background: #0a161eee;
+      border: 1px solid #335a50;
+      border-radius: 14px;
+      padding: 12px;
+      max-height: calc(100vh - 28px);
+      overflow: auto;
+      z-index: 4
+    }
+
+    #toolbarHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px
+    }
+
+    #toolbarHeader h2 {
+      margin: 0
+    }
+
+    #hideToolbar,
+    #showToolbar {
+      padding: 5px 8px
+    }
+
+    #showToolbar {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 5;
+      display: none
+    }
+
+    #toolbar h2 {
+      font-size: 15px;
+      margin: 0 0 8px;
+      color: #85fac1
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0
+    }
+
+    .controls button {
+      flex: 1
+    }
+
+    #selected {
+      font-size: 13px;
+      color: #a5ffd0;
+      min-height: 20px
+    }
+
+    #pictureTools {
+      margin: 8px 0
+    }
+
+    #pictureTools button {
+      width: 100%
+    }
+
+    #pictureStatus {
+      display: block;
+      margin-top: 5px;
+      color: #b5cbc4;
+      font-size: 11px
+    }
+
+    #heightRow {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    #heightRow input {
+      width: 100%
+    }
+
+    #tip {
+      position: fixed;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0b1c21e8;
+      border: 1px solid #426b60;
+      border-radius: 12px;
+      padding: 9px 14px;
+      text-align: center;
+      font-size: 12px;
+      max-width: 95vw
+    }
+
+    #dialog {
+      position: fixed;
+      inset: 0;
+      background: #000b;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px
+    }
+
+    #dialog article {
+      background: #14232c;
+      border: 1px solid #58d69c;
+      padding: 22px;
+      border-radius: 16px;
+      width: min(440px, 100%)
+    }
+
+    #dialog h2 {
+      margin-top: 0;
+      color: #7ff9b9
+    }
+
+    #dialog p {
+      font-size: 14px
+    }
+
+    #error {
+      display: none;
+      position: fixed;
+      bottom: 75px;
+      left: 15px;
+      right: 15px;
+      background: #541d26;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      z-index: 10
+    }
+
+    #list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px
+    }
+
+    #list button {
+      font-size: 11px;
+      padding: 7px 5px
+    }
+
+    #mobile {
+      position: fixed;
+      bottom: 65px;
+      left: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 40px);
+      gap: 4px
+    }
+
+    #mobile button {
+      padding: 8px 0
+    }
+
+    #mobile .empty {
+      visibility: hidden
+    }
+
+    @media(max-width:700px) {
+      #hud {
+        max-width: 185px;
+        padding: 9px
+      }
+
+      #hud h1 {
+        font-size: 13px
+      }
+
+      #toolbar {
+        width: min(310px, calc(100vw - 14px));
+        right: 7px;
+        top: 7px;
+        padding: 8px;
+        max-height: calc(100vh - 14px)
+      }
+
+      #toolbar button {
+        font-size: 11px;
+        padding: 7px
+      }
+
+      #list {
+        grid-template-columns: 1fr 1fr
+      }
+
+      #tip {
+        font-size: 10px;
+        bottom: 8px
+      }
+
+      #mobile {
+        bottom: 55px
+      }
+    }
+
+    #mediaTools {
+      margin: 10px 0;
+      border-top: 1px solid #335a50;
+      padding-top: 8px
+    }
+
+    #mediaTools > summary {
+      color: #85fac1;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 7px
+    }
+
+    .mediaSection {
+      margin: 7px 0;
+      padding: 7px;
+      border: 1px solid #335a50;
+      border-radius: 9px
+    }
+
+    .mediaSection > summary {
+      color: #c5ebd8;
+      cursor: pointer;
+      font-size: 12px
+    }
+
+    .mediaSection[open] > summary {
+      margin-bottom: 7px
+    }
+
+    .mediaSection label {
+      cursor: pointer;
+      background: #214d3f;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 11px
+    }
+
+    .mediaSection input[type="file"] {
+      display: none
+    }
+
+    .websiteControls {
+      display: flex;
+      gap: 5px;
+      width: 100%;
+      margin-top: 6px
+    }
+
+    .websiteControls input {
+      width: 100%;
+      min-width: 0;
+      padding: 6px;
+      border: 1px solid #487967;
+      border-radius: 7px;
+      background: #101820;
+      color: #e8f7ef;
+      font-size: 11px
+    }
+
+    .mediaSection button {
+      font-size: 11px;
+      padding: 7px
+    }
+
+    .mediaSection small {
+      width: 100%;
+      display: block;
+      margin-top: 5px;
+      color: #adcfc0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    #screenView {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000c;
+      z-index: 9;
+      align-items: center;
+      justify-content: center;
+      padding: 20px
+    }
+
+    #screenView article {
+      width: min(840px, 95vw);
+      background: #101820;
+      border: 1px solid #4eac83;
+      border-radius: 15px;
+      padding: 16px
+    }
+
+    #screenView video {
+      width: 100%;
+      max-height: 65vh;
+      background: #000
+    }
+
+    #websiteFrame {
+      width: 100%;
+      height: min(70vh, 680px);
+      border: 1px solid #335a50;
+      border-radius: 8px;
+      background: white
+    }
+
+    #websiteFrame[hidden],
+    #bigVideo[hidden],
+    #openWebsiteTab[hidden] {
+      display: none
+    }
+
+    #openWebsiteTab {
+      display: inline-block;
+      margin: 0 0 8px;
+      color: #80ffb7
+    }
+
+    #screenView header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px
+    }
+
+    #screenView h2 {
+      margin: 0;
+      font-size: 16px;
+      color: #80ffb7
+    }

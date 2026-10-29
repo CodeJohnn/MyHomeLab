@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CodeJOHN • Home Lab 3D</title>
+  <link rel="stylesheet" href="./css/homelab.css">
+</head>
+
+<body>
+  <div id="hud">
+    <h1></h1>
+    <p>WASD / setas: andar • E: interagir</p>
+    <p>Mouse: girar câmera • scroll: zoom</p>
+    <p id="status">Explore o escritório.</p>
+  </div>
+  <aside id="toolbar">
+    <div id="toolbarHeader"><h2>🛠 Organizador</h2><button id="hideToolbar" aria-label="Ocultar painel">Ocultar ✕</button></div>
+    <button id="edit">Ativar modo construção</button>
+    <p id="selected">Nenhum objeto selecionado</p>
+    <details id="mediaTools" open>
+      <summary>🖼️ Imagens e vídeos</summary>
+      <details class="mediaSection" id="pictureSection">
+        <summary>Imagens dos quadros</summary>
+        <div id="pictureTools"><button id="addPicture" disabled>🖼️ Adicionar imagem ao quadro</button><input
+            id="pictureFile" type="file" accept="image/*" hidden><small id="pictureStatus">Selecione um quadro para adicionar uma imagem.</small></div>
+      </details>
+      <details class="mediaSection">
+        <summary>Monitor esquerdo</summary>
+        <label for="videoFileLeft">📂 Escolher vídeo<input id="videoFileLeft" type="file" accept="video/mp4,video/webm,video/ogg"></label>
+        <button id="playVideoLeft">▶ Reproduzir</button>
+        <div class="websiteControls"><input id="websiteUrlLeft" type="url" placeholder="https://exemplo.com" aria-label="URL do site no monitor esquerdo"><button id="openWebsiteLeft">Abrir site</button></div>
+        <small id="videoStatusLeft">Terminal Linux</small><small id="websiteStatusLeft">Nenhum site configurado.</small>
+      </details>
+      <details class="mediaSection">
+        <summary>Monitor ultrawide</summary>
+        <label for="videoFileRight">📂 Escolher vídeo<input id="videoFileRight" type="file" accept="video/mp4,video/webm,video/ogg"></label>
+        <button id="playVideoRight">▶ Reproduzir</button>
+        <div class="websiteControls"><input id="websiteUrlRight" type="url" placeholder="https://exemplo.com" aria-label="URL do site no monitor ultrawide"><button id="openWebsiteRight">Abrir site</button></div>
+        <small id="videoStatusRight">Matrix animado</small><small id="websiteStatusRight">Nenhum site configurado.</small>
+      </details>
+      <button id="matrixMode">Restaurar telas padrão</button>
+    </details>
+    <div id="list"></div>
+    <div class="controls"><button id="left">↶ Girar</button><button id="right">Girar ↷</button></div>
+    <div id="heightRow"><span>Altura</span><input id="height" type="range" min="0" max="3" step="0.05" value="0"
+        disabled></div>
+    <div class="controls"><button id="save">💾 Salvar</button><button id="reset">Restaurar</button></div>
+    <p>Selecione pelo nome ou clique no objeto. Arraste para mover. Móveis respeitam as paredes; quadros e cortina
+      deslizam nelas.</p>
+  </aside>
+  <button id="showToolbar" aria-label="Mostrar painel">🛠 Mostrar painel</button>
+  <div id="mobile"><span class="empty"></span><button data-key="arrowup">▲</button><span class="empty"></span><button
+      data-key="arrowleft">◀</button><button data-key="arrowdown">▼</button><button data-key="arrowright">▶</button>
+  </div>
+  <div id="tip">WASD: andar • E: interagir/sentar • Espaço: digitar • M: mouse • E: levantar</div>
+  <div id="dialog">
+    <article>
+      <h2 id="dt"></h2>
+      <p id="dd"></p><button id="close">Fechar</button>
+    </article>
+  </div>
+  <div id="error"></div>
+  <div id="screenView">
+    <article>
+      <header>
+        <h2 id="screenViewTitle">🖥️ Monitor do Home Lab</h2><button id="closeScreen">Fechar ✕</button>
+      </header><video id="bigVideo" controls playsinline></video>
+      <iframe id="websiteFrame" title="Site exibido no monitor" hidden allow="fullscreen; autoplay; encrypted-media; picture-in-picture" referrerpolicy="no-referrer"></iframe>
+      <p id="screenViewMessage">Os vídeos são locais e independentes em cada monitor. O arquivo não é enviado para nenhum servidor.</p>
+      <a id="openWebsiteTab" target="_blank" rel="noopener noreferrer" hidden>Abrir site em nova aba ↗</a>
+    </article>
+  </div>
+  <script
+    type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
+  <script type="module" src="./js/homelab.js"></script>
+</body>
+
+</html>
