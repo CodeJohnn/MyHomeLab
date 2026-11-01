@@ -423,3 +423,47 @@ canvas:active { cursor: grabbing; }
 .npcThought::before, .npcThought::after { content: ''; position: absolute; background: #fff; border: 2px solid #6a9287; border-radius: 50%; }
 .npcThought::before { width: 12px; height: 9px; bottom: -12px; left: 40%; }
 .npcThought::after { width: 6px; height: 5px; bottom: -22px; left: 45%; }
+
+/* Editor do ambiente */
+#toolbar { width: 350px; padding: 20px; border: 1px solid #ffffff16; background: #111b23f5; border-radius: 20px; box-shadow: 0 20px 65px #0007; color: #e7edf2; scrollbar-width: thin; scrollbar-color: #374853 transparent; }
+#toolbarHeader { gap: 12px; margin-bottom: 16px; }
+.editorEyebrow { display: block; font-size: 9px; letter-spacing: 1.7px; font-weight: 700; color: #81979f; }
+#toolbar #toolbarHeader h2 { font-size: 21px; letter-spacing: -.6px; color: #f0f5f7; margin: 6px 0 0; }
+#toolbar #hideToolbar { width: 30px; height: 30px; padding: 0; background: #ffffff07; border-color: #ffffff12; color: #9cb0bb; }
+.editorMode { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #95aaa9; margin-bottom: 14px; }
+.editorModeDot, .editorSaveNote span { width: 5px; height: 5px; border-radius: 50%; background: #69d5af; }
+#toolbar button { transition: background .15s, border-color .15s; font-size: 12px; font-weight: 550; border-radius: 8px; background: #1b2a34; border-color: #ffffff12; color: #d8e3e9; }
+#toolbar button:hover { background: #263c48; border-color: #78988b88; }
+#toolbar button:focus-visible, #toolbar input:focus-visible, #toolbar select:focus-visible, #toolbar summary:focus-visible { outline: 2px solid #78e4bc; outline-offset: 3px; }
+#toolbar button:disabled { opacity: .4; cursor: not-allowed; }
+#toolbar #edit { width: 100%; background: #75dfb6; color: #102a24; padding: 12px; border: none; font-weight: 700; }
+#toolbar #edit.active { background: #b2f1d8; }
+.editorTabs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 4px; gap: 3px; margin: 20px 0; background: #080f16; border: 1px solid #ffffff08; border-radius: 10px; }
+#toolbar .editorTabs button { border: none; background: transparent; padding: 9px 4px; color: #8399a6; }
+#toolbar .editorTabs button[aria-pressed="true"] { background: #273944; color: #f0f7f4; box-shadow: 0 2px 5px #0003; }
+.editorSectionHeading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+.editorSectionHeading h3 { font-size: 13px; margin: 0; font-weight: 650; }
+.editorSectionHeading > span { font-size: 10px; color: #7f96a3; }
+#objectSearch { width: 100%; padding: 10px 12px; margin-bottom: 10px; border: 1px solid #ffffff13; border-radius: 8px; background: #0c151d; color: #ecf4f7; font-size: 12px; }
+#toolbar #list { max-height: 235px; overflow-y: auto; gap: 5px; padding: 2px; scrollbar-width: thin; }
+#toolbar #list button { text-align: left; padding: 10px; font-size: 11px; line-height: 1.35; min-height: 43px; background: #17252f; }
+#toolbar #list button.active { border-color: #6cd8b3; background: #203e38; color: #a1f1ce; }
+#toolbar [hidden] { display: none !important; }
+.editorInspector { margin-top: 16px; padding: 13px; border: 1px solid #ffffff0e; border-radius: 11px; background: #0c161e; }
+#toolbar #selected { color: #e0eee8; font-size: 12px; margin: 8px 0 12px; }
+#heightRow { font-size: 11px; color: #9eb2bc; margin-top: 12px; }
+#height { accent-color: #75dfb6; }
+.editorHint { margin-top: 12px; color: #7f96a3; font-size: 11px; }
+#toolbar .mediaSection { background: #14222c; border-color: #ffffff10; padding: 12px; border-radius: 10px; margin: 9px 0; }
+#toolbar summary { color: #d2e0e6; font-size: 12px; cursor: pointer; padding: 3px 0; }
+#toolbar #mediaTools { border: none; padding: 0; }
+#toolbar .mediaSection label { display: inline-flex; align-items: center; padding: 8px; border-radius: 7px; background: #22343f; font-size: 11px; margin: 4px 0; }
+#toolbar #wallTools select { width: 100%; border-color: #ffffff18; background: #0c151d; padding: 10px; }
+#toolbar #resetWallPaint { display: block; width: 100%; margin-top: 12px; }
+#toolbar #playBothMonitors, #toolbar #matrixMode { width: 100%; margin-top: 8px; }
+.editorFooter { margin-top: 20px; padding-top: 15px; border-top: 1px solid #ffffff0e; }
+.editorSaveNote { display: flex; align-items: center; gap: 7px; color: #809b95; font-size: 10px; margin-bottom: 10px; }
+#toolbar #save { background: #284d40; color: #a3edcb; border-color: #71c8a333; flex: 2; }
+#toolbar #reset { color: #b1a2a4; }
+#showToolbar { background: #152630f2; border: 1px solid #6e9a8c66; color: #c6eadc; padding: 11px 16px; border-radius: 12px; box-shadow: 0 4px 20px #0004; }
+@media(max-width:700px) { #toolbar { width: min(350px, calc(100vw - 20px)); right: 10px; top: 10px; max-height: calc(100dvh - 20px); padding: 16px; } #toolbar #list { max-height: 28vh; } #toolbar button { min-height: 38px; } }
