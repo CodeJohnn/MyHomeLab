@@ -433,7 +433,7 @@ canvas:active { cursor: grabbing; }
 .editorMode { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #95aaa9; margin-bottom: 14px; }
 .editorModeDot, .editorSaveNote span { width: 5px; height: 5px; border-radius: 50%; background: #69d5af; }
 #toolbar button { transition: background .15s, border-color .15s; font-size: 12px; font-weight: 550; border-radius: 8px; background: #1b2a34; border-color: #ffffff12; color: #d8e3e9; }
-#toolbar button:hover { background: #263c48; border-color: #78988b88; }
+#toolbar button:hover { background: #089ae9; border-color: #78988b88; }
 #toolbar button:focus-visible, #toolbar input:focus-visible, #toolbar select:focus-visible, #toolbar summary:focus-visible { outline: 2px solid #78e4bc; outline-offset: 3px; }
 #toolbar button:disabled { opacity: .4; cursor: not-allowed; }
 #toolbar #edit { width: 100%; background: #75dfb6; color: #102a24; padding: 12px; border: none; font-weight: 700; }
@@ -467,3 +467,14 @@ canvas:active { cursor: grabbing; }
 #toolbar #reset { color: #b1a2a4; }
 #showToolbar { background: #152630f2; border: 1px solid #6e9a8c66; color: #c6eadc; padding: 11px 16px; border-radius: 12px; box-shadow: 0 4px 20px #0004; }
 @media(max-width:700px) { #toolbar { width: min(350px, calc(100vw - 20px)); right: 10px; top: 10px; max-height: calc(100dvh - 20px); padding: 16px; } #toolbar #list { max-height: 28vh; } #toolbar button { min-height: 38px; } }
+
+.positionFields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 12px 0; }
+.positionFields label { font-size: 10px; color: #95aaa9; }
+.positionFields input { width: 100%; padding: 8px 5px; margin-top: 4px; color: #e7edf2; background: #14222c; border: 1px solid #ffffff20; border-radius: 6px; }
+
+.moveObjectControls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 12px; }
+
+.rotationControl { display: grid; gap: 8px; margin: 14px 0; }
+.rotationControl label { display: flex; justify-content: space-between; color: #a7bfc4; font-size: 11px; }
+.rotationControl input[type="range"] { width: 100%; accent-color: #75dfb6; }
+.rotationControl input[type="number"] { width: 100%; padding: 8px; border: 1px solid #ffffff20; border-radius: 7px; background: #14222c; color: #e7edf2; }
