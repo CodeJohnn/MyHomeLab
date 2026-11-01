@@ -5,19 +5,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CodeJOHN • Home Lab 3D</title>
-  <link rel="stylesheet" href="./css/homelab.css">
+  <link rel="stylesheet" href="./css/homelab.css?v=npc-thoughts-2">
 </head>
 
 <body>
-  <div id="hud">
-    <h1></h1>
-    <p>WASD / setas: andar • E: interagir</p>
-    <p>Mouse: girar câmera • scroll: zoom</p>
-    <p id="status">Explore o escritório.</p>
-  </div>
+  <p id="status" hidden aria-live="polite"></p>
   <aside id="toolbar">
     <div id="toolbarHeader"><h2>🛠 Organizador</h2><button id="hideToolbar" aria-label="Ocultar painel">Ocultar ✕</button></div>
     <button id="edit">Ativar modo construção</button>
+    <details class="mediaSection" id="wallTools">
+      <summary>Pintar paredes</summary>
+      <label for="wallSide">Parede</label>
+      <select id="wallSide"><option value="both">Todas</option><option value="back">Fundo</option><option value="left">Esquerda</option><option value="front">Frente</option><option value="right">Direita</option></select>
+      <label for="wallColor">Cor <input id="wallColor" type="color" value="#a5adb4"></label>
+      <button id="resetWallPaint">Restaurar pintura</button>
+      <small>Escolha uma cor para aplicar. A pintura ? salva automaticamente.</small>
+    </details>
     <p id="selected">Nenhum objeto selecionado</p>
     <details id="mediaTools" open>
       <summary>🖼️ Imagens e vídeos</summary>
@@ -40,6 +43,7 @@
         <div class="websiteControls"><input id="websiteUrlRight" type="url" placeholder="https://exemplo.com" aria-label="URL do site no monitor ultrawide"><button id="openWebsiteRight">Abrir site</button></div>
         <small id="videoStatusRight">Matrix animado</small><small id="websiteStatusRight">Nenhum site configurado.</small>
       </details>
+      <button id="playBothMonitors">? Reproduzir os dois com som</button>
       <button id="matrixMode">Restaurar telas padrão</button>
     </details>
     <div id="list"></div>
@@ -51,10 +55,6 @@
       deslizam nelas.</p>
   </aside>
   <button id="showToolbar" aria-label="Mostrar painel">🛠 Mostrar painel</button>
-  <div id="mobile"><span class="empty"></span><button data-key="arrowup">▲</button><span class="empty"></span><button
-      data-key="arrowleft">◀</button><button data-key="arrowdown">▼</button><button data-key="arrowright">▶</button>
-  </div>
-  <div id="tip">WASD: andar • E: interagir/sentar • Espaço: digitar • M: mouse • E: levantar</div>
   <div id="dialog">
     <article>
       <h2 id="dt"></h2>
@@ -74,7 +74,7 @@
   </div>
   <script
     type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
-  <script type="module" src="./js/homelab.js"></script>
+  <script type="module" src="./js/homelab.js?v=npc-thoughts-2"></script>
 </body>
 
 </html>
