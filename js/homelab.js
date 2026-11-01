@@ -1722,7 +1722,7 @@
       createNpc('Xandy', '#643b28', '#315d8a', 2.05, .25, 'casual');
       createNpc('Alex', '#e7c3a9', '#626d43', 2.2, 2.25, 'military');
 
-      let edit = false, selected = null, dragging = false, camDrag = false, oldX = 0, oldY = 0, pitch = .74, yaw = Math.PI / 4, zoom = 1, near = null; const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), plane = new THREE.Plane(), hit = new THREE.Vector3(), offset = new THREE.Vector3(); const keys = new Set();       const list = document.getElementById('list'), selText = document.getElementById('selected'), addPicture = document.getElementById('addPicture'), pictureFile = document.getElementById('pictureFile'), pictureStatus = document.getElementById('pictureStatus'); for (const o of objects) { const b = document.createElement('button'); b.textContent = o.label; b.onclick = () => select(o); list.append(b); o.button = b }
+      let edit = false, selected = null, dragging = false, camDrag = false, camPan = false, oldX = 0, oldY = 0, pitch = .74, yaw = Math.PI / 4, zoom = 1, near = null; const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), plane = new THREE.Plane(), hit = new THREE.Vector3(), offset = new THREE.Vector3(); const keys = new Set();       const list = document.getElementById('list'), selText = document.getElementById('selected'), addPicture = document.getElementById('addPicture'), pictureFile = document.getElementById('pictureFile'), pictureStatus = document.getElementById('pictureStatus'); for (const o of objects) { const b = document.createElement('button'); b.textContent = o.label; b.onclick = () => select(o); list.append(b); o.button = b }
       let interactionPose = null, interactionTime = 0, savedAvatarPosition = null, savedAvatarRotation = 0;
       function stopInteraction() {
         if (!interactionPose) return;
@@ -1804,7 +1804,18 @@
           bitmap?.close();
         }
       });
-      function cameraUpdate() { const aspect = innerWidth / innerHeight, size = innerWidth < 700 ? 12 : 10; camera.left = -size * aspect / zoom; camera.right = size * aspect / zoom; camera.top = size / zoom; camera.bottom = -size / zoom; camera.position.set(2.5 + Math.sin(yaw) * 16 * Math.cos(pitch), 1.05 + 16 * Math.sin(pitch), Math.cos(yaw) * 16 * Math.cos(pitch)); camera.lookAt(2.5, 1.05, 2.4); camera.updateProjectionMatrix();
+      const cameraTarget = new THREE.Vector3(2.5, 1.05, 2.4);
+      function panCameraBy(dx, dy) {
+        const size = innerWidth < 700 ? 12 : 10;
+        const worldPerPixel = 2 * size / (zoom * renderer.domElement.clientHeight);
+        const horizontal = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+        const depth = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+        cameraTarget.addScaledVector(horizontal, -dx * worldPerPixel);
+        cameraTarget.addScaledVector(depth, dy * worldPerPixel);
+        cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, ROOM.minX, ROOM.maxX);
+        cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, ROOM.minZ, ROOM.maxZ);
+      }
+      function cameraUpdate() { const aspect = innerWidth / innerHeight, size = innerWidth < 700 ? 12 : 10; camera.left = -size * aspect / zoom; camera.right = size * aspect / zoom; camera.top = size / zoom; camera.bottom = -size / zoom; camera.position.set(cameraTarget.x + Math.sin(yaw) * 16 * Math.cos(pitch), cameraTarget.y + 16 * Math.sin(pitch), cameraTarget.z + Math.cos(yaw) * 16 * Math.cos(pitch)); camera.lookAt(cameraTarget); camera.updateProjectionMatrix();
         // Oculta as paredes voltadas para a camera para abrir a vista do interior.
         for (const entry of Object.values(roomWalls)) {
           entry.group.visible = camera.position.x * entry.nx + camera.position.z * entry.nz <= .05;
@@ -2358,7 +2369,80 @@
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => canvas.addEventListener(type, e => {
         touches.delete(e.pointerId); pinchDistance = 0;
       }));
-      renderer.domElement.addEventListener('pointerdown', e => { if (e.button !== 0 || touches.size > 1) return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.position).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if (touches.size > 1) return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY; cameraUpdate() } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release); renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = THREE.MathUtils.clamp(zoom - e.deltaY * .001, .6, 2.5); cameraUpdate() }, { passive: false });
+      renderer.domElement.addEventListener('pointerdown', e => {
+        if (touches.size > 1) return;
+        const pan = e.button === 2 || (e.button === 0 && e.shiftKey && !edit);
+        if (e.button !== 0 && !pan) return;
+        tapOrigin = { x: e.clientX, y: e.clientY };
+        tapMoved = pan;
+        oldY = e.clientY;
+        oldX = e.clientX;
+        if (pan) {
+          camPan = true;
+          renderer.domElement.setPointerCapture(e.pointerId);
+          e.preventDefault();
+        } else if (edit) {
+          const o = target(e);
+          if (o) {
+            select(o);
+            setupPlane(o);
+            point(e);
+            if (ray.ray.intersectPlane(plane, hit)) {
+              offset.copy(o.g.position).sub(hit);
+              dragging = true;
+              renderer.domElement.setPointerCapture(e.pointerId);
+            }
+          }
+        } else {
+          camDrag = true;
+          renderer.domElement.setPointerCapture(e.pointerId);
+        }
+      });
+      renderer.domElement.addEventListener('pointermove', e => {
+        if (touches.size > 1) return;
+        if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true;
+        if (!tapMoved) return;
+        if (edit && dragging && selected) {
+          point(e);
+          if (ray.ray.intersectPlane(plane, hit)) {
+            const p = hit.clone().add(offset);
+            if (selected.kind === 'wallBack') {
+              selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4);
+              selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7);
+            } else if (selected.kind === 'wallLeft') {
+              selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3);
+              selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2);
+            } else {
+              moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z));
+            }
+          }
+        } else if (camPan) {
+          panCameraBy(e.clientX - oldX, e.clientY - oldY);
+          oldX = e.clientX;
+          oldY = e.clientY;
+          cameraUpdate();
+        } else if (camDrag) {
+          yaw += (e.clientX - oldX) * .006;
+          pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45);
+          oldX = e.clientX;
+          oldY = e.clientY;
+          cameraUpdate();
+        }
+      });
+      function release(e) {
+        if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e);
+        tapOrigin = null;
+        const wasDragging = dragging;
+        dragging = false;
+        camDrag = false;
+        camPan = false;
+        if (wasDragging && edit) save();
+      }
+      renderer.domElement.addEventListener('pointerup', release);
+      renderer.domElement.addEventListener('pointercancel', release);
+      renderer.domElement.addEventListener('lostpointercapture', release);
+      renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+      renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = THREE.MathUtils.clamp(zoom - e.deltaY * .001, .6, 2.5); cameraUpdate() }, { passive: false });
       // O clique nativo do mouse ocorre depois do pointerup e da libera??o da captura.
       canvas.addEventListener('click', e => {
         if (e.pointerType === 'touch' || e.pointerType === 'pen' || edit || tapMoved) return;
