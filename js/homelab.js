@@ -5,8 +5,9 @@
       const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
       const { RoundedBoxGeometry } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/geometries/RoundedBoxGeometry.js');
       const { CSS3DRenderer, CSS3DObject } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/renderers/CSS3DRenderer.js');
-      const scene = new THREE.Scene(); scene.background = new THREE.Color('#101923'); const camera = new THREE.OrthographicCamera(-8, 8, 5, -5, .1, 100); const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(Math.max(devicePixelRatio, 1.5), 2.5)); renderer.setSize(innerWidth, innerHeight); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.4; document.body.prepend(renderer.domElement);
-      scene.add(new THREE.HemisphereLight(0xe3f4ff, 0x6c554b, 2.3)); const sun = new THREE.DirectionalLight(0xfff3dc, 3.3); sun.position.set(-4, 11, 7); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(sun);
+      const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth <= 700;
+      const scene = new THREE.Scene(); scene.background = new THREE.Color('#101923'); const camera = new THREE.OrthographicCamera(-8, 8, 5, -5, .1, 100); const renderer = new THREE.WebGLRenderer({ antialias: !isMobile }); renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.25 : 2)); renderer.setSize(innerWidth, innerHeight); renderer.shadowMap.enabled = !isMobile; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.4; document.body.prepend(renderer.domElement);
+      scene.add(new THREE.HemisphereLight(0xe3f4ff, 0x6c554b, 2.3)); const sun = new THREE.DirectionalLight(0xfff3dc, 3.3); sun.position.set(-4, 11, 7); sun.castShadow = !isMobile; sun.shadow.mapSize.set(isMobile ? 512 : 2048, isMobile ? 512 : 2048); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(sun);
       const M = (c, metalness = 0, roughness = .72) => new THREE.MeshStandardMaterial({ color: c, metalness, roughness }); const wood = M('#a97b58'), woodLight = M('#c49b75'), black = M('#151d25', .2, .42), metal = M('#39434b', .65, .35), wall = M('#a5adb4'), tile = M('#98765c'), white = M('#dce5e7'), blue = M('#2daaff'), glass = new THREE.MeshPhysicalMaterial({ color: '#294b62', metalness: .12, roughness: .14, transparent: true, opacity: .7 }); const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
       function box(g, w, h, d, m, x = 0, y = 0, z = 0, r = 0) { const geo = r ? new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2 - .001, h / 2 - .001, d / 2 - .001)) : new THREE.BoxGeometry(w, h, d); const a = new THREE.Mesh(geo, m); a.position.set(x, y, z); a.castShadow = true; a.receiveShadow = true; g.add(a); return a } function cyl(g, r, h, m, x, y, z, segments = 24) { const a = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, segments), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a } function sphere(g, r, m, x, y, z) { const a = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a }
       // Fundo ilustrado a partir da referencia, independente da camera do quarto.
@@ -1429,22 +1430,49 @@
       refreshGithubProfile();setInterval(refreshGithubProfile,120000);
       document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshGithubProfile();});
 
+      const wallOcclusionState = new Map();
+      const wallRaycaster = new THREE.Raycaster();
+      const wallOccluders = [...new Set([backWall, leftWall, rightWall, ...apartmentWalls])];
       function updateActiveRoomWalls() {
-        // Restaura a vista em corte: paredes do fundo visiveis e as da frente ocultas.
-        const backVisible=Math.cos(yaw)>=0;
-        const leftVisible=Math.sin(yaw)>=0;
-        roomWalls.back.group.visible=backVisible;
-        roomWalls.front.group.visible=!backVisible;
-        roomWalls.left.group.visible=leftVisible;
-        roomWalls.right.group.visible=!leftVisible;
-        for(const entry of Object.values(roomWalls)) {
-          for(const child of entry.group.children) child.visible=true;
+        for (const [object, visible] of wallOcclusionState) object.visible = visible;
+        wallOcclusionState.clear();
+
+        const backVisible = Math.cos(yaw) >= 0;
+        const leftVisible = Math.sin(yaw) >= 0;
+        roomWalls.back.group.visible = backVisible;
+        roomWalls.front.group.visible = !backVisible;
+        roomWalls.left.group.visible = leftVisible;
+        roomWalls.right.group.visible = !leftVisible;
+        rearRoomPartitions.visible = backVisible;
+        for (const o of objects) {
+          if (o.kind === 'wallBack') o.g.visible = backVisible;
+          else if (o.kind === 'wallLeft') o.g.visible = leftVisible;
         }
-        rearRoomPartitions.visible=backVisible;
-        for(const child of rearRoomPartitions.children) child.visible=true;
-        for(const o of objects) {
-          if(o.kind==='wallBack')o.g.visible=backVisible;
-          else if(o.kind==='wallLeft')o.g.visible=leftVisible;
+
+        const target = avatar.position.clone();
+        target.y += .9;
+        const direction = target.sub(camera.position);
+        const distance = direction.length();
+        if (distance <= .1) return;
+        wallRaycaster.set(camera.position, direction.normalize());
+        const visibleOccluders = wallOccluders.filter(mesh => isSceneVisible(mesh));
+        const intersections = wallRaycaster.intersectObjects(visibleOccluders, false);
+        for (const { object, distance: hitDistance } of intersections) {
+          if (hitDistance >= distance - .25) break;
+          let wallGroup = null;
+          for (let parent = object.parent; parent; parent = parent.parent) {
+            if (parent === rearRoomPartitions || Object.values(roomWalls).some(entry => entry.group === parent)) {
+              wallGroup = parent;
+              break;
+            }
+          }
+          const targets = wallGroup ? [wallGroup] : [object];
+          if (wallGroup === roomWalls.back.group) targets.push(...objects.filter(o => o.kind === 'wallBack').map(o => o.g));
+          if (wallGroup === roomWalls.left.group) targets.push(...objects.filter(o => o.kind === 'wallLeft').map(o => o.g));
+          for (const target of targets) {
+            if (!wallOcclusionState.has(target)) wallOcclusionState.set(target, target.visible);
+            target.visible = false;
+          }
         }
       }
       // Avatar.
@@ -1722,7 +1750,7 @@
       createNpc('Xandy', '#643b28', '#315d8a', 2.05, .25, 'casual');
       createNpc('Alex', '#e7c3a9', '#626d43', 2.2, 2.25, 'military');
 
-      let edit = false, selected = null, dragging = false, camDrag = false, camPan = false, oldX = 0, oldY = 0, pitch = .74, yaw = Math.PI / 4, zoom = 1, near = null; const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), plane = new THREE.Plane(), hit = new THREE.Vector3(), offset = new THREE.Vector3(); const keys = new Set();       const list = document.getElementById('list'), selText = document.getElementById('selected'), addPicture = document.getElementById('addPicture'), pictureFile = document.getElementById('pictureFile'), pictureStatus = document.getElementById('pictureStatus'); for (const o of objects) { const b = document.createElement('button'); b.textContent = o.label; b.onclick = () => select(o); list.append(b); o.button = b }
+      let edit = false, selected = null, dragging = false, camDrag = false, oldX = 0, oldY = 0, pitch = .74, yaw = Math.PI / 4, zoom = 1, near = null; const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), plane = new THREE.Plane(), hit = new THREE.Vector3(), offset = new THREE.Vector3(); const keys = new Set();       const list = document.getElementById('list'), selText = document.getElementById('selected'), addPicture = document.getElementById('addPicture'), pictureFile = document.getElementById('pictureFile'), pictureStatus = document.getElementById('pictureStatus'); for (const o of objects) { const b = document.createElement('button'); b.textContent = o.label; b.onclick = () => select(o); list.append(b); o.button = b }
       let interactionPose = null, interactionTime = 0, savedAvatarPosition = null, savedAvatarRotation = 0;
       function stopInteraction() {
         if (!interactionPose) return;
@@ -1804,18 +1832,7 @@
           bitmap?.close();
         }
       });
-      const cameraTarget = new THREE.Vector3(2.5, 1.05, 2.4);
-      function panCameraBy(dx, dy) {
-        const size = innerWidth < 700 ? 12 : 10;
-        const worldPerPixel = 2 * size / (zoom * renderer.domElement.clientHeight);
-        const horizontal = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
-        const depth = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-        cameraTarget.addScaledVector(horizontal, -dx * worldPerPixel);
-        cameraTarget.addScaledVector(depth, dy * worldPerPixel);
-        cameraTarget.x = THREE.MathUtils.clamp(cameraTarget.x, ROOM.minX, ROOM.maxX);
-        cameraTarget.z = THREE.MathUtils.clamp(cameraTarget.z, ROOM.minZ, ROOM.maxZ);
-      }
-      function cameraUpdate() { const aspect = innerWidth / innerHeight, size = innerWidth < 700 ? 12 : 10; camera.left = -size * aspect / zoom; camera.right = size * aspect / zoom; camera.top = size / zoom; camera.bottom = -size / zoom; camera.position.set(cameraTarget.x + Math.sin(yaw) * 16 * Math.cos(pitch), cameraTarget.y + 16 * Math.sin(pitch), cameraTarget.z + Math.cos(yaw) * 16 * Math.cos(pitch)); camera.lookAt(cameraTarget); camera.updateProjectionMatrix();
+      function cameraUpdate() { const aspect = innerWidth / innerHeight, size = innerWidth < 700 ? 12 : 10; camera.left = -size * aspect / zoom; camera.right = size * aspect / zoom; camera.top = size / zoom; camera.bottom = -size / zoom; camera.position.set(2.5 + Math.sin(yaw) * 16 * Math.cos(pitch), 1.05 + 16 * Math.sin(pitch), Math.cos(yaw) * 16 * Math.cos(pitch)); camera.lookAt(2.5, 1.05, 2.4); camera.updateProjectionMatrix();
         // Oculta as paredes voltadas para a camera para abrir a vista do interior.
         for (const entry of Object.values(roomWalls)) {
           entry.group.visible = camera.position.x * entry.nx + camera.position.z * entry.nz <= .05;
@@ -1874,17 +1891,21 @@
       function moveSafe(o, position, rotation = o.g.rotation.y) {
         const start=o.g.position.clone(),startRotation=o.g.rotation.y;
         const overlapAtStart=overlapsSolid(o);
-        let previousPenetration=wallPenetration(o), changed=false;
-        // Testa o trajeto inteiro para nao saltar uma divisoria num arraste rapido.
+        let changed=false;
         const steps=Math.max(1,Math.ceil(start.distanceTo(position)/.05),Math.ceil(Math.abs(rotation-startRotation)/(Math.PI/90)));
         const target=position.clone();
         for(let i=1;i<=steps;i++) {
           const oldPosition=o.g.position.clone(),oldRotation=o.g.rotation.y;
           o.g.position.lerpVectors(start,target,i/steps);o.g.rotation.y=startRotation+(rotation-startRotation)*i/steps;
-          const penetration=wallPenetration(o);
-          const valid=fitsRoom(o) && penetration<=previousPenetration+.000001 && (penetration===0 || penetration<previousPenetration) && (overlapAtStart || !overlapsSolid(o));
+          const valid=fitsRoom(o) && (overlapAtStart || !overlapsSolid(o));
           if(!valid){o.g.position.copy(oldPosition);o.g.rotation.y=oldRotation;o.g.updateWorldMatrix(true,true);break;}
-          previousPenetration=penetration;changed=true;
+          changed=true;
+        }
+        if (changed && wallPenetration(o) > .000001) {
+          o.g.position.copy(start);
+          o.g.rotation.y=startRotation;
+          o.g.updateWorldMatrix(true,true);
+          return false;
         }
         return changed;
       }
@@ -2369,80 +2390,7 @@
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => canvas.addEventListener(type, e => {
         touches.delete(e.pointerId); pinchDistance = 0;
       }));
-      renderer.domElement.addEventListener('pointerdown', e => {
-        if (touches.size > 1) return;
-        const pan = e.button === 2 || (e.button === 0 && e.shiftKey && !edit);
-        if (e.button !== 0 && !pan) return;
-        tapOrigin = { x: e.clientX, y: e.clientY };
-        tapMoved = pan;
-        oldY = e.clientY;
-        oldX = e.clientX;
-        if (pan) {
-          camPan = true;
-          renderer.domElement.setPointerCapture(e.pointerId);
-          e.preventDefault();
-        } else if (edit) {
-          const o = target(e);
-          if (o) {
-            select(o);
-            setupPlane(o);
-            point(e);
-            if (ray.ray.intersectPlane(plane, hit)) {
-              offset.copy(o.g.position).sub(hit);
-              dragging = true;
-              renderer.domElement.setPointerCapture(e.pointerId);
-            }
-          }
-        } else {
-          camDrag = true;
-          renderer.domElement.setPointerCapture(e.pointerId);
-        }
-      });
-      renderer.domElement.addEventListener('pointermove', e => {
-        if (touches.size > 1) return;
-        if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true;
-        if (!tapMoved) return;
-        if (edit && dragging && selected) {
-          point(e);
-          if (ray.ray.intersectPlane(plane, hit)) {
-            const p = hit.clone().add(offset);
-            if (selected.kind === 'wallBack') {
-              selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4);
-              selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7);
-            } else if (selected.kind === 'wallLeft') {
-              selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3);
-              selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2);
-            } else {
-              moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z));
-            }
-          }
-        } else if (camPan) {
-          panCameraBy(e.clientX - oldX, e.clientY - oldY);
-          oldX = e.clientX;
-          oldY = e.clientY;
-          cameraUpdate();
-        } else if (camDrag) {
-          yaw += (e.clientX - oldX) * .006;
-          pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45);
-          oldX = e.clientX;
-          oldY = e.clientY;
-          cameraUpdate();
-        }
-      });
-      function release(e) {
-        if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e);
-        tapOrigin = null;
-        const wasDragging = dragging;
-        dragging = false;
-        camDrag = false;
-        camPan = false;
-        if (wasDragging && edit) save();
-      }
-      renderer.domElement.addEventListener('pointerup', release);
-      renderer.domElement.addEventListener('pointercancel', release);
-      renderer.domElement.addEventListener('lostpointercapture', release);
-      renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
-      renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = THREE.MathUtils.clamp(zoom - e.deltaY * .001, .6, 2.5); cameraUpdate() }, { passive: false });
+      renderer.domElement.addEventListener('pointerdown', e => { if (e.button !== 0 || touches.size > 1) return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.position).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if (touches.size > 1) return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY; cameraUpdate() } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release); renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); zoom = THREE.MathUtils.clamp(zoom - e.deltaY * .001, .6, 2.5); cameraUpdate() }, { passive: false });
       // O clique nativo do mouse ocorre depois do pointerup e da libera??o da captura.
       canvas.addEventListener('click', e => {
         if (e.pointerType === 'touch' || e.pointerType === 'pen' || edit || tapMoved) return;
@@ -2466,18 +2414,41 @@
       }
 
       const requestedOrganization = {
+        bancadaTI: [5.2, 0, -2.85, 0],
+        instrumentosTI: [6.4, 0, -2.85, 0],
+        rackExtraTI: [7.6, 0, -2.85, 0],
+        pecasTI: [8.8, 0, -2.85, 0],
+        banquetaTI: [5.3, 0, -.9, 0],
+        vaso: [8.75, 0, .85, 0],
+        piaBanheiro: [5.45, 0, .7, 0],
+        chuveiro: [8.45, 0, 2.6, 0],
         mesa: [0, 0, -2.65, 0],
         monitor1: [-.85, 1.11, -2.75, 0],
         monitor2: [.73, 1.11, -2.75, 0],
         pc: [-1.89, 1.0975, -2.65, -Math.PI / 2],
         cadeira: [-.15, 0, -1.62, Math.PI],
+        bibliotecaNova: [-4.04, 0, 1.6, Math.PI / 2],
+        mesaLeitura: [-2.35, 0, 1.45, 0],
+        cadeiraLeitura: [-2.35, 0, 2.28, 0],
+        mesaL: [3.1, 0, -2.2, 0],
+        lousa: [-2.95, 2.4, -3.35, 0],
+        modemWifi: [1.9, 2.7, -3.29, 0],
+        quadro1: [-.95, 2.45, -3.35, 0],
+        quadro2: [-.02, 2.45, -3.35, 0],
+        quadro3: [.92, 2.45, -3.35, 0],
+        cortina: [-4.34, 1.8, -1.65, 0],
         mousepad: [.3, 1.115, -2.43, 0],
         teclado: [-.15, 1.11715, -2.43, 0],
         mouse: [.85, 1.121, -2.43, 0],
         tv: [3.15, 1.9, -3.34, 0],
-        quadro1: [-.95, 2.45, -3.35, 0],
-        quadro2: [-.02, 2.45, -3.35, 0],
-        quadro3: [.92, 2.45, -3.35, 0]
+        setupVitoria: [-2.05, 0, 7.7, Math.PI],
+        setupXandy: [2.5, 0, 7.7, Math.PI],
+        setupAlex: [7.05, 0, 7.7, Math.PI],
+        lousaNPCs: [-2.9, 2.05, 3.6, 0],
+        quadroMaquiavel: [-.35, 2.05, 3.6, 0],
+        quadroCodejohn: [4.85, 2.05, 3.6, 0],
+        quadroLinux: [7.2, 2.05, 3.6, 0],
+        githubPerfil: [2, 2.05, 3.6, 0]
       };
       for (const [id, position] of Object.entries(requestedOrganization)) {
         const object = byId[id];
@@ -2662,9 +2633,11 @@
       function show(o) { document.getElementById('dt').textContent = o.label; document.getElementById('dd').textContent = o.desc; document.getElementById('dialog').style.display = 'flex'; keys.clear() }
       document.getElementById('close').onclick = () => document.getElementById('dialog').style.display = 'none';
       document.getElementById('dialog').onclick = e => { if (e.target.id === 'dialog') e.currentTarget.style.display = 'none' };
-      let prev = performance.now(), walk = 0;
+      let prev = performance.now(), walk = 0, lastMobileFrame = 0;
       function loop(t) {
         requestAnimationFrame(loop);
+        if (document.hidden || (isMobile && t - lastMobileFrame < 1000 / 30)) return;
+        if (isMobile) lastMobileFrame = t;
         const dt = Math.min((t - prev) / 1000, .05);
         prev = t;
         if (!edit && document.getElementById('dialog').style.display !== 'flex' && !interactionPose) {
