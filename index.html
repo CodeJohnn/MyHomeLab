@@ -5,56 +5,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CodeJOHN • Home Lab 3D</title>
-  <link rel="stylesheet" href="./css/homelab.css?v=npc-thoughts-2">
+  <link rel="stylesheet" href="./css/homelab.css?v=editor-3">
 </head>
 
 <body>
   <p id="status" hidden aria-live="polite"></p>
-  <aside id="toolbar">
-    <div id="toolbarHeader"><h2>🛠 Organizador</h2><button id="hideToolbar" aria-label="Ocultar painel">Ocultar ✕</button></div>
-    <button id="edit">Ativar modo construção</button>
-    <details class="mediaSection" id="wallTools">
-      <summary>Pintar paredes</summary>
-      <label for="wallSide">Parede</label>
-      <select id="wallSide"><option value="both">Todas</option><option value="back">Fundo</option><option value="left">Esquerda</option><option value="front">Frente</option><option value="right">Direita</option></select>
-      <label for="wallColor">Cor <input id="wallColor" type="color" value="#a5adb4"></label>
-      <button id="resetWallPaint">Restaurar pintura</button>
-      <small>Escolha uma cor para aplicar. A pintura ? salva automaticamente.</small>
-    </details>
-    <p id="selected">Nenhum objeto selecionado</p>
-    <details id="mediaTools" open>
-      <summary>🖼️ Imagens e vídeos</summary>
-      <details class="mediaSection" id="pictureSection">
-        <summary>Imagens dos quadros</summary>
-        <div id="pictureTools"><button id="addPicture" disabled>🖼️ Adicionar imagem ao quadro</button><input
-            id="pictureFile" type="file" accept="image/*" hidden><small id="pictureStatus">Selecione um quadro para adicionar uma imagem.</small></div>
-      </details>
-      <details class="mediaSection">
-        <summary>Monitor esquerdo</summary>
-        <label for="videoFileLeft">📂 Escolher vídeo<input id="videoFileLeft" type="file" accept="video/mp4,video/webm,video/ogg"></label>
-        <button id="playVideoLeft">▶ Reproduzir</button>
-        <div class="websiteControls"><input id="websiteUrlLeft" type="url" placeholder="https://exemplo.com" aria-label="URL do site no monitor esquerdo"><button id="openWebsiteLeft">Abrir site</button></div>
-        <small id="videoStatusLeft">Terminal Linux</small><small id="websiteStatusLeft">Nenhum site configurado.</small>
-      </details>
-      <details class="mediaSection">
-        <summary>Monitor ultrawide</summary>
-        <label for="videoFileRight">📂 Escolher vídeo<input id="videoFileRight" type="file" accept="video/mp4,video/webm,video/ogg"></label>
-        <button id="playVideoRight">▶ Reproduzir</button>
-        <div class="websiteControls"><input id="websiteUrlRight" type="url" placeholder="https://exemplo.com" aria-label="URL do site no monitor ultrawide"><button id="openWebsiteRight">Abrir site</button></div>
-        <small id="videoStatusRight">Matrix animado</small><small id="websiteStatusRight">Nenhum site configurado.</small>
-      </details>
-      <button id="playBothMonitors">? Reproduzir os dois com som</button>
-      <button id="matrixMode">Restaurar telas padrão</button>
-    </details>
-    <div id="list"></div>
-    <div class="controls"><button id="left">↶ Girar</button><button id="right">Girar ↷</button></div>
-    <div id="heightRow"><span>Altura</span><input id="height" type="range" min="0" max="3" step="0.05" value="0"
-        disabled></div>
-    <div class="controls"><button id="save">💾 Salvar</button><button id="reset">Restaurar</button></div>
-    <p>Selecione pelo nome ou clique no objeto. Arraste para mover. Móveis respeitam as paredes; quadros e cortina
-      deslizam nelas.</p>
+  <aside id="toolbar" aria-label="Editor do ambiente">
+    <div id="toolbarHeader"><div><span class="editorEyebrow">GUEDESSEC / HOME LAB</span><h2>Editor do ambiente</h2></div><button id="hideToolbar" aria-label="Recolher painel" title="Recolher painel">&#10005;</button></div>
+    <div class="editorMode"><span class="editorModeDot"></span><span>Seu espa&ccedil;o, do seu jeito</span></div>
+    <button id="edit">Ativar modo constru&ccedil;&atilde;o</button>
+    <nav class="editorTabs" aria-label="Se&ccedil;&otilde;es do editor">
+      <button data-editor-tab="objects" aria-pressed="true">Objetos</button><button data-editor-tab="appearance" aria-pressed="false">Ambiente</button><button data-editor-tab="media" aria-pressed="false">M&iacute;dia</button>
+    </nav>
+    <section data-editor-section="objects">
+      <div class="editorSectionHeading"><h3>Objetos do quarto</h3><span id="objectCount"></span></div>
+      <input id="objectSearch" type="search" placeholder="Buscar objeto..." aria-label="Buscar objeto">
+      <div id="list"></div><p id="emptyObjectSearch" hidden>Nenhum objeto encontrado.</p>
+      <div class="editorInspector"><span class="editorEyebrow">SELE&Ccedil;&Atilde;O ATUAL</span><p id="selected">Nenhum objeto selecionado</p>
+      <div class="controls"><button id="left">&#8630; Girar</button><button id="right">Girar &#8631;</button></div>
+      <div id="heightRow"><label for="height">Altura</label><input id="height" type="range" min="0" max="3" step="0.05" value="0" disabled></div></div>
+      <p class="editorHint">Ative a constru&ccedil;&atilde;o para selecionar e arrastar os m&oacute;veis.</p>
+    </section>
+    <section data-editor-section="appearance" hidden>
+      <div class="editorSectionHeading"><h3>Acabamentos</h3><span>04 paredes</span></div>
+      <details class="mediaSection" id="wallTools" open><summary>Pintura das paredes</summary>
+      <label for="wallSide">Aplicar em</label><select id="wallSide"><option value="both">Todas as paredes</option><option value="back">Fundo</option><option value="left">Esquerda</option><option value="front">Frente</option><option value="right">Direita</option></select>
+      <label for="wallColor">Cor da pintura <input id="wallColor" type="color" value="#a5adb4"></label>
+      <button id="resetWallPaint">Restaurar pintura original</button><small>As cores s&atilde;o salvas automaticamente.</small></details>
+    </section>
+    <section data-editor-section="media" hidden>
+      <div class="editorSectionHeading"><h3>Telas e imagens</h3><span>Personalizar</span></div>
+      <details id="mediaTools" open><summary>Conte&uacute;do do ambiente</summary>
+      <details class="mediaSection" id="pictureSection" open><summary>Quadros decorativos</summary><div id="pictureTools"><button id="addPicture" disabled>Adicionar imagem ao quadro</button><input id="pictureFile" type="file" accept="image/*" hidden><small id="pictureStatus">Selecione um quadro na aba Objetos.</small></div></details>
+      <details class="mediaSection"><summary>Monitor esquerdo</summary><label class="fileChoice" for="videoFileLeft">Escolher v&iacute;deo<input id="videoFileLeft" type="file" accept="video/mp4,video/webm,video/ogg"></label><button id="playVideoLeft">Reproduzir</button><div class="websiteControls"><input id="websiteUrlLeft" type="url" placeholder="https://exemplo.com" aria-label="Site do monitor esquerdo"><button id="openWebsiteLeft">Abrir</button></div><small id="videoStatusLeft">Nenhum v&iacute;deo selecionado.</small><small id="websiteStatusLeft">Nenhum site configurado.</small></details>
+<details class="mediaSection"><summary>Monitor ultrawide</summary><label class="fileChoice" for="videoFileRight">Escolher v&iacute;deo<input id="videoFileRight" type="file" accept="video/mp4,video/webm,video/ogg"></label><button id="playVideoRight">Reproduzir</button><div class="websiteControls"><input id="websiteUrlRight" type="url" placeholder="https://exemplo.com" aria-label="Site do monitor ultrawide"><button id="openWebsiteRight">Abrir</button></div><small id="videoStatusRight">Nenhum v&iacute;deo selecionado.</small><small id="websiteStatusRight">Nenhum site configurado.</small></details>
+      <button id="playBothMonitors">Reproduzir os dois com som</button><button id="matrixMode">Restaurar telas originais</button></details>
+    </section>
+    <footer class="editorFooter"><div class="editorSaveNote"><span></span>Salvo neste navegador</div><div class="controls"><button id="save">Salvar ambiente</button><button id="reset">Restaurar</button></div></footer>
   </aside>
-  <button id="showToolbar" aria-label="Mostrar painel">🛠 Mostrar painel</button>
+  <button id="showToolbar" aria-label="Mostrar painel">&#9881; Editar ambiente</button>
   <div id="dialog">
     <article>
       <h2 id="dt"></h2>
@@ -74,7 +63,7 @@
   </div>
   <script
     type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
-  <script type="module" src="./js/homelab.js?v=npc-thoughts-2"></script>
+  <script type="module" src="./js/homelab.js?v=editor-3"></script>
 </body>
 
 </html>
