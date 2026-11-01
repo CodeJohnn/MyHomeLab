@@ -402,3 +402,24 @@
       font-size: 16px;
       color: #80ffb7
     }
+
+#mobile button { touch-action: none; user-select: none; min-height: 44px; }
+canvas { cursor: grab; }
+canvas:active { cursor: grabbing; }
+#dialog { z-index: 8; }
+
+#wallTools select { max-width: 100%; padding: 7px; background: #101820; color: #e8f7ef; border: 1px solid #487967; border-radius: 7px; margin-bottom: 10px; }
+#wallTools label { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0; }
+#wallColor { width: 48px; height: 40px; padding: 2px; cursor: pointer; }
+#wallTools small { display: block; margin-top: 7px; color: #b5cbc4; }
+
+#monitorVideoLayer { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+#monitorVideoLayer * { pointer-events: none !important; }
+#hud, #tip, #mobile { z-index: 2; }
+
+#npcThoughtLayer { position: fixed; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.npcThought { position: absolute; transform: translate(-50%, -100%); width: max-content; max-width: min(210px, 75vw); padding: 14px 17px; background: #fff; color: #19382f; border: 2px solid #6a9287; border-radius: 36px; box-shadow: 0 4px 14px #0004; font: 600 13px/1.4 system-ui, sans-serif; text-align: center; }
+.npcThought[hidden] { display: none; }
+.npcThought::before, .npcThought::after { content: ''; position: absolute; background: #fff; border: 2px solid #6a9287; border-radius: 50%; }
+.npcThought::before { width: 12px; height: 9px; bottom: -12px; left: 40%; }
+.npcThought::after { width: 6px; height: 5px; bottom: -22px; left: 45%; }
