@@ -5,17 +5,32 @@ import {characterReactions} from './emotion-reactions.mjs';
 export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction}) {
   const panel=document.createElement('details');
   panel.hidden=true;
-  panel.innerHTML=`<summary><span class="onlineHeading"><span class="onlineIndicator"></span>Jogar online</span><span class="onlineCount" data-count>Conectando</span><span class="onlineChevron" aria-hidden="true">&#8964;</span></summary>
+  panel.innerHTML=`<summary><span class="onlineHeading"><span class="onlineIndicator"></span>Conversa</span><span class="onlineCount" data-count>Conectando</span><button type="button" class="onlineOptions" aria-label="Opcoes da sala">&#8943;</button><span class="onlineChevron" aria-hidden="true">&#8964;</span></summary>
   <div class="onlineBody"><nav class="onlineTabs" role="tablist" aria-label="Painel online"><button type="button" id="online-tab-room" role="tab" aria-controls="online-page-room" aria-selected="true" data-tab="room">Sala</button><button type="button" id="online-tab-chat" role="tab" aria-controls="online-page-chat" aria-selected="false" tabindex="-1" data-tab="chat">Conversa</button><button type="button" id="online-tab-profile" role="tab" aria-controls="online-page-profile" aria-selected="false" tabindex="-1" data-tab="profile">Perfil</button><button type="button" id="online-tab-media" role="tab" aria-controls="online-page-media" aria-selected="false" tabindex="-1" data-tab="media">Tela</button></nav>
   <div class="onlineTabPages">
-    <section id="online-page-room" role="tabpanel" aria-labelledby="online-tab-room" data-page="room"><div class="onlineWelcome"><span class="onlineWelcomeIcon" aria-hidden="true">&#9672;</span><h3>Um espaco para jogar junto</h3><p>Crie uma sala e convide seus amigos para o laboratorio.</p></div><div class="onlineRoomEntry"><button data-create class="onlinePrimary">Criar sala para amigos</button><button data-join>Entrar no mundo</button></div><div class="onlinePeople"><div class="onlineSectionTitle">PARTICIPANTES</div><div data-people class="onlinePeopleList"></div></div><div class="onlineActions"><button data-copy hidden>Copiar convite</button><button data-leave class="onlineLeave" hidden>Sair da sala</button></div></section>
+    <section id="online-page-room" role="tabpanel" aria-labelledby="online-tab-room" data-page="room"><div class="onlineWelcome"><span class="onlineWelcomeIcon" aria-hidden="true">&#9672;</span><h3>Um espaço para jogar junto</h3><p>Crie uma sala e convide seus amigos para o laboratório.</p></div><div class="onlineRoomEntry"><button data-create class="onlinePrimary">Criar sala para amigos</button><button data-join>Entrar no mundo</button></div><div class="onlinePeople"><div class="onlineSectionTitle">PARTICIPANTES</div><div data-people class="onlinePeopleList"></div></div><div class="onlineActions"><button data-copy hidden>Copiar convite</button><button data-leave class="onlineLeave" hidden>Sair da sala</button></div></section>
     <section id="online-page-chat" role="tabpanel" aria-labelledby="online-tab-chat" data-page="chat" hidden><div class="onlineChatSlot"></div></section>
     <section id="online-page-profile" role="tabpanel" aria-labelledby="online-tab-profile" data-page="profile" hidden><div class="onlinePageHeading"><h3>Seu perfil</h3><p>Escolha como aparecer para o pessoal.</p></div><section class="onlineProfile"><label>Seu nome <input data-name maxlength="30" value="Visitante"></label></section></section>
     <section id="online-page-media" role="tabpanel" aria-labelledby="online-tab-media" data-page="media" hidden><div class="onlinePageHeading"><h3>Uma sessao de cinema</h3><p>Escolha um filme do seu computador para assistir com os amigos.</p></div><section class="onlineMedia"><p class="onlineMediaHint" data-no-session>Entre em uma sala para compartilhar.</p><label data-upload hidden class="onlineUpload"><span>Escolher um video</span><input data-file type="file" accept="video/mp4,video/webm,video/ogg"><small>Transmissao direta. Mantenha esta pagina aberta.</small></label><video data-video controls playsinline hidden></video><button data-stop hidden>Encerrar transmissao</button><button data-resume hidden>Ativar som / reproduzir</button></section></section>
   </div><p data-status role="status" class="onlineStatus"></p></div>`;
   document.body.append(panel);
-  panel.className='onlineRoom';
+  panel.className='onlineRoom';panel.dataset.menu='false';
+  const profileDialog=document.createElement('dialog');profileDialog.className='onlineProfileDialog';
+  profileDialog.innerHTML='<header><div><small>SEU LUGAR NO LABORATORIO</small><h2>Como voce quer aparecer?</h2><p>Escolha seu nome e personalize seu avatar antes de entrar.</p></div><button type="button" data-profile-close aria-label="Fechar">&#10005;</button></header><div class="onlineProfileContent"></div>';
+  document.body.append(profileDialog);
+  let profileResolve=null,profileConfirmed=false;
+  function openOnlineProfile(required=false){
+    avatarEditor.querySelector('button.onlinePrimary').textContent=required?'Salvar e entrar no mundo':'Salvar perfil';
+    if(!profileDialog.open)profileDialog.showModal();nameInput.focus();
+    if(required)return new Promise(resolve=>{profileResolve=resolve;});
+  }
+  function closeOnlineProfile(){profileDialog.close();}
+  profileDialog.querySelector('[data-profile-close]').onclick=closeOnlineProfile;
+  profileDialog.addEventListener('close',()=>{if(profileResolve){profileResolve(false);profileResolve=null;}});
+  for(const type of ['keydown','keyup','pointerdown','pointerup'])profileDialog.addEventListener(type,e=>e.stopPropagation());
+  panel.querySelector('.onlineOptions').onclick=event=>{event.preventDefault();event.stopPropagation();panel.dataset.menu=panel.dataset.menu==='true'?'false':'true';panel.open=true;selectOnlineTab(panel.dataset.menu==='true'?'room':'chat');};
   function selectOnlineTab(name,focus=false){
+    if(name==='profile'){openOnlineProfile();return;}
     for(const button of panel.querySelectorAll('[data-tab]')){const active=button.dataset.tab===name;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;if(active&&focus)button.focus();}
     for(const page of panel.querySelectorAll('[data-page]'))page.hidden=page.dataset.page!==name;
   }
@@ -30,6 +45,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       if(next!==undefined){event.preventDefault();selectOnlineTab(onlineTabs[next].dataset.tab,true);}
     };
   }
+  selectOnlineTab('chat');
   const nameInput=panel.querySelector('[data-name]');
   const nameForm=document.createElement('form');nameForm.className='onlineIdentity';
   nameInput.parentElement.replaceWith(nameForm);
@@ -39,6 +55,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   const avatarEditor=document.createElement('form');avatarEditor.className='onlineAvatarEditor';
   avatarEditor.innerHTML='<strong>Seu avatar</strong><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="long">Longo</option><option value="curly">Cacheado</option></select></label><div class="onlineAvatarColors"><label>Pele<input name="skin" type="color" value="#bd896c"></label><label>Cabelo<input name="hair" type="color" value="#292725"></label><label>Camisa<input name="shirt" type="color" value="#080808"></label><label>Calca<input name="pants" type="color" value="#17191e"></label></div><label><input name="glasses" type="checkbox" checked> Usar oculos</label><button class="onlinePrimary">Salvar avatar</button><small role="status" data-avatar-feedback></small>';
   panel.querySelector('.onlineProfile').append(avatarEditor);
+  profileDialog.querySelector('.onlineProfileContent').append(panel.querySelector('.onlineProfile'));
   const avatarInput=name=>avatarEditor.elements.namedItem(name);
   const readAvatar=()=>Object.fromEntries(['gender','hairStyle','skin','hair','shirt','pants','glasses'].map(key=>[key,key==='glasses'?avatarInput(key).checked:avatarInput(key).value]));
   try{const saved=JSON.parse(localStorage.getItem('homelab.avatar')||'null');if(saved)for(const key of ['gender','hairStyle','skin','hair','shirt','pants','glasses']){if(key==='glasses')avatarInput(key).checked=saved[key]!==false;else if(typeof saved[key]==='string')avatarInput(key).value=saved[key];}}catch{}
@@ -52,9 +69,16 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   avatarEditor.addEventListener('input',previewAvatar);
   avatarInput('gender').onchange=()=>{avatarInput('hairStyle').value=avatarInput('gender').value==='feminine'?'long':'short';previewAvatar();};
   avatarEditor.onsubmit=async event=>{
-    event.preventDefault();const appearance=readAvatar(),button=avatarEditor.querySelector('button');button.disabled=true;
-    try{if(token)await api('state',{avatar:appearance});localStorage.setItem('homelab.avatar',JSON.stringify(appearance));onAvatar?.(appearance);avatarEditor.querySelector('[data-avatar-feedback]').textContent='Avatar salvo.';}
-    catch(error){avatarEditor.querySelector('[data-avatar-feedback]').textContent=error.message;}finally{button.disabled=false;}
+    event.preventDefault();const appearance=readAvatar(),name=nameInput.value.trim(),button=avatarEditor.querySelector('button.onlinePrimary');
+    if(!name){nameFeedback.textContent='Digite um nome para continuar.';nameInput.focus();return;}
+    button.disabled=true;
+    try{
+      if(token)await api('state',{avatar:appearance,name});
+      localStorage.setItem('homelab.avatar',JSON.stringify(appearance));localStorage.setItem('homelab.name',name);nameInput.value=name;onAvatar?.(appearance);
+      profileConfirmed=true;
+      const resolve=profileResolve;profileResolve=null;profileDialog.close();resolve?.(true);
+      panel.dataset.menu='false';selectOnlineTab('chat');panel.open=!matchMedia('(max-width:600px)').matches;
+    }catch(error){avatarEditor.querySelector('[data-avatar-feedback]').textContent=error.message;}finally{button.disabled=false;}
   };
   onAvatar?.(readAvatar());
   const social=document.createElement('div');social.className='onlineSocial';
@@ -62,7 +86,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   panel.querySelector('.onlineChatSlot').append(social);panel.open=!matchMedia('(max-width: 600px)').matches;
   panel.addEventListener('keydown',e=>e.stopPropagation());
   panel.addEventListener('keyup',e=>e.stopPropagation());
-  const el=n=>panel.querySelector(`[data-${n}]`), video=el('video');
+  const el=n=>panel.querySelector(`[data-${n}]`)||profileDialog.querySelector(`[data-${n}]`), video=el('video');
   function setOnlineConnected(value){
     panel.dataset.connected=String(value);
     for(const input of social.querySelectorAll('input,button'))input.disabled=!value;
@@ -121,8 +145,10 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   }
   el('resume').onclick=()=>{video.muted=false;video.volume=1;video.play().then(()=>{el('resume').hidden=true;playback();}).catch(showError);};
   el('join').onclick=async()=>{
-    el('join').disabled=true;el('count').textContent='Entrando';
+    el('join').disabled=true;
     try {
+      if(!profileConfirmed&&!(await openOnlineProfile(true)))return;
+      el('count').textContent='Entrando';
       if(!room)room=(await api('lobby',{})).room;
       const joined=await api('join',{name:el('name').value,avatar:readAvatar(),token:sessionStorage.getItem(sessionKey(room))});token=joined.token;selfId=joined.id;closed=false;setOnlineConnected(true);
       sessionStorage.setItem(sessionKey(room),token);localStorage.setItem('homelab.name',el('name').value);onSpawn?.(joined.pose);
@@ -168,7 +194,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       room=(await api('create',{capacity:12})).room;
       await el('join').onclick();
       if(token)status('Sala criada para ate 12 pessoas. Use Copiar convite e envie aos amigos.');
-    }catch(error){showError(error);}finally{el('create').disabled=false;}
+    }catch(error){setOnlineConnected(Boolean(token));showError(error);}finally{el('create').disabled=false;}
   };
   el('copy').onclick=()=>navigator.clipboard.writeText(location.href).then(()=>status('Convite copiado!')).catch(()=>status(`Convite: ${location.href}`));
   async function uploadVideo(file,screen='screen-0'){
