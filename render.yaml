@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: homelab-sala
+    runtime: node
+    plan: free
+    buildCommand: node --version
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: HOST
+        value: 0.0.0.0
+      - key: SERVE_FRONTEND
+        value: 'false'
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: SERVER_ROOM_PASSWORD
+        sync: false

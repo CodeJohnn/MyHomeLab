@@ -1,0 +1,21 @@
+.onlineRoom { width:min(320px,calc(100vw - 52px));max-height:calc(100dvh - 52px);overflow:auto;box-shadow:0 16px 48px #0007;backdrop-filter:blur(18px); }
+.onlineRoom summary { cursor:pointer;font-weight:700;letter-spacing:.03em;padding:4px; }
+.onlineRoom .onlineIdentity { display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;padding:12px;background:#19312d;border-radius:12px;margin-top:4px; }
+.onlineRoom .onlineIdentity label { display:grid;gap:7px;font-size:9px;letter-spacing:.09em;color:#a2cabe; }
+.onlineRoom .onlineIdentity input { width:100%;box-sizing:border-box;min-width:0; }
+.onlineRoom .onlineIdentity small { grid-column:1/-1;color:#a5e8ca;font-size:11px;line-height:1.4; }
+.onlineRoom input { background:#09191d;color:#effbf7;border:1px solid #375b51;border-radius:9px;padding:10px;font:inherit; }
+.onlineRoom input:focus-visible { outline:2px solid #5de2ae;outline-offset:2px; }
+.onlineRoom button { border:1px solid #3b6656;border-radius:9px;background:#21473b;color:#dffbee;padding:9px 11px;font:600 12px Arial;cursor:pointer; }
+.onlineRoom button:hover { background:#2b5f4d; }
+.onlineRoom button:disabled { opacity:.55;cursor:wait; }
+.onlineRoom [data-chat] { display:flex;flex-direction:column;gap:9px;scrollbar-width:thin;padding:10px 4px; }
+.onlineRoom .onlineMessage { align-self:flex-start;max-width:88%;padding:10px 12px;border-radius:14px 14px 14px 4px;background:#20343c;color:#e3eff0;box-shadow:0 3px 10px #0002; }
+.onlineRoom .onlineMessage.isOwn { align-self:flex-end;background:#194d3e;border-radius:14px 14px 4px 14px; }
+.onlineRoom .onlineMessageHeading { display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:5px; }
+.onlineRoom .onlineMessageHeading strong { color:#8fe4be;font-size:11px;overflow-wrap:anywhere; }
+.onlineRoom .onlineMessageHeading time { color:#91aca6;font-size:9px;flex-shrink:0; }
+.onlineRoom .onlineMessage p { margin:0;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere; }
+.onlineRoom [data-form] { padding-top:4px; }
+.onlineRoom [data-status] { color:#a6c2b8;font-size:11px;line-height:1.5; }
+.onlineRoom .onlineSystemMessage { align-self:center;text-align:center;color:#b7c9c2;background:#ffffff08;border:1px solid #ffffff12;border-radius:20px;padding:7px 12px;margin:3px 0;font-size:11px;line-height:1.5;overflow-wrap:anywhere; }
