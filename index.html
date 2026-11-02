@@ -4,13 +4,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>CodeJOHN • Home Lab 3D</title>
-  <link rel="stylesheet" href="./css/homelab.css?v=clean-chat-86">
+  <title>CodeJOHN • Homelab</title>
+  <link rel="stylesheet" href="./frontend/css/online-room.css?v=2">
+  <link rel="stylesheet" href="./frontend/css/homelab.css?v=vitoria-affection-95">
 </head>
 
 <body>
   <p id="status" hidden aria-live="polite"></p>
-  <aside id="toolbar" aria-label="Editor do ambiente">
+  <aside id="toolbar" hidden style="display:none" aria-label="Editor do ambiente">
     <div id="toolbarHeader"><div><span class="editorEyebrow">GUEDESSEC / HOME LAB</span><h2>Editor do ambiente</h2></div><button id="hideToolbar" aria-label="Recolher painel" title="Recolher painel">&#10005;</button></div>
     <div class="editorMode"><span class="editorModeDot"></span><span>Seu espa&ccedil;o, do seu jeito</span></div>
     <button id="edit">Ativar modo constru&ccedil;&atilde;o</button>
@@ -24,7 +25,7 @@
       <div class="editorInspector"><span class="editorEyebrow">SELE&Ccedil;&Atilde;O ATUAL</span><p id="selected">Nenhum objeto selecionado</p>
       <div class="rotationControl"><label for="rotationAngle">Giro livre <output id="rotationValue">0&deg;</output></label><input id="rotationAngle" type="range" min="0" max="360" step="0.5" value="0" disabled><label for="rotationNumber">&Acirc;ngulo em graus</label><input id="rotationNumber" type="number" step="0.5" value="0" disabled></div>
       </div>
-      <p class="editorHint">Ative a constru&ccedil;&atilde;o para selecionar e arrastar os m&oacute;veis.</p>
+      <p class="editorHint">Ative a constru&ccedil;&atilde;o para arrastar os objetos. Leve os quadros sobre uma parede de qualquer c&ocirc;modo para encaixar.</p>
     </section>
     <section data-editor-section="appearance" hidden>
       <div class="editorSectionHeading"><h3>Acabamentos</h3><span>04 paredes</span></div>
@@ -33,7 +34,7 @@
       <label for="wallColor">Cor da pintura <input id="wallColor" type="color" value="#a5adb4"></label>
       <button id="resetWallPaint">Restaurar pintura original</button><small>As cores s&atilde;o salvas automaticamente.</small></details>
       <details class="mediaSection" open><summary>Pisos por ambiente</summary><div class="environmentFields">
-      <label>Aplicar em<select id="floorRoom"><option value="all">Todos os ambientes</option><option value="lab">Laboratorio</option><option value="servers">Sala de servidores</option><option value="bath">Banheiro</option><option value="office">Estacoes dos NPCs</option></select></label>
+      <label>Aplicar em<select id="floorRoom"><option value="all">Todos os ambientes</option><option value="lab">Laboratorio</option><option value="servers">Sala de servidores</option><option value="officeExtension">Ampliacao das estacoes</option><option value="office">Estacoes dos NPCs</option><option value="bath">Banheiro dos fundos</option></select></label>
       <label>Formato<select id="floorPattern"><option value="square">Placas quadradas</option><option value="rectangle">Placas retangulares</option><option value="wood">Tabuas de madeira</option><option value="hex">Hexagonal</option><option value="plain">Cimento liso</option></select></label>
       <label>Cor do piso<input id="floorTint" type="color" value="#ad9b85"></label><label>Cor das juntas<input id="floorGrout" type="color" value="#897c6c"></label>
       <label>Tamanho das pecas<input id="floorScale" type="range" min="0.3" max="2" step="0.05" value="0.75"></label>
@@ -41,9 +42,10 @@
       <label>Orientacao<select id="floorDirection"><option value="0">Horizontal</option><option value="90">Vertical</option><option value="45">Diagonal</option></select></label>
       <label>Acabamento<select id="floorFinish"><option value="matte">Fosco</option><option value="satin">Acetinado</option><option value="polished">Polido</option></select></label>
       <button id="resetFloor" type="button">Restaurar pisos</button></div></details>
+      <details class="mediaSection"><summary>Cabos de rede</summary><div class="environmentFields"><label><input id="networkCablesVisible" type="checkbox" checked> Mostrar cabos</label><label>Conexao<select id="networkCableTarget"><option value="pc">Meu computador</option><option value="setupVitoria">Vitoria</option><option value="setupXandy">Xandy</option><option value="setupAlex">Alex</option></select></label><label>Percurso<select id="networkCableRoute"><option value="left">Pela parede esquerda</option><option value="right">Pela parede direita</option></select></label><label>Altura do percurso<input id="networkCableHeight" type="range" min="3.3" max="3.88" step="0.02" value="3.86"></label><label>Cor dos cabos<input id="networkCableColor" type="color" value="#187ef5"></label><button id="resetNetworkCables" type="button">Restaurar cabos</button><small>Cabos organizados automaticamente junto as paredes. O trecho final desce diretamente atras do gabinete, sem passar pelo chao.</small></div></details>
       <details class="mediaSection"><summary>Acabamento e iluminacao</summary><div class="environmentFields"><label>Paredes<select id="wallFinish"><option value="matte">Foscas</option><option value="satin">Acetinadas</option><option value="polished">Brilhantes</option></select></label><label><input id="daylightEnabled" type="checkbox" checked> Iluminacao pelo horario do dia</label><small id="daylightClock">Horario de Sao Paulo</small><label>Intensidade da luz<input id="roomExposure" type="range" min="0.6" max="2" step="0.05" value="1.4"></label></div></details>
-      <details class="mediaSection" open><summary>Sons do ambiente</summary><div class="environmentFields"><label class="ambientSwitch"><input id="ambientEnabled" type="checkbox"> Ativar som por comodo</label><label>Volume <output id="ambientVolumeValue">25%</output><input id="ambientVolume" type="range" min="0" max="100" step="1" value="25"></label><small>Ventoinhas, teclas e melodia suave. O som acompanha seu personagem e diminui durante os videos.</small></div></details>
-      <details class="mediaSection" open><summary>Vozes dos personagens</summary><div class="environmentFields"><label><input id="npcVoicesEnabled" type="checkbox"> Conversas com voz</label><label>Volume das vozes<input id="npcVoicesVolume" type="range" min="0" max="100" value="60"></label><small id="npcVoicesNote">Vozes em portugues disponiveis no navegador. As falas comecam apos o primeiro clique.</small></div></details>
+      <details class="mediaSection" open><summary>Sons do ambiente</summary><button id="toggleSpeakerRadio" type="button">Tocar rock classico</button><small id="speakerRadioStatus" role="status">RADIO BOB! Classic Rock ? radio online.</small><div class="environmentFields"><label class="ambientSwitch"><input id="ambientEnabled" type="checkbox"> Ativar som por comodo</label><label>Volume <output id="ambientVolumeValue">25%</output><input id="ambientVolume" type="range" min="0" max="100" step="1" value="25"></label><small>Ventoinhas, teclas e melodia suave. O som acompanha seu personagem e diminui durante os videos.</small></div></details>
+      <details class="mediaSection" open><summary>Vozes dos personagens</summary><div class="environmentFields"><label><input id="npcVoicesEnabled" type="checkbox"> Voz em interacoes e chamadas</label><label>Volume das vozes<input id="npcVoicesVolume" type="range" min="0" max="100" value="60"></label><small id="npcVoicesNote">Vozes em portugues disponiveis no navegador. Sem conversas automaticas: falam ao interagir ou atender o telefone.</small></div></details>
       <details class="mediaSection"><summary>Sons das interacoes</summary><div class="environmentFields"><label><input id="effectsEnabled" type="checkbox"> Teclado, mouse, passos e objetos</label><label>Volume dos efeitos<input id="effectsVolume" type="range" min="0" max="100" value="45"></label><small>Clique nas canecas para interagir com o cafe.</small></div></details>
     </section>
     <section data-editor-section="media" hidden>
@@ -54,9 +56,10 @@
 <details class="mediaSection"><summary>Monitor ultrawide</summary><label class="fileChoice" for="videoFileRight">Escolher v&iacute;deo<input id="videoFileRight" type="file" accept="video/mp4,video/webm,video/ogg"></label><button id="playVideoRight">Reproduzir</button><div class="websiteControls"><input id="websiteUrlRight" type="text" inputmode="url" placeholder="https://exemplo.com" aria-label="Site do monitor ultrawide"><button id="openWebsiteRight">Abrir</button></div><small id="videoStatusRight">Nenhum v&iacute;deo selecionado.</small><small id="websiteStatusRight">Nenhum site configurado.</small></details>
       <button id="playBothMonitors">Reproduzir os dois com som</button><button id="matrixMode">Restaurar telas originais</button></details>
     </section>
-    <footer class="editorFooter"><div class="editorSaveNote"><span></span>Salvo neste navegador</div><div class="controls"><button id="save">Salvar ambiente</button><button id="reset">Restaurar</button></div></footer>
+    <footer class="editorFooter"><div class="editorSaveNote"><span></span>Salvo neste navegador</div><div class="controls"><button id="save">Salvar ambiente</button><button id="reset">Restaurar</button></div><button id="exportEnvironment" type="button">Salvar no projeto (baixar arquivo)</button><p id="exportStatus" role="status">Baixe ambiente.json e coloque na pasta frontend para publicar no GitHub.</p></footer>
   </aside>
-  <button id="showToolbar" aria-label="Mostrar painel">&#9881; Editar ambiente</button>
+  <button id="toggleFirstPerson" type="button" aria-pressed="false" style="position:fixed;left:14px;top:14px;z-index:6">Primeira pessoa (V)</button>
+  <button id="showToolbar" hidden aria-label="Mostrar painel">&#9881; Editar ambiente</button>
   <div id="dialog">
     <article>
       <h2 id="dt"></h2>
@@ -76,8 +79,8 @@
   </div>
   <script
     type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
-  <script src="./js/editor-panel.js?v=1" defer></script>
-  <script type="module" src="./js/homelab.js?v=passive-frames-118"></script>
+  <script src="./frontend/js/editor-panel.js?v=1" defer></script>
+  <script type="module" src="./frontend/js/homelab.js?v=adaptive-performance-227"></script>
 </body>
 
 </html>
