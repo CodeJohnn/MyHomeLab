@@ -29,7 +29,9 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
       }
       if(req.method==='POST' && url.pathname==='/api/rooms') {
         if(rooms.size>=100) return reply(res,503,{error:'Servidor cheio.'});
-        const key=id(); rooms.set(key,{members:new Map(),media:null,files:new Map(),touched:Date.now(),world:createRoomWorld()}); return reply(res,201,{room:key});
+        const raw=await body(req),input=raw.length?JSON.parse(raw.toString()):{};
+        const capacity=input.capacity===12?12:2;
+        const key=id(); rooms.set(key,{members:new Map(),media:null,files:new Map(),touched:Date.now(),capacity,world:createRoomWorld()}); return reply(res,201,{room:key});
       }
       const match=url.pathname.match(/^\/api\/rooms\/([a-f0-9]{36})(?:\/(join|events|state|upload|leave|media|share|signal|rtc))?$/);
       if(match) {

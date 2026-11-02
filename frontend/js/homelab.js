@@ -2677,7 +2677,9 @@
         for(const y of [.62,.78,.94])sphere(root,.008,seam,0,y,.176);
         return coat;
       }
+      const originalUniformParts=new Set(avatar.children);
       addBlackLabCoat(avatar);
+      for(const part of avatar.children)if(!originalUniformParts.has(part))part.userData.avatarHide=true;
       cyl(avatar, .075, .12, skin, 0, 1.32, 0);
       const playerHead=sphere(avatar,.18,skin,0,1.555,.01);playerHead.scale.set(.88,1.13,.94);
       const playerJaw=sphere(avatar,.125,skin,0,1.465,.035);playerJaw.scale.set(.97,.72,.9);
@@ -2791,13 +2793,14 @@
       johnCartoonHead.name='onlineAvatarHead';johnTorso.userData.avatarTorso=true;
       for(const node of [hood,hoodEdge,hairCap])node.userData.avatarHide=true;
       avatar.traverse(node=>{
+        if(node.material===studs)node.userData.avatarHide=true;
         if(node.material===skin)node.userData.avatarPart='skin';
         else if(node.material===shirt||node.material===shirtLight)node.userData.avatarPart='shirt';
         else if(node.material===pants)node.userData.avatarPart='pants';
         else if(node.material===hair||node.material===naturalHair){node.userData.avatarPart='hair';if(node.material===naturalHair)node.userData.avatarHide=true;}
       });
       const avatarTemplate=avatar.clone(true);
-      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs');
+      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=clean-skins-2');
       const npcs = [];
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
         const root = new THREE.Group();
@@ -4896,7 +4899,7 @@
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=billiards-online-1');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=clean-skins-8');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
