@@ -269,35 +269,76 @@
       const defaultBilliardsBalls=[{id:0,x:-.7,z:0,alive:true}];
       const billiardsRack=[[1,0,0],[2,1,-.5],[3,1,.5],[4,2,-1],[8,2,0],[5,2,1],[6,3,-1.5],[7,3,-.5],[9,3,.5],[10,3,1.5],[11,4,-2],[12,4,-1],[13,4,0],[14,4,1],[15,4,2]];
       for(const [id,row,offset] of billiardsRack)defaultBilliardsBalls.push({id,x:.23+row*.047*2.05,z:offset*.047*2.05,alive:true});
-      let billiardsState=null,billiardsAngle=0,billiardsTargets=defaultBilliardsBalls;
+      const {createBilliardsState,shootBilliards,stepBilliards,resetBilliards}=await import('./billiards-engine.mjs');
+      const {createBilliardsBoard}=await import('./billiards-board.mjs?v=arcade-3');
+      let billiardsState=null,billiardsAngle=0,billiardsTargets=defaultBilliardsBalls,onlineBilliardsState=null,localBilliards=false,billiardsShotPending=false;
+      function billiardsSelfId(){return localBilliards?billiardsState?.players?.[billiardsState.turn]?.id:sharedRoom?.getSelfId();}
       const billiardsDialog=document.createElement('dialog');billiardsDialog.className='billiardsDialog';
       billiardsDialog.innerHTML='<form method="dialog" class="billiardsPanel"><button class="billiardsClose" aria-label="Fechar">×</button><span class="billiardsEyebrow">MESA COMPARTILHADA</span><h2>Sinuca online</h2><p data-billiards-status>Entre no mundo online e chame outra pessoa para jogar.</p><div class="billiardsPlayers"><span data-player="0">Lugar 1 · livre</span><span data-player="1">Lugar 2 · livre</span></div><label class="billiardsControl">Direção <output data-angle-value>0°</output><input data-angle type="range" min="0" max="359" value="0" disabled></label><label class="billiardsControl">Força <output data-power-value>65%</output><input data-power type="range" min="12" max="100" value="65" disabled></label><div class="billiardsActions"><button type="button" data-billiards-join>Entrar para jogar</button><button type="button" data-billiards-shot hidden disabled>Dar tacada</button><button type="button" data-billiards-reset hidden>Nova partida</button></div><small>Clique no pano da mesa para mirar. Duas pessoas jogam na mesma partida.</small></form>';
       document.body.append(billiardsDialog);
+      billiardsDialog.querySelector('h2').textContent='POOL CLUB';
+      billiardsDialog.querySelector('.billiardsEyebrow').textContent='GUEDESSEC';
+      billiardsDialog.querySelector('.billiardsPanel>small').textContent='Mire tocando na mesa. Puxe o taco ou a bola branca para tras e solte para jogar.';
+      billiardsDialog.querySelector('[data-angle]').closest('label').classList.add('billiardsAngleControl');
+      billiardsDialog.querySelector('[data-power]').closest('label').classList.add('billiardsPowerControl');
+      billiardsDialog.querySelector('[data-billiards-status]').setAttribute('aria-live','polite');
       const billiardsControl=name=>billiardsDialog.querySelector(`[data-${name}]`);
+      const billiardsBoardHost=document.createElement('div');billiardsBoardHost.className='billiardsBoardHost';
+      billiardsDialog.querySelector('.billiardsPlayers').after(billiardsBoardHost);
+      const billiardsBoard=createBilliardsBoard({container:billiardsBoardHost,onAim:angle=>{
+        const degrees=(angle*180/Math.PI+360)%360;
+        billiardsControl('angle').value=String(Math.round(degrees)%360);billiardsControl('angle').dispatchEvent(new Event('input'));
+      },onCharge:power=>{
+        billiardsControl('power').value=String(Math.max(12,Math.round(power*100)));
+        billiardsControl('power').dispatchEvent(new Event('input'));
+        billiardsDialog.style.setProperty('--shot-power',Math.round(power*100)+'%');
+      },onShot:power=>{
+        billiardsControl('power').value=String(Math.round(power*100));
+        billiardsControl('power').dispatchEvent(new Event('input'));
+        billiardsControl('billiards-shot').click();
+      }});
+      const practiceButton=document.createElement('button');practiceButton.type='button';practiceButton.textContent='Treinar sozinho';practiceButton.dataset.billiardsPractice='';
+      const leaveTableButton=document.createElement('button');leaveTableButton.type='button';leaveTableButton.textContent='Sair da mesa';leaveTableButton.hidden=true;
+      billiardsDialog.querySelector('.billiardsActions').append(practiceButton,leaveTableButton);
+      practiceButton.onclick=async()=>{
+        if(sharedRoom?.isOnline()&&onlineBilliardsState?.players?.some(p=>p?.id===sharedRoom.getSelfId())){
+          try{await sharedRoom.sendWorldAction({type:'billiards',action:'leave'});}catch(error){billiardsControl('billiards-status').textContent=error.message;return;}
+        }
+        localBilliards=true;const game=createBilliardsState();game.players=[{id:'practice-1',name:'Voce'},{id:'practice-2',name:'Voce (treino)'}];game.message='Treino local. Toque na mesa para mirar e escolha a forca.';updateBilliardsState(game,true);
+      };
+      leaveTableButton.onclick=async()=>{
+        if(localBilliards){localBilliards=false;updateBilliardsState(onlineBilliardsState,true);return;}
+        try{await sharedRoom.sendWorldAction({type:'billiards',action:'leave'});}catch(error){billiardsControl('billiards-status').textContent=error.message;}
+      };
       billiardsControl('angle').addEventListener('input',event=>{billiardsAngle=Number(event.target.value)*Math.PI/180;billiardsControl('angle-value').textContent=event.target.value+'°';});
       billiardsControl('power').addEventListener('input',event=>{billiardsControl('power-value').textContent=event.target.value+'%';});
       billiardsDialog.addEventListener('click',event=>{if(event.target===billiardsDialog)billiardsDialog.close();});
       for(const type of ['keydown','keyup'])billiardsDialog.addEventListener(type,event=>event.stopPropagation());
-      function updateBilliardsState(state){
+      function updateBilliardsState(state,localUpdate=false){
+        if(!localUpdate){onlineBilliardsState=state;if(localBilliards)return;}
         billiardsState=state||null;
         billiardsTargets=state?.balls||defaultBilliardsBalls;
-        const selfId=sharedRoom?.getSelfId();
+        const selfId=billiardsSelfId();
         const isPlayer=state?.players?.some(player=>player?.id===selfId);
-        const isTurn=state?.players?.[state.turn]?.id===selfId;
+        const isTurn=Boolean(selfId&&state?.players?.[state.turn]?.id===selfId);
         for(let slot=0;slot<2;slot++){
           const player=state?.players?.[slot],group=state?.groups?.[slot];
+          billiardsDialog.querySelector(`[data-player="${slot}"]`).classList.toggle('isTurn',Boolean(player&&state.turn===slot&&!state.winner));
           const groupLabel=group==='solids'?' · lisas':group==='stripes'?' · listradas':'';
           billiardsDialog.querySelector(`[data-player="${slot}"]`).textContent=(player?.name||`Lugar ${slot+1} · livre`)+(player?groupLabel:'');
         }
         billiardsControl('billiards-status').textContent=state?.message||'Entre no mundo online e chame outra pessoa para jogar.';
-        billiardsControl('billiards-join').hidden=Boolean(isPlayer||state?.players?.every(Boolean)||state?.winner);
+        billiardsControl('billiards-join').hidden=!localBilliards&&Boolean(isPlayer||state?.players?.every(Boolean)||state?.winner);
+        billiardsControl('billiards-join').textContent=localBilliards?'Jogar online':'Ocupar um lugar';
+        leaveTableButton.hidden=!isPlayer;practiceButton.hidden=localBilliards;
         billiardsControl('billiards-shot').hidden=!isTurn||state?.moving||Boolean(state?.winner);
-        billiardsControl('billiards-shot').disabled=!isTurn||state?.moving||Boolean(state?.winner);
+        billiardsControl('billiards-shot').disabled=billiardsShotPending||!isTurn||state?.moving||Boolean(state?.winner);
         billiardsControl('billiards-reset').hidden=!isPlayer;
         billiardsControl('angle').disabled=!isTurn||state?.moving;
         billiardsControl('power').disabled=!isTurn||state?.moving;
       }
       function updateBilliardsScene(dt){
+        if(localBilliards&&billiardsState?.moving){stepBilliards(billiardsState,dt);updateBilliardsState(billiardsState,true);}
         const targets=new Map((billiardsTargets||[]).map(ball=>[ball.id,ball]));
         const blend=1-Math.exp(-22*dt);
         for(let id=0;id<billiardsBalls.length;id++){
@@ -305,7 +346,15 @@
           mesh.visible=ball?.alive!==false;
           if(ball?.alive)mesh.position.lerp(new THREE.Vector3(ball.x,.85,ball.z),blend);
         }
-        const cue=billiardsTargets?.[0],selfId=sharedRoom?.getSelfId();
+        if(billiardsDialog.open){
+          const display={...(billiardsState||{}),balls:(billiardsTargets||[]).map(ball=>({...ball,x:billiardsBalls[ball.id].position.x,z:billiardsBalls[ball.id].position.z}))};
+          billiardsBoard.draw(display,billiardsAngle,Boolean(billiardsState&&billiardsSelfId()&&billiardsState.players[billiardsState.turn]?.id===billiardsSelfId()),Number(billiardsControl('power').value)/100);
+        }
+        const cue=billiardsTargets?.[0],selfId=billiardsSelfId();
+        if(billiardsDialog.open){
+          const display={...(billiardsState||{}),balls:(billiardsTargets||[]).map(ball=>({...ball,x:billiardsBalls[ball.id].position.x,z:billiardsBalls[ball.id].position.z}))};
+          billiardsBoard.draw(display,billiardsAngle,Boolean(selfId&&billiardsState?.players?.[billiardsState.turn]?.id===selfId),Number(billiardsControl('power').value)/100);
+        }
         cueStick.visible=Boolean(cue?.alive&&!billiardsState?.moving&&billiardsState?.players?.[billiardsState.turn]?.id===selfId);
         if(cueStick.visible){
           const direction=new THREE.Vector3(-Math.cos(billiardsAngle),0,-Math.sin(billiardsAngle));
@@ -318,19 +367,26 @@
           const local=byId.mesaSinuca.g.worldToLocal(worldPoint.clone()),cue=billiardsTargets?.[0];
           if(cue){let degrees=Math.atan2(local.z-cue.z,local.x-cue.x)*180/Math.PI;if(degrees<0)degrees+=360;billiardsControl('angle').value=String(Math.round(degrees)%360);billiardsControl('angle').dispatchEvent(new Event('input'));}
         }
-        billiardsDialog.showModal();
+        updateBilliardsState(localBilliards?billiardsState:onlineBilliardsState,true);
+        if(!billiardsDialog.open)billiardsDialog.showModal();
       }
       billiardsControl('billiards-join').onclick=async()=>{
         if(!sharedRoom?.isOnline()){billiardsControl('billiards-status').textContent='Entre no mundo online antes de ocupar um lugar.';return;}
-        try{await sharedRoom.sendWorldAction({type:'billiards',action:'join'});}catch(error){billiardsControl('billiards-status').textContent=error.message;}
+        try{localBilliards=false;updateBilliardsState(onlineBilliardsState,true);await sharedRoom.sendWorldAction({type:'billiards',action:'join'});}catch(error){billiardsControl('billiards-status').textContent=error.message;}
       };
       billiardsControl('billiards-shot').onclick=async()=>{
-        if(!sharedRoom?.isOnline()){billiardsControl('billiards-status').textContent='Conecte-se ao mundo online para jogar.';return;}
+        if(billiardsShotPending)return;
         let angle=billiardsAngle;if(angle>Math.PI)angle-=Math.PI*2;
-        try{await sharedRoom.sendWorldAction({type:'billiards',action:'shot',angle,power:Number(billiardsControl('power').value)/100});}
+        const power=Number(billiardsControl('power').value)/100;
+        if(localBilliards){shootBilliards(billiardsState,billiardsSelfId(),angle,power);updateBilliardsState(billiardsState,true);return;}
+        if(!sharedRoom?.isOnline()){billiardsControl('billiards-status').textContent='Entre na sala online ou escolha Treinar sozinho.';return;}
+        billiardsShotPending=true;billiardsControl('billiards-shot').disabled=true;
+        try{await sharedRoom.sendWorldAction({type:'billiards',action:'shot',angle,power});}
         catch(error){billiardsControl('billiards-status').textContent=error.message;}
+        finally{billiardsShotPending=false;}
       };
       billiardsControl('billiards-reset').onclick=async()=>{
+        if(localBilliards){resetBilliards(billiardsState,billiardsSelfId());updateBilliardsState(billiardsState,true);return;}
         try{await sharedRoom.sendWorldAction({type:'billiards',action:'reset'});}catch(error){billiardsControl('billiards-status').textContent=error.message;}
       };
       // Tapete de tecido com o emblema JavaScript, no centro do laboratorio.
@@ -2801,6 +2857,7 @@
       });
       const avatarTemplate=avatar.clone(true);
       const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=clean-skins-2');
+      const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs');
       const npcs = [];
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
         const root = new THREE.Group();
@@ -4899,7 +4956,7 @@
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=welcome-chat-10');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=avatar-preview-11');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -4983,6 +5040,7 @@
       sharedRoom=createSharedRoom({
         onWorld:world=>{applyRoomWorld(world);updateBilliardsState(world?.billiards);},
         onReaction:type=>showCharacterReaction(avatar,type),
+        mountAvatarPreview: container=>createAvatarEditorPreview({container,THREE,template:avatarTemplate,applyAppearance:applyAvatarAppearance}),
         onAvatar: appearance=>applyAvatarAppearance(avatar,appearance,THREE),
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
         getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z])}),

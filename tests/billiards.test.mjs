@@ -4,6 +4,19 @@ import {createWorld,actOnWorld,tickWorld,leaveBilliards} from '../backend/room-w
 import {createBilliardsState,stepBilliards} from '../backend/billiards.mjs';
 import {createServer} from '../backend/server.mjs';
 
+test('sair durante uma tacada interrompe a simulacao sem quebrar a partida',()=>{
+  const world=createWorld(),a={id:'ana',name:'Ana'},b={id:'bia',name:'Bia'};
+  actOnWorld(world,{type:'billiards',action:'join'},0,Math.random,a);
+  actOnWorld(world,{type:'billiards',action:'join'},0,Math.random,b);
+  assert.equal(actOnWorld(world,{type:'billiards',action:'shot',angle:0,power:.8},0,Math.random,a),true);
+  assert.equal(actOnWorld(world,{type:'billiards',action:'leave'},0,Math.random,b),true);
+  assert.equal(world.billiards.moving,false);
+  assert.doesNotThrow(()=>stepBilliards(world.billiards));
+  assert.ok(world.billiards.balls.every(ball=>ball.vx===0&&ball.vz===0));
+  assert.equal(actOnWorld(world,{type:'billiards',action:'join'},0,Math.random,{id:'carol',name:'Carol'}),true);
+  assert.ok(world.billiards.players.every(Boolean));
+});
+
 test('sinuca online reserva dois lugares e respeita a vez',()=>{
   const world=createWorld(0,()=>0),game=world.billiards;
   assert.equal(actOnWorld(world,{type:'billiards',action:'join'},0,Math.random,{id:'ana',name:'Ana'}),true);

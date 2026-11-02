@@ -2,7 +2,7 @@ import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
 
-export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction}) {
+export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview}) {
   const panel=document.createElement('details');
   panel.hidden=true;
   panel.innerHTML=`<summary><span class="onlineHeading"><span class="onlineIndicator"></span>Conversa</span><span class="onlineCount" data-count>Conectando</span><button type="button" class="onlineOptions" aria-label="Opcoes da sala">&#8943;</button><span class="onlineChevron" aria-hidden="true">&#8964;</span></summary>
@@ -16,17 +16,20 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   document.body.append(panel);
   panel.className='onlineRoom';panel.dataset.menu='false';
   const profileDialog=document.createElement('dialog');profileDialog.className='onlineProfileDialog';
-  profileDialog.innerHTML='<header><div><small>SEU LUGAR NO LABORATORIO</small><h2>Como voce quer aparecer?</h2><p>Escolha seu nome e personalize seu avatar antes de entrar.</p></div><button type="button" data-profile-close aria-label="Fechar">&#10005;</button></header><div class="onlineProfileContent"></div>';
+  profileDialog.innerHTML='<header><div><small>SEU LUGAR NO LABORATORIO</small><h2>Como voce quer aparecer?</h2><p>Escolha seu nome e personalize seu avatar antes de entrar.</p></div><button type="button" data-profile-close aria-label="Fechar">&#10005;</button></header><div class="onlineProfileLayout"><aside class="onlineAvatarPreview"><div class="onlineAvatarPreviewHeading"><span>SEU AVATAR</span><span class="onlineAvatarLive">AO VIVO</span></div><div class="onlineAvatarPreviewStage"></div><div class="onlineAvatarPreviewAngles"><button type="button" data-preview-front>Frente</button><button type="button" data-preview-back>Costas</button></div><small>Arraste o personagem para girar</small></aside><div class="onlineProfileContent"></div></div>';
   document.body.append(profileDialog);
+  const avatarPreview=mountAvatarPreview?.(profileDialog.querySelector('.onlineAvatarPreviewStage'));
+  profileDialog.querySelector('[data-preview-front]').onclick=()=>avatarPreview?.turn(0);
+  profileDialog.querySelector('[data-preview-back]').onclick=()=>avatarPreview?.turn(Math.PI);
   let profileResolve=null,profileConfirmed=false;
   function openOnlineProfile(required=false){
     avatarEditor.querySelector('button.onlinePrimary').textContent=required?'Salvar e entrar no mundo':'Salvar perfil';
-    if(!profileDialog.open)profileDialog.showModal();nameInput.focus();
+    if(!profileDialog.open)profileDialog.showModal();avatarPreview?.update(readAvatar());avatarPreview?.setVisible(true);nameInput.focus();
     if(required)return new Promise(resolve=>{profileResolve=resolve;});
   }
   function closeOnlineProfile(){profileDialog.close();}
   profileDialog.querySelector('[data-profile-close]').onclick=closeOnlineProfile;
-  profileDialog.addEventListener('close',()=>{if(profileResolve){profileResolve(false);profileResolve=null;}});
+  profileDialog.addEventListener('close',()=>{avatarPreview?.setVisible(false);if(profileResolve){profileResolve(false);profileResolve=null;}});
   for(const type of ['keydown','keyup','pointerdown','pointerup'])profileDialog.addEventListener(type,e=>e.stopPropagation());
   panel.querySelector('.onlineOptions').onclick=event=>{event.preventDefault();event.stopPropagation();panel.dataset.menu=panel.dataset.menu==='true'?'false':'true';panel.open=true;selectOnlineTab(panel.dataset.menu==='true'?'room':'chat');};
   function selectOnlineTab(name,focus=false){
@@ -65,7 +68,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     button.onclick=()=>{avatarInput('shirt').value=shirt;avatarInput('pants').value=pants;avatarInput('hair').value=hair;previewAvatar();};avatarPresets.append(button);
   }
   avatarEditor.querySelector('strong').after(avatarPresets);
-  function previewAvatar(){onAvatar?.(readAvatar());avatarEditor.querySelector('[data-avatar-feedback]').textContent='Previa no personagem. Salve para atualizar na sala.';}
+  function previewAvatar(){const appearance=readAvatar();onAvatar?.(appearance);avatarPreview?.update(appearance);avatarEditor.querySelector('[data-avatar-feedback]').textContent='Previa no personagem. Salve para atualizar na sala.';}
   avatarEditor.addEventListener('input',previewAvatar);
   avatarInput('gender').onchange=()=>{avatarInput('hairStyle').value=avatarInput('gender').value==='feminine'?'long':'short';previewAvatar();};
   avatarEditor.onsubmit=async event=>{
@@ -217,7 +220,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   let sending=false;
   setInterval(async()=>{if(!token||closed||sending)return;sending=true;try{await api('state',{pose:getPose()});}catch(e){showError(e);}finally{sending=false;}},100);
   setInterval(()=>{if(token&&media)apply();},5000);
-  addEventListener('pagehide',()=>{events?.close();peer.close();});
+  addEventListener('pagehide',()=>{events?.close();peer.close();avatarPreview?.dispose();});
   el('join').textContent='Entrar no mundo';
   let checkingAvailability=false,lastAvailabilityCheck=-Infinity,wasAvailable=false,autoJoinStarted=false,availabilityAttempts=0;
   async function checkAvailability(force=false){

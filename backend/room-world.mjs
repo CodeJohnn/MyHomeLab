@@ -22,7 +22,8 @@ export function actOnWorld(world,action,now=Date.now(),random=Math.random,player
     const game=world.billiards;
     const accepted=action.action==='join'?joinBilliards(game,player)
       :action.action==='shot'?shootBilliards(game,player.id,action.angle,action.power)
-      :action.action==='reset'?resetBilliards(game,player.id):false;
+      :action.action==='reset'?resetBilliards(game,player.id)
+      :action.action==='leave'?leaveBilliards(game,player.id):false;
     if(!accepted)return false;
   }
   else return false;
