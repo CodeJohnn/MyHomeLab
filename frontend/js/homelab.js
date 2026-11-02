@@ -1,4 +1,11 @@
-    const errorBox = document.getElementById('error'); function fail(e) { errorBox.style.display = 'block'; errorBox.textContent = 'Falha ao iniciar o cenário 3D: ' + (e?.message || e) + '\nAbra com Live Server e confira a conexão com a internet.'; console.error(e) } window.addEventListener('error', e => fail(e.error || e.message)); window.addEventListener('unhandledrejection', e => fail(e.reason));
+    const errorBox = document.getElementById('error');let sceneReady=false;
+    function fail(e) {
+      errorBox.style.display='block';
+      errorBox.textContent=(sceneReady?'Erro durante o uso do cenário 3D: ':'Falha ao iniciar o cenário 3D: ')+(e?.message||e)+(sceneReady?'':'\nAbra com Live Server e confira a conexão com a internet.');
+      console.error(e);
+    }
+    window.addEventListener('error',e=>fail(e.error||e.message));
+    window.addEventListener('unhandledrejection',e=>fail(e.reason));
     try {
       const { createInteractionAudio } = await import('./interaction-audio.mjs?v=3');
       const interactionAudio=createInteractionAudio();
@@ -10,6 +17,7 @@
       const { createRoomAudio } = await import('./room-audio.mjs?v=8');
       const { createAdminTerminal } = await import('./admin-terminal.mjs?v=3');
       const { normalizeMonitorUrl, embeddedMonitorUrl } = await import('./monitor-urls.mjs?v=3');
+      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=1');
       const { replyToNpc } = await import('./npc-dialogue.mjs?v=5');
       const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
       const { RoundedBoxGeometry } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/geometries/RoundedBoxGeometry.js');
@@ -20,7 +28,7 @@
       // Near positivo recortava o gramado na parte inferior da tela.
       const overviewCamera=camera;
       const eyeCamera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.04,120);
-      let firstPerson=false,eyeYaw=0,eyePitch=0;
+      let firstPerson=false,eyeYaw=0,eyePitch=0,viewMode='overview',followOrbit=0,followPitch=.28,followDistance=3.2,followBoom=3.2,lastFollowUpdate=0;
       const skyLight=new THREE.HemisphereLight(0xe3f4ff,0x6c554b,2.3);scene.add(skyLight); const sun = new THREE.DirectionalLight(0xfff3dc, 3.3); sun.position.set(-4, 11, 7); sun.castShadow = true; sun.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(sun);
       const M = (c, metalness = 0, roughness = .72) => new THREE.MeshStandardMaterial({ color: c, metalness, roughness }); const wood = M('#a97b58'), woodLight = M('#c49b75'), black = M('#151d25', .2, .42), metal = M('#39434b', .65, .35), wall = M('#bdc1c5'), tile = M('#98765c'), white = M('#dce5e7'), blue = M('#2daaff'), glass = new THREE.MeshPhysicalMaterial({ color: '#294b62', metalness: .12, roughness: .14, transparent: true, opacity: .7 }); const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
       function box(g, w, h, d, m, x = 0, y = 0, z = 0, r = 0) { const geo = r ? new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - .001, h / 2 - .001, d / 2 - .001)) : new THREE.BoxGeometry(w, h, d); const a = new THREE.Mesh(geo, m); a.position.set(x, y, z); a.castShadow = true; a.receiveShadow = true; g.add(a); return a } function cyl(g, r, h, m, x, y, z, segments = 24) { const a = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, segments), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a } function sphere(g, r, m, x, y, z) { const a = new THREE.Mesh(new THREE.SphereGeometry(r, isMobile ? 16 : 18, 12), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a }
@@ -157,6 +165,7 @@
         partition(roomWalls.right.group,.14,.85,1.1,4.5,2.875,z);
         for(const edge of [-.55,.55]) box(roomWalls.right.group,.18,2.45,.055,woodLight,4.5,1.225,z+edge);
       }
+      partition(roomWalls.right.group,.14,WALL_HEIGHT-2.5,1.1,4.5,(WALL_HEIGHT+2.5)/2,-1.85,rightWall.material);
       partition(roomWalls.front.group,8,3.3,.12,8.5,1.65,1);
       const guedesTv = new THREE.Group();
       guedesTv.position.set(4.34, 2.05, 0);
@@ -224,6 +233,106 @@
       }
 
       const objects = [], byId = {}; function item(id, label, kind, x, y, z, desc) { const g = new THREE.Group(); g.position.set(x, y, z); g.userData.id = id; scene.add(g); const o = { id, label, kind, g, desc, baseY: y, initial: [x, y, z, 0] }; objects.push(o); byId[id] = o; return g }
+      const billiardsTable=item('mesaSinuca','Mesa de sinuca','floor',6.7,0,6.2,'Mesa de sinuca com partida online para duas pessoas.');
+      const billiardsWood=M('#533520',.12,.42),billiardsCushion=M('#236344',.02,.82),billiardsFelt=M('#176b43',0,.92),billiardsPocket=M('#101713',.08,.82);
+      box(billiardsTable,2.9,.13,1.7,billiardsWood,0,.7,0,.025);
+      box(billiardsTable,2.56,.055,1.36,billiardsFelt,0,.793,0,.008);
+      for(const x of [-.66,.66])for(const z of [-.72,.72])box(billiardsTable,1.02,.13,.16,billiardsCushion,x,.858,z,.025);
+      for(const x of [-1.37,1.37])for(const z of [-.32,.32])box(billiardsTable,.16,.13,.48,billiardsCushion,x,.858,z,.025);
+      const billiardsPockets=[];
+      for(const x of [-1.12,0,1.12])for(const z of [-.52,.52]){
+        const pocket=new THREE.Mesh(new THREE.CircleGeometry(.105,24),billiardsPocket);pocket.rotation.x=-Math.PI/2;pocket.position.set(x,.823,z);billiardsTable.add(pocket);billiardsPockets.push(pocket);
+        const lip=new THREE.Mesh(new THREE.TorusGeometry(.098,.012,6,24),billiardsWood);lip.rotation.x=Math.PI/2;lip.position.set(x,.829,z);billiardsTable.add(lip);
+      }
+      for(const x of [-1.05,-.78,-.51,0,.51,.78,1.05])for(const z of [-.735,.735])sphere(billiardsTable,.018,M('#d9c596',.08,.4),x,.93,z);
+      for(const x of [-1.28,1.28])for(const z of [-.55,.55])box(billiardsTable,.13,.65,.13,billiardsWood,x,.34,z,.025);
+      for(const x of [-.96,.96])box(billiardsTable,.14,.12,.14,billiardsWood,x,.09,0,.025);
+      const billiardsBallColors=['#f5f4ed','#f6d32d','#2476db','#d83832','#8e45ba','#e98428','#319458','#812b36','#17191c'];
+      const billiardsBalls=[];
+      for(let id=0;id<16;id++){
+        const ball=new THREE.Group();ball.position.set(-.7,.85,0);billiardsTable.add(ball);
+        const stripe=id>8,color=billiardsBallColors[stripe?id-8:id];
+        sphere(ball,.047,M(stripe?'#eeeade':color,.04,.22),0,0,0);
+        if(stripe){const band=new THREE.Mesh(new THREE.TorusGeometry(.044,.014,6,24),M(color,.02,.28));band.rotation.x=Math.PI/2;ball.add(band);}
+        if(id>0){
+          const labelCanvas=document.createElement('canvas');labelCanvas.width=labelCanvas.height=64;
+          const labelContext=labelCanvas.getContext('2d');labelContext.fillStyle='#f8f6ec';labelContext.beginPath();labelContext.arc(32,32,28,0,Math.PI*2);labelContext.fill();
+          labelContext.fillStyle='#10151a';labelContext.font='bold 34px Arial';labelContext.textAlign='center';labelContext.textBaseline='middle';labelContext.fillText(String(id),32,33);
+          const labelTexture=new THREE.CanvasTexture(labelCanvas);labelTexture.colorSpace=THREE.SRGBColorSpace;
+          const label=new THREE.Mesh(new THREE.CircleGeometry(.018,20),new THREE.MeshBasicMaterial({map:labelTexture,toneMapped:false}));
+          label.rotation.x=-Math.PI/2;label.position.y=.044;ball.add(label);
+        }
+        billiardsBalls.push(ball);
+      }
+      const cueStick=new THREE.Mesh(new THREE.CylinderGeometry(.009,.016,1.15,10),M('#d4b37b',.08,.55));
+      cueStick.visible=false;billiardsTable.add(cueStick);
+      const defaultBilliardsBalls=[{id:0,x:-.7,z:0,alive:true}];
+      const billiardsRack=[[1,0,0],[2,1,-.5],[3,1,.5],[4,2,-1],[8,2,0],[5,2,1],[6,3,-1.5],[7,3,-.5],[9,3,.5],[10,3,1.5],[11,4,-2],[12,4,-1],[13,4,0],[14,4,1],[15,4,2]];
+      for(const [id,row,offset] of billiardsRack)defaultBilliardsBalls.push({id,x:.23+row*.047*2.05,z:offset*.047*2.05,alive:true});
+      let billiardsState=null,billiardsAngle=0,billiardsTargets=defaultBilliardsBalls;
+      const billiardsDialog=document.createElement('dialog');billiardsDialog.className='billiardsDialog';
+      billiardsDialog.innerHTML='<form method="dialog" class="billiardsPanel"><button class="billiardsClose" aria-label="Fechar">×</button><span class="billiardsEyebrow">MESA COMPARTILHADA</span><h2>Sinuca online</h2><p data-billiards-status>Entre no mundo online e chame outra pessoa para jogar.</p><div class="billiardsPlayers"><span data-player="0">Lugar 1 · livre</span><span data-player="1">Lugar 2 · livre</span></div><label class="billiardsControl">Direção <output data-angle-value>0°</output><input data-angle type="range" min="0" max="359" value="0" disabled></label><label class="billiardsControl">Força <output data-power-value>65%</output><input data-power type="range" min="12" max="100" value="65" disabled></label><div class="billiardsActions"><button type="button" data-billiards-join>Entrar para jogar</button><button type="button" data-billiards-shot hidden disabled>Dar tacada</button><button type="button" data-billiards-reset hidden>Nova partida</button></div><small>Clique no pano da mesa para mirar. Duas pessoas jogam na mesma partida.</small></form>';
+      document.body.append(billiardsDialog);
+      const billiardsControl=name=>billiardsDialog.querySelector(`[data-${name}]`);
+      billiardsControl('angle').addEventListener('input',event=>{billiardsAngle=Number(event.target.value)*Math.PI/180;billiardsControl('angle-value').textContent=event.target.value+'°';});
+      billiardsControl('power').addEventListener('input',event=>{billiardsControl('power-value').textContent=event.target.value+'%';});
+      billiardsDialog.addEventListener('click',event=>{if(event.target===billiardsDialog)billiardsDialog.close();});
+      for(const type of ['keydown','keyup'])billiardsDialog.addEventListener(type,event=>event.stopPropagation());
+      function updateBilliardsState(state){
+        billiardsState=state||null;
+        billiardsTargets=state?.balls||defaultBilliardsBalls;
+        const selfId=sharedRoom?.getSelfId();
+        const isPlayer=state?.players?.some(player=>player?.id===selfId);
+        const isTurn=state?.players?.[state.turn]?.id===selfId;
+        for(let slot=0;slot<2;slot++){
+          const player=state?.players?.[slot],group=state?.groups?.[slot];
+          const groupLabel=group==='solids'?' · lisas':group==='stripes'?' · listradas':'';
+          billiardsDialog.querySelector(`[data-player="${slot}"]`).textContent=(player?.name||`Lugar ${slot+1} · livre`)+(player?groupLabel:'');
+        }
+        billiardsControl('billiards-status').textContent=state?.message||'Entre no mundo online e chame outra pessoa para jogar.';
+        billiardsControl('billiards-join').hidden=Boolean(isPlayer||state?.players?.every(Boolean)||state?.winner);
+        billiardsControl('billiards-shot').hidden=!isTurn||state?.moving||Boolean(state?.winner);
+        billiardsControl('billiards-shot').disabled=!isTurn||state?.moving||Boolean(state?.winner);
+        billiardsControl('billiards-reset').hidden=!isPlayer;
+        billiardsControl('angle').disabled=!isTurn||state?.moving;
+        billiardsControl('power').disabled=!isTurn||state?.moving;
+      }
+      function updateBilliardsScene(dt){
+        const targets=new Map((billiardsTargets||[]).map(ball=>[ball.id,ball]));
+        const blend=1-Math.exp(-22*dt);
+        for(let id=0;id<billiardsBalls.length;id++){
+          const mesh=billiardsBalls[id],ball=targets.get(id);
+          mesh.visible=ball?.alive!==false;
+          if(ball?.alive)mesh.position.lerp(new THREE.Vector3(ball.x,.85,ball.z),blend);
+        }
+        const cue=billiardsTargets?.[0],selfId=sharedRoom?.getSelfId();
+        cueStick.visible=Boolean(cue?.alive&&!billiardsState?.moving&&billiardsState?.players?.[billiardsState.turn]?.id===selfId);
+        if(cueStick.visible){
+          const direction=new THREE.Vector3(-Math.cos(billiardsAngle),0,-Math.sin(billiardsAngle));
+          cueStick.position.set(cue.x+direction.x*.61,.87,cue.z+direction.z*.61);
+          cueStick.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction);
+        }
+      }
+      function openBilliards(worldPoint){
+        if(worldPoint){
+          const local=byId.mesaSinuca.g.worldToLocal(worldPoint.clone()),cue=billiardsTargets?.[0];
+          if(cue){let degrees=Math.atan2(local.z-cue.z,local.x-cue.x)*180/Math.PI;if(degrees<0)degrees+=360;billiardsControl('angle').value=String(Math.round(degrees)%360);billiardsControl('angle').dispatchEvent(new Event('input'));}
+        }
+        billiardsDialog.showModal();
+      }
+      billiardsControl('billiards-join').onclick=async()=>{
+        if(!sharedRoom?.isOnline()){billiardsControl('billiards-status').textContent='Entre no mundo online antes de ocupar um lugar.';return;}
+        try{await sharedRoom.sendWorldAction({type:'billiards',action:'join'});}catch(error){billiardsControl('billiards-status').textContent=error.message;}
+      };
+      billiardsControl('billiards-shot').onclick=async()=>{
+        if(!sharedRoom?.isOnline()){billiardsControl('billiards-status').textContent='Conecte-se ao mundo online para jogar.';return;}
+        let angle=billiardsAngle;if(angle>Math.PI)angle-=Math.PI*2;
+        try{await sharedRoom.sendWorldAction({type:'billiards',action:'shot',angle,power:Number(billiardsControl('power').value)/100});}
+        catch(error){billiardsControl('billiards-status').textContent=error.message;}
+      };
+      billiardsControl('billiards-reset').onclick=async()=>{
+        try{await sharedRoom.sendWorldAction({type:'billiards',action:'reset'});}catch(error){billiardsControl('billiards-status').textContent=error.message;}
+      };
       // Tapete de tecido com o emblema JavaScript, no centro do laboratorio.
       const javascriptRug=item('tapeteJavaScript','Tapete JavaScript','rug',0,0,.35,'Tapete com a logo do JavaScript.');
       const rugCanvas=document.createElement('canvas');rugCanvas.width=rugCanvas.height=1024;
@@ -435,11 +544,11 @@
           box(chair,.07,.04,.3,black,side*.27,.73,0,.012);
         }
       }
-      const restrictedDoor=new THREE.Group();restrictedDoor.position.set(4.5,0,-2.38);restrictedDoor.rotation.y=-Math.PI/2;
+      const restrictedDoor=new THREE.Group();restrictedDoor.position.set(4.5,0,-2.4);restrictedDoor.rotation.y=-Math.PI/2;
       restrictedDoor.userData.wallAttachment=true;scene.add(restrictedDoor);
-      const restrictedDoorLeaf=box(restrictedDoor,1.04,2.37,.065,M('#304853',.35,.5),.52,1.215,0,.015);
+      const restrictedDoorLeaf=box(restrictedDoor,1.1,2.5,.065,M('#304853',.35,.5),.55,1.25,0);
       for(const side of [-1,1]) {
-        box(restrictedDoor,.08,.12,.035,rackSteel,.91,1.12,side*.055,.009);
+        box(restrictedDoor,.08,.12,.035,rackSteel,.94,1.12,side*.055,.009);
         const labelCanvas=document.createElement('canvas');labelCanvas.width=512;labelCanvas.height=192;
         const ctx=labelCanvas.getContext('2d');ctx.fillStyle='#a62c30';ctx.fillRect(0,0,512,192);
         ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.font='bold 66px sans-serif';ctx.fillText('RESTRITO',256,91);
@@ -488,7 +597,7 @@
         // A orientacao pertence ao suporte; o rotor gira somente no seu eixo local.
         if(axis==='x')mount.rotation.y=Math.PI/2;
         if(axis==='y')mount.rotation.x=Math.PI/2;
-        const ring = new THREE.Mesh(new THREE.TorusGeometry(r, .014, 8, 36), cyan); mount.add(ring);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r, .014, 8, 36), cyan); ring.userData.fanAccent=true;mount.add(ring);
         const rotor = new THREE.Group(); rotor.userData.isPcFan = true; mount.add(rotor);
         for (let k = 0; k < 7; k++) { const blade = box(rotor, r * .70, r * .28, .018, M('#d6eaf0', .3, .34), r * .38, 0, 0, .008); blade.rotation.z = .5; const pivot = new THREE.Group(); pivot.rotation.z = k * Math.PI * 2 / 7; rotor.remove(blade); pivot.add(blade); rotor.add(pivot) }
         const hub = sphere(rotor, r * .18, silver, 0, 0, 0); animatedPcFans.push(rotor);
@@ -914,6 +1023,7 @@
       }
       const screenPosition = new THREE.Vector3(), screenNormal = new THREE.Vector3();
       const screenRay = new THREE.Raycaster();
+      const youtubeRoomPlayers=new WeakMap();
       let lastMonitorOcclusionCheck = -Infinity;
       function renderMonitorVideos() {
         const checkOcclusion = performance.now() - lastMonitorOcclusionCheck >= (isMobile ? 180 : 100);
@@ -933,7 +1043,12 @@
             iframe.style.height=(1280*size.height/size.width)+'px';
             iframe.addEventListener('load',()=>{
               if(!/youtube(?:-nocookie)?\.com\/embed\//.test(iframe.src))return;
-              const origin=new URL(iframe.src).origin;iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:'monitor-player'}),origin);monitor.youtubeMode=null;
+              const origin=new URL(iframe.src).origin,playerWindow=iframe.contentWindow;
+              if(!playerWindow)return;
+              youtubeRoomPlayers.set(playerWindow,monitor);
+              postYoutubeMessage(iframe,{event:'listening',id:'monitor-player'},origin);
+              for(const event of ['onReady','onError'])postYoutubeMessage(iframe,{event:'command',func:'addEventListener',args:[event]},origin);
+              monitor.youtubeMode=null;
               for(const delay of [300,900,1800])setTimeout(()=>resumeMonitorYoutube(monitor),delay);
             });
             monitor.websiteScreen=new CSS3DObject(iframe);monitor.websiteScreen.scale.setScalar(size.width/1280);videoScene.add(monitor.websiteScreen);
@@ -952,7 +1067,7 @@
             if(monitor.youtubeMode!==mode) {
               monitor.youtubeMode=mode;
               const iframe=monitor.websiteScreen.element,origin=new URL(iframe.src).origin;
-              for(const func of expanded?['mute','pauseVideo']:(monitor.audioEnabled?['unMute','playVideo']:['mute','playVideo']))iframe.contentWindow.postMessage(JSON.stringify({event:'command',func,args:[]}),origin);
+              for(const func of expanded?['mute','pauseVideo']:(monitor.audioEnabled?['unMute','playVideo']:['mute','playVideo']))postYoutubeMessage(iframe,{event:'command',func,args:[]},origin);
             }
           }
           for(const [screen,active] of [[monitor.htmlScreen,monitor.contentKind==='video' && !!monitor.url],[monitor.websiteScreen,monitor.contentKind==='website' && !!monitor.websiteUrl]]) {
@@ -1100,9 +1215,15 @@
       previewVideo.muted = true;
       const websiteFrame = document.getElementById('websiteFrame');
       const openWebsiteTab = document.getElementById('openWebsiteTab');
+      function postYoutubeMessage(frame,message,origin) {
+        const playerWindow=frame?.contentWindow;
+        if(!playerWindow)return false;
+        playerWindow.postMessage(JSON.stringify(message),origin);
+        return true;
+      }
       function youtubeCommand(frame,func,args=[]) {
-        if(!frame?.contentWindow || !/youtube(?:-nocookie)?\.com\/embed\//.test(frame.src))return;
-        frame.contentWindow.postMessage(JSON.stringify({event:'command',func,args}),new URL(frame.src).origin);
+        if(!frame||!/youtube(?:-nocookie)?\.com\/embed\//.test(frame.src))return;
+        postYoutubeMessage(frame,{event:'command',func,args},new URL(frame.src).origin);
       }
       function resumeMonitorYoutube(monitor) {
         if(!monitor?.websiteScreen)return;
@@ -1115,15 +1236,33 @@
       websiteFrame.addEventListener('load',()=>{
         if(!/youtube(?:-nocookie)?\.com\/embed\//.test(websiteFrame.src))return;
         const origin=new URL(websiteFrame.src).origin;
-        websiteFrame.contentWindow.postMessage(JSON.stringify({event:'listening',id:'homelab-player'}),origin);
-        websiteFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'addEventListener',args:['onError']}),origin);
+        if(!websiteFrame.contentWindow)return;
+        postYoutubeMessage(websiteFrame,{event:'listening',id:'homelab-player'},origin);
+        for(const event of ['onReady','onError'])postYoutubeMessage(websiteFrame,{event:'command',func:'addEventListener',args:[event]},origin);
       });
       window.addEventListener('message',event=>{
-        if(!['https://www.youtube.com','https://www.youtube-nocookie.com'].includes(event.origin)||event.source!==websiteFrame.contentWindow)return;
+        if(!['https://www.youtube.com','https://www.youtube-nocookie.com'].includes(event.origin))return;
         let data;try{data=typeof event.data==='string'?JSON.parse(event.data):event.data;}catch{return;}
+        if(data?.event==='onReady'){
+          if(event.source===websiteFrame.contentWindow){
+            if(activeScreen?.contentKind==='website'){
+              soundButton.disabled=false;
+              if(activeScreen.audioEnabled){youtubeCommand(websiteFrame,'setVolume',[100]);youtubeCommand(websiteFrame,'unMute');youtubeCommand(websiteFrame,'playVideo');}
+            }
+            return;
+          }
+          const monitor=youtubeRoomPlayers.get(event.source);
+          if(monitor)resumeMonitorYoutube(monitor);
+          return;
+        }
         if(data?.event!=='onError')return;
         const explanations={2:'O link ou identificador do video e invalido.',5:'O navegador nao conseguiu reproduzir este video.',100:'Video removido, privado ou inexistente.',101:'O autor nao permite exibir este video fora do YouTube.',150:'O autor nao permite exibir este video fora do YouTube.',153:'O YouTube nao identificou a origem. Abra o laboratorio pelo Live Server, e confira bloqueadores do navegador.'};
-        document.getElementById('screenViewMessage').textContent='YouTube ('+data.info+'): '+(explanations[data.info]||'Nao foi possivel reproduzir. Tente abrir em nova aba.');
+        const message='YouTube ('+data.info+'): '+(explanations[data.info]||'Nao foi possivel reproduzir. Tente abrir em nova aba.');
+        if(event.source===websiteFrame.contentWindow)screenViewMessage.textContent=message;
+        else {
+          const monitor=youtubeRoomPlayers.get(event.source);
+          if(monitor&&activeScreen===monitor)screenViewMessage.textContent=message;
+        }
       });
 
       const screenViewMessage = document.getElementById('screenViewMessage');
@@ -1203,7 +1342,7 @@
         if(activeScreen===monitor)screenViewMessage.textContent=message;
       }
       function loadLocalFilm(monitor,file,expand) {
-        if(sharedRoom){
+        if(sharedRoom?.isOnline()){
           screenViewMessage.textContent='Enviando vídeo para todos na sala…';
           sharedRoom.uploadVideo(file,monitor.networkScreen).then(()=>{
             screenViewMessage.textContent='Vídeo compartilhado com a sala.';
@@ -1266,7 +1405,7 @@
       partition(roomWalls.front.group,1.4,.8,.14,4,2.9,10.5,frontWall.material);
       const entranceDoor=new THREE.Group();entranceDoor.position.set(3.3,0,10.5);
       entranceDoor.userData.wallAttachment=true;roomWalls.front.group.add(entranceDoor);
-      const entranceLeaf=box(entranceDoor,1.34,2.42,.075,M('#825638'),.67,1.23,0,.015);
+      const entranceLeaf=box(entranceDoor,1.4,2.5,.075,M('#825638'),.7,1.25,0);
       for(const y of [.65,1.65])box(entranceLeaf,1.08,.65,.025,M('#a2744c'),0,y-1.23,.045,.012);
       sphere(entranceDoor,.055,M('#c3ac73',.6,.3),1.17,1.1,-.075);
       sphere(entranceDoor,.055,M('#c3ac73',.6,.3),1.17,1.1,.075);
@@ -1276,7 +1415,7 @@
       partition(roomWalls.left.group,.14,3.3,7,-4.5,1.65,7,leftWall.material);
       partition(roomWalls.right.group,.14,3.3,7,12.5,1.65,7,rightWall.material);
       const {Reflector}=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/objects/Reflector.js');
-      const {createBathroom}=await import('./bathroom.mjs?v=mirror-budget-2');
+      const {createBathroom}=await import('./bathroom.mjs?v=door-clearance-4');
       const bathroom=createBathroom({THREE,Reflector,scene,item,box,cyl,sphere,M,partition,backWall,wallHeight:WALL_HEIGHT,isMobile});
       let bathroomDoorOpen=false;
       const bathRoofMaterial=M('#9d5440');
@@ -1366,7 +1505,7 @@
         diffuser.castShadow = false;
         diffuser.userData.litMaterial = diffuser.material;
         const circuitId = z < -3.5 ? 'bath' : z > 3.5 ? 'office' : x > 4.5 ? (z < 1 ? 'servers' : 'office') : 'lab';
-        const light = new THREE.SpotLight(cool ? '#e0efff' : '#fff0d8', 38, 6.5, Math.PI / 3, .65, 2);
+        const light = new THREE.SpotLight(cool ? '#e0efff' : '#fff0d8', 55, 9.5, Math.PI / 2, .65, 2);
         light.position.set(x, 2.98+WALL_RAISE, z);
         light.target.position.set(x, 0, z);
         light.userData.onIntensity = light.intensity;
@@ -1408,13 +1547,13 @@
         ctx.fillStyle='#aebdc6';ctx.font='bold 28px monospace';ctx.fillText('GUEDESSEC / DISPLAY',52,162);
         ctx.font='16px monospace';ctx.fillText('DP 1.4   HDMI   144 Hz',112,205);
       });
-      function detailComputer(group,name,accent,decalOnly=false) {
+      function detailComputer(group,name,accent,decalOnly=false,gpuModel='RTX 3060') {
         const io=new THREE.Mesh(new THREE.PlaneGeometry(.28,.14),new THREE.MeshStandardMaterial({map:ioTexture,roughness:.5,metalness:.25}));
         io.rotation.x=-Math.PI/2;io.position.set(.2,1.278,.24);if(!decalOnly)group.add(io);
         const label=hardwareTexture((ctx,w,h)=>{
           ctx.fillStyle='#111820';ctx.fillRect(0,0,w,h);ctx.fillStyle=accent;ctx.fillRect(0,0,12,h);
           ctx.font='bold 32px monospace';ctx.fillText(name.toUpperCase(),30,65);
-          ctx.fillStyle='#d4dce0';ctx.font='22px monospace';ctx.fillText('RTX 3060 / RYZEN 7',30,115);ctx.fillText('NVMe / DDR4 / AIO 240',30,155);
+          ctx.fillStyle='#d4dce0';ctx.font='22px monospace';ctx.fillText(gpuModel+' / RYZEN 7',30,115);ctx.fillText('NVMe / DDR4 / AIO 240',30,155);
           ctx.fillStyle='#788b95';for(let i=0;i<65;i++)ctx.fillRect(30+i*6,190,i%3===0?3:1,33);
         });
         const plate=new THREE.Mesh(new THREE.PlaneGeometry(.52,.23),new THREE.MeshBasicMaterial({map:label,toneMapped:false}));
@@ -1449,13 +1588,17 @@
           copy.traverse(node=>{
             const isScreen = node.userData.isScreen;
             const isPcFan = node.userData.isPcFan;
+            const isFanAccent = node.userData.fanAccent;
             if(isPcFan) animatedPcFans.push(node);
-            node.userData = { ...(isScreen ? { isScreen: true } : {}), ...(isPcFan ? { isPcFan: true } : {}) };
+            node.userData = { ...(isScreen ? { isScreen: true } : {}), ...(isPcFan ? { isPcFan: true } : {}), ...(isFanAccent ? { fanAccent: true } : {}) };
             if(isScreen) node.material = terminalMat;
             if(node.isLight) lights.push(node);
             if(node.isMesh) {
               node.castShadow=false;
-              if(!whitePc && !isScreen && ['pc','monitor1','monitor2','teclado','mouse','mousepad'].includes(source)) {
+              if(id==='setupXandy'&&isFanAccent) {
+                const purple=node.material.clone();purple.color.set('#a855f7');node.material=purple;
+              }
+              if(!whitePc && !isScreen && !isFanAccent && ['pc','monitor1','monitor2','teclado','mouse','mousepad'].includes(source)) {
                 const customize=material=>{
                   if(!material.color||material.map||material.transparent)return material;
                   const changed=material.clone();
@@ -1484,7 +1627,7 @@
             // Replace only the personalized decal; the shared hardware textures remain reused.
             const inherited=copy.children.find(child=>child.isMesh && child.geometry.type==='PlaneGeometry' && Math.abs(child.position.x-.43)<.001);
             if(inherited)copy.remove(inherited);
-            detailComputer(copy,name,whitePc?'#b38cce':id==='setupXandy'?'#36bfff':'#ffb94d',true);
+            detailComputer(copy,name,whitePc?'#b38cce':id==='setupXandy'?'#36bfff':'#ffb94d',true,id==='setupXandy'?'RTX 5060':'RTX 3060');
           }
           if(source==='pc' && !whitePc) {
             const accent=glow(id==='setupXandy'?'#36bfff':'#ffb94d');
@@ -1721,23 +1864,24 @@
         document.querySelector('#monitorEmpty p').textContent=monitor.contentKind==='logic'?'Abra a IDE para programar, escolha um filme ou cole um site nas opcoes ao lado. Seu codigo fica salvo.':'Escolha um video ou abra um link para comecar.';
         const isYoutube=monitor.contentKind==='website' && /youtube(?:-nocookie)?\.com|youtu\.be/.test(monitor.websiteUrl||'');
         soundButton.hidden=!(monitor.contentKind==='video'||isYoutube);
+        soundButton.disabled=isYoutube;
         roomSoundButton.hidden=['default','logic'].includes(monitor.contentKind);
         interactOnScreen.hidden=monitor.contentKind!=='website';
         soundActions.hidden=['default','logic'].includes(monitor.contentKind);
         previewVideo.hidden=true;websiteFrame.hidden=true;openWebsiteTab.hidden=true;
-        screenViewMessage.textContent='Cole um link e clique em Abrir site. Se o site bloquear a exibicao, use Abrir site em nova aba.';
+        screenViewMessage.textContent='Cole um link e clique em Abrir. No YouTube, use o link de um video; clique em Reproduzir com som para ativar o audio.';
         document.getElementById('screenView').style.display='flex';
         if(monitor.contentKind==='video' && monitor.url) {
           monitor.localExpanded=true;
           if(monitor.htmlScreen)monitor.htmlScreen.removeFromParent();
           monitor.htmlScreen=null;previewVideo=monitor.video;
           previewVideo.style.cssText='display:block;position:static;transform:none;width:100%;max-height:65vh;background:#000;pointer-events:auto;';
-          previewVideo.controls=true;previewVideo.hidden=false;previewVideo.muted=false;previewVideo.volume=1;
+          previewVideo.controls=previewVideo.dataset.peerRole!=='guest';previewVideo.hidden=false;previewVideo.muted=false;previewVideo.volume=1;
           websiteFrame.before(previewVideo);
           screenViewMessage.textContent='Video local: o mesmo player continua na tela do monitor ao fechar.';
           previewVideo.play().catch(error=>{if(error.name!=='AbortError')reportLocalVideoError(monitor,error.name==='NotAllowedError'?'Clique no Play do video.':localVideoError(previewVideo));});
         } else if(monitor.contentKind==='website' && monitor.websiteUrl) {
-          websiteFrame.src=embeddedMonitorUrl(monitor.websiteUrl,{autoplay:true});websiteFrame.hidden=false;openWebsiteTab.href=monitor.websiteUrl;openWebsiteTab.hidden=false;
+          websiteFrame.referrerPolicy='strict-origin-when-cross-origin';websiteFrame.src=embeddedMonitorUrl(monitor.websiteUrl,{autoplay:true,muted:true});websiteFrame.hidden=false;openWebsiteTab.href=monitor.websiteUrl;openWebsiteTab.hidden=false;
           if (monitor.fixedSite) screenViewMessage.textContent='Transmitindo GuedesSEC. A TV permanece ligada enquanto o laboratorio estiver aberto.';
         }
       }
@@ -1752,7 +1896,11 @@
           const url=normalizeMonitorUrl(document.getElementById('screenMediaUrl').value);
           embeddedMonitorUrl(url.href);
           if(!['http:','https:'].includes(url.protocol))throw Error();
-          activeScreen.video.pause();activeScreen.websiteUrl=url.href;activeScreen.contentKind='website';openAnyScreen(activeScreen);
+          activeScreen.video.pause();activeScreen.websiteUrl=url.href;activeScreen.contentKind='website';
+          if(activeScreen.websiteInput)activeScreen.websiteInput.value=url.href;
+          if(activeScreen.websiteStatus)activeScreen.websiteStatus.textContent='Site configurado.';
+          saveMonitorWebsites();
+          openAnyScreen(activeScreen);
         }catch(error){screenViewMessage.textContent=error.message;}
       };
       document.getElementById('screenMediaCode').onclick=()=>{
@@ -1763,7 +1911,7 @@
         const monitor=activeScreen;
         releaseLocalPlayer(monitor);activeScreen=null;previewMonitorId=null;
         previewVideoHome.pause();previewVideoHome.hidden=true;
-        websiteFrame.src='about:blank';document.getElementById('screenView').style.display='none';
+        websiteFrame.src='about:blank';soundButton.disabled=false;document.getElementById('screenView').style.display='none';
         if(monitor)setTimeout(()=>resumeMonitorYoutube(monitor),100);
       };
       // Canaletas continuas: os quatro cabos ficam agrupados junto ao teto.
@@ -2175,6 +2323,10 @@
       }
       serverDoorDialog.addEventListener('keydown',e=>e.stopPropagation());
       serverDoorDialog.addEventListener('keyup',e=>e.stopPropagation());
+      const serverDoorFeedback=document.createElement('dialog');
+      serverDoorFeedback.innerHTML='<form method="dialog" style="display:grid;gap:16px;max-width:360px"><strong>Acesso aos servidores</strong><p role="alert"></p><button>Fechar</button></form>';
+      document.body.append(serverDoorFeedback);
+      for(const type of ['keydown','keyup'])serverDoorFeedback.addEventListener(type,e=>e.stopPropagation());
       let checkingServerPassword=false;
       async function useServerDoor(){
         if(checkingServerPassword)return;
@@ -2197,7 +2349,11 @@
             if(!stored)localStorage.setItem(localKey,hash);
             restrictedDoorOpen=true;
           }
-        }catch(error){document.getElementById('status').textContent=error.message;}
+        }catch(error){
+          document.getElementById('status').textContent=error.message;
+          serverDoorFeedback.querySelector('p').textContent=error.message;
+          if(!serverDoorFeedback.open)serverDoorFeedback.showModal();
+        }
         finally{checkingServerPassword=false;}
       }
       const serverNotice=document.createElement('div');serverNotice.hidden=true;
@@ -2242,20 +2398,28 @@
       }
       const wallSwitches = [];
       const switchPlate = M('#e7e9e5', .05, .4);
-      for (const [id, parent, x, z, rotation] of [
-        ['lab', scene, -1, 3.39, Math.PI],
-        ['servers', interiorSidePartitions, 4.61, -2.65, Math.PI/2],
-        ['office', rearRoomPartitions, 1, 3.62, 0]
+      for (const [id, parent, x, z, rotation, label] of [
+        ['lab', rearRoomPartitions, 1.55, 3.39, Math.PI, 'LABORATORIO'],
+        ['servers', interiorSidePartitions, 4.61, -2.72, Math.PI/2, 'SERVIDORES'],
+        ['office', roomWalls.front.group, 5.05, 10.39, Math.PI, 'SALAO'],
+        ['bath', bathroom.walls, 2.28, -3.61, Math.PI, 'BANHEIRO']
       ]) {
         const plate = new THREE.Group();
         plate.position.set(x, 1.32, z); plate.rotation.y = rotation;
-        plate.userData.circuit = id; parent.add(plate); wallSwitches.push(plate);
+        plate.userData.circuit = id;plate.userData.wallAttachment=true;
+        parent.add(plate); wallSwitches.push(plate);
         box(plate, .24, .34, .045, switchPlate, 0, 0, 0, .015);
         box(plate, .15, .23, .012, lampHousing, 0, 0, .029, .008);
         const rocker = box(plate, .12, .19, .035, switchPlate, 0, 0, .05, .008);
         lampCircuits[id].rocker = rocker;
         box(rocker, .045, .009, .003, glow('#89dca7'), 0, .055, .019);
         for (const y of [-.14, .14]) box(plate, .024, .005, .003, lampHousing, 0, y, .025);
+        const labelCanvas=document.createElement('canvas');labelCanvas.width=256;labelCanvas.height=64;
+        const labelContext=labelCanvas.getContext('2d');labelContext.fillStyle='#e7e9e5';labelContext.fillRect(0,0,256,64);
+        labelContext.fillStyle='#34454b';labelContext.textAlign='center';labelContext.font='bold 28px sans-serif';labelContext.fillText(label,128,43,240);
+        const labelTexture=new THREE.CanvasTexture(labelCanvas);labelTexture.colorSpace=THREE.SRGBColorSpace;
+        const labelMesh=new THREE.Mesh(new THREE.PlaneGeometry(.3,.075),new THREE.MeshBasicMaterial({map:labelTexture,toneMapped:false}));
+        labelMesh.position.set(0,.235,.025);plate.add(labelMesh);
         setLampCircuit(id, true);
       }
       const wallOcclusionState = new Map();
@@ -2270,14 +2434,14 @@
       function updateActiveRoomWalls() {
         const time=performance.now();
         const outside=!insideHouse(avatar.position.x,avatar.position.z);
-        const viewMode=`${firstPerson}:${outside}`;
-        if(lastWallViewMode===viewMode && time-lastWallVisibilityUpdate<(isMobile?150:80))return;
-        lastWallVisibilityUpdate=time;lastWallViewMode=viewMode;
+        const wallViewMode=`${viewMode}:${outside}`;
+        if(lastWallViewMode===wallViewMode && time-lastWallVisibilityUpdate<(isMobile?150:80))return;
+        lastWallVisibilityUpdate=time;lastWallViewMode=wallViewMode;
         for (const [object, visible] of wallOcclusionState) object.visible = visible;
         wallOcclusionState.clear();
 
         houseExterior.roof.visible=firstPerson||outside;
-        if(firstPerson||outside) {
+        if(viewMode!=='overview'||outside) {
           for(const entry of Object.values(roomWalls))entry.group.visible=true;
           for(const o of objects)if(o.kind.startsWith('wall'))o.g.visible=true;
           rearRoomPartitions.visible=true;interiorSidePartitions.visible=true;
@@ -2594,7 +2758,7 @@
         const glasses=new THREE.Group();glasses.position.set(side*.066,.018,.209);
         for(const y of [-.035,.035])box(glasses,.093,.009,.009,hair,0,y,0,.003);
         for(const x of [-.042,.042])box(glasses,.009,.07,.009,hair,x,0,0,.003);
-        box(glasses,.009,.008,.095,hair,side*.045,.024,-.04,.002);johnCartoonHead.add(glasses);
+        box(glasses,.009,.008,.095,hair,side*.045,.024,-.04,.002);glasses.userData.avatarGlasses=true;johnCartoonHead.add(glasses);
         const angryBrow=box(johnCartoonHead,.058,.016,.014,hair,side*.065,.067,.187,.005);angryBrow.rotation.z=side*.3;
       }
       box(johnCartoonHead,.04,.006,.008,hair,0,.025,.21,.002);
@@ -2624,6 +2788,16 @@
       johnCartoonHead.scale.setScalar(1.48);
       avatar.position.set(-1.2, 0, 2.45);
       // NPCs independentes do personagem controlado pelo jogador.
+      johnCartoonHead.name='onlineAvatarHead';johnTorso.userData.avatarTorso=true;
+      for(const node of [hood,hoodEdge,hairCap])node.userData.avatarHide=true;
+      avatar.traverse(node=>{
+        if(node.material===skin)node.userData.avatarPart='skin';
+        else if(node.material===shirt||node.material===shirtLight)node.userData.avatarPart='shirt';
+        else if(node.material===pants)node.userData.avatarPart='pants';
+        else if(node.material===hair||node.material===naturalHair){node.userData.avatarPart='hair';if(node.material===naturalHair)node.userData.avatarHide=true;}
+      });
+      const avatarTemplate=avatar.clone(true);
+      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs');
       const npcs = [];
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
         const root = new THREE.Group();
@@ -2837,8 +3011,26 @@
         startInteraction('sit',chair);
       }
       let interactionPose = null, interactionTime = 0, savedAvatarPosition = null, savedAvatarRotation = 0;
+      let pendingToilet=false;
+      function useToilet(){
+        if(interactionPose==='toilet'){stopInteraction();return;}
+        stopInteraction();keys.clear();walkTarget=null;walkPath=[];
+        const toilet=byId.vasoBanheiroNovo.g;
+        const approach=toilet.localToWorld(new THREE.Vector3(0,0,1.1));
+        if(Math.hypot(avatar.position.x-approach.x,avatar.position.z-approach.z)<.55){sitOnToilet();return;}
+        pendingToilet=walkTo(approach);
+        document.getElementById('status').textContent=pendingToilet?'Indo ao banheiro...':'Abra a porta e libere a passagem ate o vaso.';
+      }
+      function sitOnToilet(){
+        pendingToilet=false;walkTarget=null;walkPath=[];keys.clear();
+        startInteraction('toilet',{id:'vasoBanheiroNovo',g:byId.vasoBanheiroNovo.g,offset:new THREE.Vector3(0,-.015,.15),facing:0});
+        bathroomDoorOpen=false;
+        arms.forEach(arm=>arm.rotation.x=-.45);
+        document.getElementById('status').textContent='Usando o banheiro... E para levantar.';
+      }
       function stopInteraction() {
         if (!interactionPose) return;
+        const wasToilet=interactionPose==='toilet';
         interactionPose = null;
         activePlayerChair=null;activeTypingKeyboard=null;
         if (savedAvatarPosition) avatar.position.copy(savedAvatarPosition);
@@ -2848,6 +3040,7 @@
         knees.forEach(knee => { knee.rotation.set(0, 0, 0) });
         arms.forEach(arm => { arm.rotation.set(0, 0, 0) });
         elbows.forEach(elbow => { elbow.rotation.set(0, 0, 0) });
+        if(wasToilet){document.getElementById('status').textContent='Banheiro utilizado. Tudo pronto!';return;}
         document.getElementById('status').textContent = 'Você levantou da cadeira.';
       }
       function startInteraction(action, seat = null) {
@@ -2954,7 +3147,7 @@
       const cameraCenter=new THREE.Vector3(2.5,1.05,2.4),cameraGoal=cameraCenter.clone();
       let viewYaw=yaw,viewPitch=pitch,viewZoom=zoom,panDrag=false,touchCenter=null;
       function panCamera(dx,dy) {
-        if(firstPerson)return;
+        if(viewMode!=='overview')return;
         const scale=(innerWidth<700?24:20)/viewZoom/innerHeight;
         cameraGoal.x-=Math.cos(viewYaw)*dx*scale;
         cameraGoal.z+=Math.sin(viewYaw)*dx*scale;
@@ -2962,7 +3155,22 @@
         cameraGoal.z-=Math.cos(viewYaw)*dy*scale/Math.max(.3,Math.sin(viewPitch));
         cameraGoal.x=THREE.MathUtils.clamp(cameraGoal.x,-8,14);cameraGoal.z=THREE.MathUtils.clamp(cameraGoal.z,-8,14);
       }
+      const followCameraRay=new THREE.Raycaster();
       function cameraUpdate() {
+        if(viewMode==='third'){
+          eyeCamera.aspect=innerWidth/innerHeight;eyeCamera.updateProjectionMatrix();
+          const focus=avatar.position.clone().add(new THREE.Vector3(0,1.45,0));
+          const angle=followOrbit;
+          const direction=new THREE.Vector3(Math.sin(angle)*Math.cos(followPitch),Math.sin(followPitch),Math.cos(angle)*Math.cos(followPitch));
+          followCameraRay.set(focus,direction);followCameraRay.far=followDistance;
+          const hit=followCameraRay.intersectObjects([...wallOccluders,...objects.filter(o=>o.kind==='floor').map(o=>o.g),restrictedDoor,entranceDoor,bathroom.door],true)[0];
+          const targetDistance=hit?Math.max(.12,Math.min(followDistance,hit.distance-.2)):followDistance;
+          const now=performance.now(),elapsed=Math.min(.05,Math.max(0,(now-lastFollowUpdate)/1000));lastFollowUpdate=now;
+          followBoom=targetDistance<followBoom?targetDistance:THREE.MathUtils.lerp(followBoom,targetDistance,1-Math.exp(-6*elapsed));
+          eyeCamera.position.copy(focus).addScaledVector(direction,followBoom);eyeCamera.lookAt(focus);
+          avatar.visible=followBoom>.65;
+          return;
+        }
         if(firstPerson) {
           eyeCamera.aspect=innerWidth/innerHeight;eyeCamera.updateProjectionMatrix();
           eyeCamera.position.copy(avatar.position).add(new THREE.Vector3(0,1.6,0));
@@ -2973,19 +3181,27 @@
         // Alterar aqui restaurava paredes ocultadas entre duas atualizacoes.
       } cameraUpdate(); addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); cameraUpdate() });
       const viewButton=document.getElementById('toggleFirstPerson');
-      function toggleFirstPerson(force) {
-        firstPerson=typeof force==='boolean'?force:!firstPerson;
-        if(firstPerson && edit)document.getElementById('edit').click();
-        keys.clear();walkTarget=null;walkPath=[];
+      const viewSelect=document.createElement('select');viewSelect.id='cameraViewMode';viewSelect.setAttribute('aria-label','Modo de camera');
+      viewSelect.style.cssText='position:fixed;left:14px;top:58px;z-index:6;padding:9px;border-radius:8px;background:#14212b;color:#e7eff4;border:1px solid #77918d;max-width:190px';
+      for(const [value,label]of [['overview','Visao geral'],['first','Primeira pessoa'],['third','Terceira pessoa (atras)']])viewSelect.add(new Option(label,value));
+      document.body.append(viewSelect);
+      function setViewMode(mode){
+        if(mode!=='overview'&&edit)document.getElementById('edit').click();
+        viewMode=mode;firstPerson=mode==='first';keys.clear();walkTarget=null;walkPath=[];followOrbit=avatar.rotation.y+(mode==='third'?Math.PI:0);followPitch=.28;followBoom=followDistance;lastFollowUpdate=performance.now();
         if(firstPerson){eyeYaw=avatar.rotation.y+Math.PI;eyePitch=0;}
-        camera=firstPerson?eyeCamera:overviewCamera;avatar.visible=!firstPerson;
-        firstPersonCeilings.visible=firstPerson;
-        houseExterior.roof.visible=firstPerson;
-        viewButton.textContent=firstPerson?'Visao externa (V)':'Primeira pessoa (V)';
-        viewButton.setAttribute('aria-pressed',String(firstPerson));
-        cameraUpdate();
+        camera=mode==='overview'?overviewCamera:eyeCamera;avatar.visible=!firstPerson;
+        firstPersonCeilings.visible=mode!=='overview';houseExterior.roof.visible=mode!=='overview';
+        viewSelect.value=mode;
+        viewButton.textContent=({overview:'Visao geral',first:'Primeira pessoa',third:'Terceira pessoa'})[mode]+' (V)';
+        viewButton.setAttribute('aria-label','Alternar modo de camera');
+        viewButton.setAttribute('aria-pressed',String(mode!=='overview'));
+        lastWallViewMode=null;cameraUpdate();
       }
-      viewButton.onclick=()=>toggleFirstPerson();
+      function toggleFirstPerson(force){
+        if(typeof force==='boolean'){setViewMode(force?'first':'overview');return;}
+        const modes=['overview','first','third'];setViewMode(modes[(modes.indexOf(viewMode)+1)%modes.length]);
+      }
+      viewButton.textContent='Visao geral (V)';viewButton.onclick=()=>toggleFirstPerson();viewSelect.onchange=()=>setViewMode(viewSelect.value);
       function point(e) { const r = renderer.domElement.getBoundingClientRect(); pointer.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(pointer, camera) } function target(e) {
         point(e);
         // In construction mode frames remain selectable through furniture and other props.
@@ -3072,13 +3288,12 @@
           o.g.updateWorldMatrix(true,true);
           return false;
         }
+        if(changed)roomColliders=null;
         return changed;
       }
-      let roomColliders = null, colliderLayout = '',lastColliderCheck=-Infinity;
+      let roomColliders = null, colliderLayout = '';
       function refreshRoomColliders() {
-        const checkTime=performance.now();
-        if(roomColliders&&!edit&&checkTime-lastColliderCheck<200)return;
-        lastColliderCheck=checkTime;
+        if(roomColliders&&!edit)return;
         const layout = objects.map(o => [o.g.position.x, o.g.position.y, o.g.position.z, o.g.rotation.y, o.g.scale.x, o.g.scale.y, o.g.scale.z].join(',')).join(';');
         if (roomColliders && layout === colliderLayout) return;
         colliderLayout = layout;
@@ -3276,10 +3491,10 @@
         const line = document.createElement('p');line.className=who==='Voce'?'npcMessageUser':'npcMessageReply'; const author = document.createElement('strong');
         author.textContent = who + ': '; line.append(author, document.createTextNode(text)); log.append(line);while(log.children.length>80)log.firstChild.remove(); log.scrollTop = log.scrollHeight;
       }
-      function npcSay(npc, text) {
+      function npcSay(npc, text, casual=false) {
         if(typeof text!=='string'||!text.trim())text='Pode me contar melhor o que voce precisa?';
         text=naturalNpcText(text);
-        if(!/\bchefe\b/i.test(text)) {
+        if(!casual&&npc.name!=='Luiza'&&!/\bchefe\b/i.test(text)) {
           if(/^(oi|ola|olá|opa|e ai|e aí)[!,.]?/i.test(text)) {
             text=text.replace(/^(oi|ola|olá|opa|e ai|e aí)[!,.]?/i, '$1, chefe!');
           } else text='Chefe, '+text.charAt(0).toLocaleLowerCase('pt-BR')+text.slice(1);
@@ -3289,6 +3504,31 @@
         addChatLine(npc.name, text);
         bubble.remaining=Math.max(9,Math.min(35,text.length/13));
         npcVoices.speak(text,npcs.indexOf(npc),true);
+      }
+      const xandyLuizaFlirts=[
+        ['Luiza, voce deixou esse deploy bem mais interessante.','Foi o deploy ou foi a companhia, Xandy?'],
+        ['Quando voce passa por aqui, ate os testes ficam mais bonitos.','Entao capricha no codigo que eu passo mais vezes.'],
+        ['Aceita um cafe comigo quando terminar a ronda?','Aceito. Mas dessa vez voce escolhe a playlist.'],
+        ['Eu ia pedir ajuda com a rede, mas acho que so queria te ver.','Podia ter falado logo. Eu tambem gosto de passar aqui.'],
+        ['Seu sorriso devia vir junto com as atualizacoes do sistema.','E o seu devia aparecer mais quando eu chego.'],
+        ['Se eu terminar isso agora, ganho sua companhia na pausa?','Ganha. Vou cobrar essa pausa, hein.']
+      ];
+      let nextXandyFlirt=performance.now()+35000+Math.random()*30000,flirtReply=null,flirtIndex=0;
+      function updateXandyLuizaFlirts(time){
+        const xandy=npcs.find(n=>n.name==='Xandy'),luiza=npcs.find(n=>n.name==='Luiza');
+        if(!xandy||!luiza)return;
+        const available=!edit&&!talkingNpc&&!xandy.callRemaining&&!luiza.callRemaining;
+        const nearby=xandy.root.position.distanceTo(luiza.root.position)<3;
+        if(flirtReply){
+          if(!available||!nearby){flirtReply=null;return;}
+          if(time>=flirtReply.at){npcSay(luiza,flirtReply.text,true);flirtReply=null;}
+          return;
+        }
+        if(time<nextXandyFlirt||!available||!nearby||luiza.path.length)return;
+        const lines=xandyLuizaFlirts[flirtIndex++%xandyLuizaFlirts.length];
+        npcSay(xandy,lines[0],true);luiza.wait=Math.max(luiza.wait,8);
+        flirtReply={at:time+3200,text:lines[1]};
+        nextXandyFlirt=time+90000+Math.random()*90000;
       }
       const spouseActions=document.createElement('div');spouseActions.className='spouseActions';spouseActions.hidden=true;
       spouseActions.innerHTML='<button type="button" data-spouse="call">Chamar / levantar</button><button type="button" data-spouse="kiss">Dar um beijo</button>';
@@ -3631,6 +3871,8 @@
           npc.head.rotation.y = Math.sin(t * .00065 + npc.taskIndex) * .1;
         }
       }
+      const {createPowerOutlets}=await import('./power-outlets.mjs');
+      const powerOutlets=createPowerOutlets({THREE,box,M,byId,roomWalls});
       // Iluminacao de galeria presa ao quadro, inclusive durante a edicao.
       scene.updateMatrixWorld(true);
       const pictureLampMetal=M('#a99468',.72,.3);
@@ -3943,8 +4185,15 @@
             let plate = switchHit.object;
             while (plate && !plate.userData.circuit) plate = plate.parent;
             const id = plate.userData.circuit;
-            sendWorldAction({type:'light',id,on:!lampCircuits[id].on});
-            keys.clear(); save(); return;
+            const on=!lampCircuits[id].on;
+            setLampCircuit(id,on);
+            if(sharedRoom?.isOnline()){
+              sharedRoom.sendWorldAction({type:'light',id,on}).catch(error=>{
+                setLampCircuit(id,!on);
+                document.getElementById('status').textContent=error.message;
+              });
+            }else save();
+            keys.clear(); return;
           }
         }
         const hitScreen=ray.intersectObjects([...playableScreens.keys()],false)[0];
@@ -3985,6 +4234,7 @@
           }
           return;
         }
+        if(o.id==='mesaSinuca'){walkTarget=null;walkPath=[];keys.clear();stopInteraction();openBilliards(objectHit?.point);return;}
         if(writableBoards[o.id]){openBoardEditor(o.id);return;}
         if(isDecorativeFrame(o))return;
         walkTarget = null;
@@ -4023,17 +4273,17 @@
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => canvas.addEventListener(type, e => {
         touches.delete(e.pointerId); pinchDistance = 0; touchCenter=null;
       }));
-      renderer.domElement.addEventListener('pointerdown', e => { if(touches.size>1)return; if(e.button===1||e.button===2||e.shiftKey){e.preventDefault();panDrag=true;tapMoved=true;tapOrigin=null;oldX=e.clientX;oldY=e.clientY;canvas.setPointerCapture(e.pointerId);return;} if(e.button!==0)return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.getWorldPosition(new THREE.Vector3())).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if(touches.size>1)return; if(panDrag){panCamera(e.clientX-oldX,e.clientY-oldY);oldX=e.clientX;oldY=e.clientY;return;} if(!tapOrigin)return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (isDecorativeFrame(selected)) { dragFrameOnWall(selected); return; } if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { if(firstPerson) {
+      renderer.domElement.addEventListener('pointerdown', e => { if(touches.size>1)return; if(e.button===1||e.button===2||e.shiftKey){e.preventDefault();panDrag=true;tapMoved=true;tapOrigin=null;oldX=e.clientX;oldY=e.clientY;canvas.setPointerCapture(e.pointerId);return;} if(e.button!==0)return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.getWorldPosition(new THREE.Vector3())).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if(touches.size>1)return; if(panDrag){panCamera(e.clientX-oldX,e.clientY-oldY);oldX=e.clientX;oldY=e.clientY;return;} if(!tapOrigin)return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (isDecorativeFrame(selected)) { dragFrameOnWall(selected); return; } if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { if(viewMode==='third'){followOrbit-=(e.clientX-oldX)*.006;followPitch=THREE.MathUtils.clamp(followPitch+(e.clientY-oldY)*.004,.08,.9);oldX=e.clientX;oldY=e.clientY;cameraUpdate();return;} if(firstPerson) {
           eyeYaw-=(e.clientX-oldX)*.004;eyePitch=THREE.MathUtils.clamp(eyePitch-(e.clientY-oldY)*.004,-1.35,1.35);
           oldX=e.clientX;oldY=e.clientY;cameraUpdate();return;
-        } yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY; cameraUpdate() } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; panDrag=false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release); renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); if(firstPerson)return; zoom=THREE.MathUtils.clamp(zoom*Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0015),.5,4) }, { passive: false });
+        } yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY; cameraUpdate() } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; panDrag=false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release);         renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); if(viewMode==='third'){followDistance=THREE.MathUtils.clamp(followDistance+e.deltaY*.003,1.3,5);return;} if(firstPerson)return; zoom=THREE.MathUtils.clamp(zoom*Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0015),.5,4) }, { passive: false });
       canvas.addEventListener('contextmenu',e=>e.preventDefault());
       // O clique nativo do mouse ocorre depois do pointerup e da liberação da captura.
       canvas.addEventListener('click', e => {
         if (e.button!==0 || e.pointerType === 'touch' || e.pointerType === 'pen' || edit || tapMoved) return;
         activateAt(e);
       });
-      document.getElementById('edit').onclick = () => { edit = !edit; if(edit && firstPerson)toggleFirstPerson(false); walkTarget = null; if (edit) stopInteraction(); release(); keys.clear(); document.getElementById('edit').textContent = edit ? '✓ Concluir organização' : 'Ativar modo construção'; document.getElementById('edit').classList.toggle('active', edit); document.getElementById('status').textContent = edit ? 'Modo construção ativo • alterações salvas automaticamente' : 'Explore o escritório.'; if (!edit) select(null) };
+      document.getElementById('edit').onclick = () => { edit = !edit; roomColliders=null; if(edit && viewMode!=='overview')toggleFirstPerson(false); walkTarget = null; if (edit) stopInteraction(); release(); keys.clear(); document.getElementById('edit').textContent = edit ? '✓ Concluir organização' : 'Ativar modo construção'; document.getElementById('edit').classList.toggle('active', edit); document.getElementById('status').textContent = edit ? 'Modo construção ativo • alterações salvas automaticamente' : 'Explore o escritório.'; if (!edit) select(null) };
       function syncRotationInputs() {
         const angle = selected ? ((selected.g.rotation.y * 180 / Math.PI) % 360 + 360) % 360 : 0;
         for (const id of ['rotationAngle', 'rotationNumber']) {
@@ -4051,6 +4301,7 @@
       }
 
       const requestedOrganization = {
+        mesaSinuca: [7, 0, 7.2, 0],
         arCondicionado: [4.30,2.95,1.85,-Math.PI/2],
         geladeiraEnergeticos: [3.95,0,2.98,-Math.PI/2],
         bancadaTI: [5.2, 0, -2.85, 0],
@@ -4099,7 +4350,7 @@
         object.g.position.set(...position.slice(0, 3));
         object.g.rotation.y = position[3];
       }
-      const layoutVersion = 4;
+      const layoutVersion = 5;
       const storage = 'codejohn.homelab.layout.v13.collisions', previousStorages = ['codejohn.homelab.layout.v12.collisions', 'codejohn.homelab.layout.v11.collisions', 'codejohn.homelab.layout.v10.collisions', 'codejohn.homelab.layout.v9.collisions', 'codejohn.homelab.layout.v8.collisions', 'codejohn.homelab.layout.v7.collisions', 'codejohn.homelab.layout.v6.collisions', 'codejohn.homelab.layout.v5.collisions', 'codejohn.homelab.layout.v4.collisions', 'codejohn.homelab.layout.v3.collisions'];
       const wallMaterials = { back: backWall.material, left: leftWall.material, front: frontWall.material, right: rightWall.material };
       const wallSide = document.getElementById('wallSide'), wallColor = document.getElementById('wallColor');
@@ -4434,12 +4685,12 @@
         b.addEventListener('pointerdown', e => { e.preventDefault(); if (!interactionPose) keys.add(k); b.setPointerCapture(e.pointerId) });
         ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => b.addEventListener(type, () => keys.delete(k)));
       });
-      function show(o) { if(o.id==='bibliotecaNova'||o.id==='mesaLeitura'){keys.clear();walkTarget=null;bookLibrary.open();return;} if(o.kind==='rug')return; if(writableBoards[o.id]){openBoardEditor(o.id);return;} if(isDecorativeFrame(o))return; if(o.id==='geladeiraEnergeticos'){toggleEnergyFridge();return;} if(o.id==='banquetaTI'){openAdminConsole();return;} document.getElementById('dt').textContent = o.label; document.getElementById('dd').textContent = o.desc; document.getElementById('dialog').style.display = 'flex'; keys.clear() }
+      function show(o) { if(o.id==='vasoBanheiroNovo'){useToilet();return;} if(o.id==='bibliotecaNova'||o.id==='mesaLeitura'){keys.clear();walkTarget=null;bookLibrary.open();return;} if(o.id==='mesaSinuca'){keys.clear();walkTarget=null;openBilliards();return;} if(o.kind==='rug')return; if(writableBoards[o.id]){openBoardEditor(o.id);return;} if(isDecorativeFrame(o))return; if(o.id==='geladeiraEnergeticos'){toggleEnergyFridge();return;} if(o.id==='banquetaTI'){openAdminConsole();return;} document.getElementById('dt').textContent = o.label; document.getElementById('dd').textContent = o.desc; document.getElementById('dialog').style.display = 'flex'; keys.clear() }
       document.getElementById('close').onclick = () => document.getElementById('dialog').style.display = 'none';
       document.getElementById('dialog').onclick = e => { if (e.target.id === 'dialog') e.currentTarget.style.display = 'none' };
       renderer.shadowMap.autoUpdate=false;
       let lastShadowUpdate=-Infinity;
-      let prev = performance.now(), walk = 0, lastMobileFrame = 0;
+      let prev = performance.now(), walk = 0, lastFrameTime = 0;
       // Sombras de contato leves: acabamento no piso sem um mapa de sombras extra.
       let updateMobileContactShadows=()=>{};
       if(isMobile){
@@ -4488,7 +4739,7 @@
         const focus=firstPerson?avatar.position:cameraGoal;
         const position=new THREE.Vector3();
         for(const [type,pool] of Object.entries(localLightPools)) {
-          const limit=type==='spot'?(isMobile?4:8):(isMobile?2:4);
+          const limit=type==='spot'?(isMobile?8:pool.length):(isMobile?2:4);
           const ranked=pool.map(light=>{
             light.getWorldPosition(position);
             return {light,score:light.intensity/(1+position.distanceToSquared(focus))};
@@ -4498,10 +4749,12 @@
       }
       function loop(t) {
         requestAnimationFrame(loop);
-        if (document.hidden || (isMobile && t - lastMobileFrame < 1000 / 30)) return;
-        if (isMobile) lastMobileFrame = t;
+        sceneReady=true;
+        if (document.hidden || t - lastFrameTime < (isMobile ? 1000 / 30 : 1000 / 60)) return;
+        lastFrameTime = t;
         const dt = Math.min((t - prev) / 1000, .05);
         houseExterior.updateTraffic(dt);
+        powerOutlets.update(t);
         const cameraBlend=1-Math.exp(-16*dt);
         if(Math.abs(viewYaw-yaw)+Math.abs(viewPitch-pitch)+Math.abs(viewZoom-zoom)+cameraCenter.distanceTo(cameraGoal)>.00001) {
           viewYaw=THREE.MathUtils.lerp(viewYaw,yaw,cameraBlend);viewPitch=THREE.MathUtils.lerp(viewPitch,pitch,cameraBlend);viewZoom=THREE.MathUtils.lerp(viewZoom,zoom,cameraBlend);cameraCenter.lerp(cameraGoal,cameraBlend);cameraUpdate();
@@ -4518,7 +4771,12 @@
             dx=localX*Math.cos(eyeYaw)+localZ*Math.sin(eyeYaw);
             dz=-localX*Math.sin(eyeYaw)+localZ*Math.cos(eyeYaw);
           }
-          if (dx || dz) { walkTarget = null; walkPath = []; }
+          if(viewMode==='third'&&(dx||dz)){
+            const forward=eyeCamera.getWorldDirection(new THREE.Vector3());forward.y=0;forward.normalize();
+            const right=forward.clone().cross(new THREE.Vector3(0,1,0));
+            const movement=right.multiplyScalar(dx).addScaledVector(forward,-dz);dx=movement.x;dz=movement.z;
+          }
+          if (dx || dz) { pendingToilet=false;walkTarget = null; walkPath = []; }
           let step = dt * 2.3;
           if (walkTarget) {
             dx = walkTarget.x - avatar.position.x;
@@ -4565,8 +4823,15 @@
           const outsideDistance=Math.min(distanceToRect(-4.42,12.42,-3.42,10.42),distanceToRect(-4.42,4.42,-8.42,-3.42));
           avatar.position.y=-.3*THREE.MathUtils.smoothstep(outsideDistance,0,.8);
         }
+        if(pendingToilet){
+          const approach=byId.vasoBanheiroNovo.g.localToWorld(new THREE.Vector3(0,0,1.1));
+          if(Math.hypot(avatar.position.x-approach.x,avatar.position.z-approach.z)<.55)sitOnToilet();
+          else if(!walkTarget&&!walkPath.length)pendingToilet=false;
+        }
         if (interactionPose) {
           interactionTime += dt;
+          if(interactionPose==='toilet'&&interactionTime>=8){stopInteraction();}
+
           if (interactionPose === 'typing') {
             poseNpcTyping({root:avatar,arms,forearms:elbows,upperLength:.28,lowerLength:.265},{userData:{keyboard:activeTypingKeyboard || byId.teclado.g}},t);
           } else if (interactionPose === 'mouse') {
@@ -4591,6 +4856,7 @@
         animatedPcFans.forEach((fan, i) => { fan.rotation.z += dt * (i % 2 ? 5.2 : -5.2) });
         refreshRoomColliders();
         updateNpcs(dt, t);
+        updateXandyLuizaFlirts(t);
         updateSpouseInteraction(t);
         npcVoices.updateProximity();
         paintScreens();
@@ -4603,7 +4869,7 @@
         interactionAudio.updateTyping(typingSources);
         for(const cup of interactiveCups){const remaining=cup.userData.sipUntil-t;const motion=remaining>0?Math.sin((1-remaining/900)*Math.PI):0;cup.rotation.z=motion*.28;cup.position.y=cup.userData.restY+motion*.12;}
         updateEnergyDrink(dt);
-        bathroom.door.rotation.y=THREE.MathUtils.damp(bathroom.door.rotation.y,bathroomDoorOpen?Math.PI/2:0,8,dt);
+        bathroom.door.rotation.y=THREE.MathUtils.damp(bathroom.door.rotation.y,bathroomDoorOpen?-Math.PI/2:0,8,dt);
         entranceDoor.rotation.y=THREE.MathUtils.damp(entranceDoor.rotation.y,entranceOpen?-Math.PI/2:0,8,dt);
         restrictedDoor.rotation.y=THREE.MathUtils.damp(restrictedDoor.rotation.y,restrictedDoorOpen?-.12:-Math.PI/2,7,dt);
         updateSpeakerAnimation(t,dt);
@@ -4618,24 +4884,62 @@
           const failed=serverIncident.down&&mesh.parent===byId[serverIncident.rackId]?.g;
           mesh.material.color.setHex(failed?(Math.sin(t*.012)>0?0xff2448:0x4d1020):(Math.sin(t*.009+phase)>.15?0x65f5a9:0x163b2d));
         });
-        if(firstPerson)cameraUpdate();
+        if(viewMode!=='overview')cameraUpdate();
         updateActiveRoomWalls();
         updateMobileContactShadows(t);
         updateMobileQuality(t);
         updateLightBudget(t);
         updateGuests(dt,t);
+        updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
         renderer.render(scene, camera);
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=door-auth-3');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=billiards-online-1');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
       let sharedVideoMonitor=null;
       const guests = new Map();
       let ownBubble=null,ownBubbleUntil=0;
+      const reactionSounds=Object.fromEntries(Object.entries(characterReactions).map(([type,reaction])=>{
+        const audio=new Audio(new URL(reaction.audio,import.meta.url));
+        audio.preload='auto';audio.volume=.85;
+        return [type,audio];
+      }));
+      function clearCharacterReaction(character) {
+        const sprite=character.userData.reactionSprite;
+        if(!sprite)return;
+        sprite.material.map.dispose();sprite.material.dispose();sprite.removeFromParent();
+        character.userData.reactionSprite=null;
+      }
+      function showCharacterReaction(character,type,playSound=true) {
+        const reaction=characterReactions[type];
+        if(!reaction)return;
+        clearCharacterReaction(character);
+        const canvas=document.createElement('canvas');canvas.width=160;canvas.height=144;
+        const ctx=canvas.getContext('2d');ctx.font='112px "Segoe UI Emoji", sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(reaction.emoji,80,74);
+        const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+        const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false}));
+        sprite.position.set(0,2.38,0);sprite.scale.set(.82,.82,1);sprite.renderOrder=101;
+        character.add(sprite);character.userData.reactionSprite=sprite;character.userData.reactionType=type;character.userData.reactionUntil=performance.now()+3200;
+        if(!playSound)return;
+        const audio=reactionSounds[type];
+        audio.currentTime=0;
+        audio.play().catch(error=>{
+          if(error.name==='NotAllowedError')sharedRoom?.notify('Clique em um botão de reação para ativar o áudio.');
+          else{console.error('Não foi possível reproduzir o áudio da reação.',error);sharedRoom?.notify('Não foi possível reproduzir o áudio da reação.');}
+        });
+      }
+      function updateCharacterReaction(character,time) {
+        const sprite=character.userData.reactionSprite;
+        if(!sprite)return;
+        const remaining=character.userData.reactionUntil-time;
+        if(remaining<=0){clearCharacterReaction(character);return;}
+        sprite.material.opacity=Math.min(1,remaining/450);
+      }
       const networkJoints=[...legs,...knees,...arms,...elbows];
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       function nameTag(text,bubble=false,sender='') {
@@ -4661,8 +4965,10 @@
       }
       function disposeTag(tag){tag.material.map.dispose();tag.material.dispose();tag.removeFromParent();}
       function updateGuests(dt,t) {
+        updateCharacterReaction(avatar,t);
         if(ownBubble){ownBubble.position.copy(avatar.position);ownBubble.position.y+=ownBubble.userData.height;ownBubble.material.opacity=Math.min(1,Math.max(0,(ownBubbleUntil-t)/500));if(t>ownBubbleUntil){disposeTag(ownBubble);ownBubble=null;}}
         for(const guest of guests.values()){
+          updateCharacterReaction(guest,t);
           const p=guest.userData.networkPose;if(!p)continue;
           const blend=1-Math.exp(-18*dt);guest.position.lerp(new THREE.Vector3(p.x,p.y,p.z),blend);
           guest.rotation.y+=Math.atan2(Math.sin(p.r-guest.rotation.y),Math.cos(p.r-guest.rotation.y))*blend;
@@ -4672,19 +4978,32 @@
         }
       }
       sharedRoom=createSharedRoom({
-        onWorld:applyRoomWorld,
+        onWorld:world=>{applyRoomWorld(world);updateBilliardsState(world?.billiards);},
+        onReaction:type=>showCharacterReaction(avatar,type),
+        onAvatar: appearance=>applyAvatarAppearance(avatar,appearance,THREE),
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
         getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z])}),
         onMembers: members => {
-          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);scene.remove(guest);guests.delete(id);}
+          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
             let guest=guests.get(member.id);
-            if(!guest){guest=avatar.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
+            if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
             if(guest.userData.displayName!==member.name){disposeTag(guest.userData.tag);guest.userData.tag=nameTag(member.name);guest.add(guest.userData.tag);guest.userData.displayName=member.name;}
+            if(member.avatar)applyAvatarAppearance(guest,member.avatar,THREE);
             guest.userData.networkPose=member.pose;
           }
         },
         onMessage: message=>{
+          const reaction=reactionFromMessage(message.text);
+          if(reaction){
+            if(message.self){
+              if(avatar.userData.reactionType!==reaction||avatar.userData.reactionUntil<=performance.now())showCharacterReaction(avatar,reaction);
+            }else{
+              const guest=guests.get(message.sender);
+              if(guest)showCharacterReaction(guest,reaction);
+            }
+            return;
+          }
           const duration=Math.min(14000,Math.max(5000,message.text.length*65));
           if(message.self){
             if(ownBubble)disposeTag(ownBubble);
@@ -4696,6 +5015,16 @@
           if(message.text==='👋')guest.userData.waveUntil=performance.now()+2500;
         },
         onVideo: (video,screen) => {
+          if(!video){
+            if(sharedVideoMonitor){
+              const previous=sharedVideoMonitor;
+              previous.htmlScreen?.removeFromParent();previous.htmlScreen=null;
+              if(previous.localVideo)previous.video=previous.localVideo;
+              previous.url=null;previous.contentKind='default';previous.mesh.material=previous.defaultMaterial;
+              sharedVideoMonitor=null;
+            }
+            return;
+          }
           const monitor=networkScreens.find(m=>m.networkScreen===screen);
           if(!monitor){screenViewMessage.textContent='A tela compartilhada não existe nesta versão do ambiente. Atualize a página.';return;}
           if(sharedVideoMonitor&&sharedVideoMonitor!==monitor){
@@ -4703,11 +5032,11 @@
             previous.htmlScreen?.removeFromParent();previous.htmlScreen=null;
             previous.video=previous.localVideo;previous.url=null;previous.contentKind='default';previous.mesh.material=previous.defaultMaterial;
           }
-          monitor.video.pause();
+          if(monitor.video!==video)monitor.video.pause();
           if(!monitor.localVideo)monitor.localVideo=monitor.video;
           monitor.htmlScreen?.removeFromParent();monitor.htmlScreen=null;
-          monitor.video=video;monitor.url=video.src;monitor.contentKind='video';monitor.localExpanded=false;sharedVideoMonitor=monitor;
-          video.loop=false;video.playsInline=true;video.controls=true;
+          monitor.video=video;monitor.url=video.src||'webrtc:live';monitor.contentKind='video';monitor.localExpanded=false;sharedVideoMonitor=monitor;
+          video.loop=false;video.playsInline=true;video.controls=video.dataset.peerRole!=='guest';
           const texture=new THREE.VideoTexture(video);texture.colorSpace=THREE.SRGBColorSpace;
           if(monitor.sharedTexture)monitor.sharedTexture.dispose();
           if(monitor.sharedMaterial)monitor.sharedMaterial.dispose();

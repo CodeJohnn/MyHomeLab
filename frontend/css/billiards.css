@@ -1,0 +1,18 @@
+.billiardsDialog{width:min(440px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);padding:0;border:1px solid #ffffff24;border-radius:20px;background:#101b23;color:#e8eef2;box-shadow:0 24px 80px #0009;font:14px/1.5 Arial,sans-serif}
+.billiardsDialog::backdrop{background:#071019b8;backdrop-filter:blur(4px)}
+.billiardsPanel{position:relative;display:grid;gap:14px;padding:26px}
+.billiardsClose{position:absolute;top:14px;right:14px;width:36px;height:36px;border:1px solid #ffffff20;border-radius:50%;background:#ffffff08;color:#dce7eb;font-size:23px;cursor:pointer}
+.billiardsEyebrow{color:#7ed9b3;font-size:10px;font-weight:700;letter-spacing:.18em}
+.billiardsPanel h2{margin:-8px 0 0;font-size:27px;letter-spacing:-.03em}
+.billiardsPanel p{min-height:22px;margin:0;color:#a8bdc8}
+.billiardsPlayers{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.billiardsPlayers span{padding:10px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff05;color:#c5d6de;font-size:12px}
+.billiardsControl{display:grid;grid-template-columns:1fr auto;gap:5px 12px;color:#cbd9df;font-size:12px}
+.billiardsControl output{color:#86dcb9;font-variant-numeric:tabular-nums}
+.billiardsControl input{grid-column:1/-1;width:100%;accent-color:#70d2ad}
+.billiardsActions{display:flex;flex-wrap:wrap;gap:8px}
+.billiardsActions button{min-height:42px;padding:10px 14px;border:1px solid #ffffff20;border-radius:9px;background:#ffffff08;color:#dce9ed;font:600 12px Arial,sans-serif;cursor:pointer}
+.billiardsActions button[data-billiards-shot]{border-color:transparent;background:#76d5b3;color:#0b241c}
+.billiardsActions button:disabled{opacity:.45;cursor:default}
+.billiardsPanel small{color:#829aa6;font-size:11px}
+@media(max-width:600px){.billiardsPanel{gap:12px;padding:22px}.billiardsDialog{border-radius:16px}}

@@ -43,3 +43,7 @@ npm start entrega o site e a API juntos por padr?o. Com API_BASE_URL vazio, o fr
 ## Senha da porta dos servidores
 
 No Render, configure SERVER_ROOM_PASSWORD em Environment e publique novamente o backend. A senha e validada no servidor e nao deve ser colocada em config.mjs nem no repositorio. Sem essa variavel, a abertura online fica bloqueada. No modo local, o primeiro acesso permite definir uma senha, cujo hash fica salvo neste navegador. Esta e uma trava da porta do cenario, nao um sistema de autenticacao das APIs ou de todos os movimentos dos jogadores.
+
+## Filmes por transmissao direta
+
+Para a versao WebRTC, publique tambem o backend com Manual Deploy. Veja [WATCH-PARTY.md](WATCH-PARTY.md). WEBRTC_ICE_SERVERS e opcional para configurar um servidor TURN; sem ele, algumas redes nao conseguem conectar.

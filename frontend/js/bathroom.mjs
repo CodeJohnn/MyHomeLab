@@ -5,13 +5,15 @@ export function createBathroom({THREE,Reflector,scene,item,box,cyl,sphere,M,part
   partition(walls,9,3.3,.14,0,1.65,-8.5,tile);
   for(const x of [-4.5,4.5])partition(walls,.14,3.3,5,x,1.65,-6,tile);
   // Entrada lateral ao setup, sem mover a mesa do laboratorio.
-  const shape=new THREE.Shape();shape.moveTo(-4.5,-wallHeight/2);shape.lineTo(4.5,-wallHeight/2);shape.lineTo(4.5,wallHeight/2);shape.lineTo(-4.5,wallHeight/2);shape.closePath();
-  const hole=new THREE.Path();hole.moveTo(2.6,-wallHeight/2);hole.lineTo(2.6,2.7-wallHeight/2);hole.lineTo(4,2.7-wallHeight/2);hole.lineTo(4,-wallHeight/2);hole.closePath();shape.holes.push(hole);
+  // Porta e um recorte aberto no contorno, nao um furo encostado na borda.
+  const bottom=-wallHeight/2,top=wallHeight/2,lintel=2.7-wallHeight/2;
+  const shape=new THREE.Shape();shape.moveTo(-4.5,bottom);shape.lineTo(2.6,bottom);shape.lineTo(2.6,lintel);shape.lineTo(4,lintel);shape.lineTo(4,bottom);shape.lineTo(4.5,bottom);shape.lineTo(4.5,top);shape.lineTo(-4.5,top);shape.closePath();
   const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.translate(0,0,-.07);backWall.geometry.dispose();backWall.geometry=geometry;
-  const door=new THREE.Group();door.position.set(4,0,-3.5);scene.add(door);
-  const leaf=box(door,1.34,2.6,.065,wood,-.67,1.32,0,.018);
-  sphere(door,.045,chrome,-1.17,1.15,.065);sphere(door,.045,chrome,-1.17,1.15,-.065);
-  for(const x of [2.56,4.04])box(walls,.08,2.76,.17,wood,x,1.38,-3.5);box(walls,1.56,.08,.17,wood,3.3,2.76,-3.5);
+  const door=new THREE.Group();door.position.set(4,0,-3.5);door.userData.wallAttachment=true;backWall.parent.add(door);
+  const leaf=box(door,1.4,2.7,.065,wood,-.7,1.35,0);
+  sphere(door,.045,chrome,-1.2,1.15,.065);sphere(door,.045,chrome,-1.2,1.15,-.065);
+  const doorFrame=new THREE.Group();doorFrame.position.set(3.3,0,-3.5);doorFrame.userData.wallAttachment=true;backWall.parent.add(doorFrame);
+  for(const x of [-.74,.74])box(doorFrame,.08,2.76,.17,wood,x,1.38,0);box(doorFrame,1.56,.08,.17,wood,0,2.76,0);
   const vanity=item('piaBanheiroNovo','Pia e bancada do banheiro','floor',-2.5,0,-7.95,'Bancada com pia, torneira, armarios e espelho.');
   box(vanity,2.8,.82,.7,wood,0,.44,0,.03);box(vanity,2.9,.08,.8,white,0,.9,0,.025);
   for(const x of [-.9,0,.9]){box(vanity,.84,.65,.025,tile,x,.45,.365,.01);box(vanity,.24,.025,.03,chrome,x,.69,.39);}
