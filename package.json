@@ -3,19 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs",
-    "prestart": "npm run build",
     "start": "node backend/server.mjs",
     "test": "node --test"
   },
   "engines": {
     "node": ">=22"
-  },
-  "dependencies": {
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
-  },
-  "devDependencies": {
-    "esbuild": "^0.28.2"
   }
 }

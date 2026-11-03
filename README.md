@@ -1,20 +1,20 @@
 ﻿# Home Lab — sala compartilhada
 
-Requer Node.js 22 ou superior e npm. Os menus React em `frontend/js/*.react` são compilados com esbuild ao iniciar e ao publicar.
+Requer Node.js 22 ou superior. Sem dependências externas.
 
 Estrutura: `index.html` é a entrada na raiz; `frontend/` contém scripts, estilos, assets e `ambiente.json`; `api/rooms.mjs` implementa as rotas de salas e sincronização; `backend/` contém o servidor HTTP e a lógica do mundo; `tests/` reúne os testes automatizados. Para publicar alterações do editor, substitua `frontend/ambiente.json` pelo arquivo exportado.
 
 Para hospedar sem depender do seu computador, consulte [Hospedar no Render gratuito](RENDER.md). O projeto inclui `render.yaml` para criar o serviço no plano Free e instruções para suspendê-lo e retomá-lo pelo painel.
 
 ```powershell
-npm start
+node backend/server.mjs
 ```
 
 Abra http://localhost:3000. O painel **Mundo online** conecta automaticamente ao ambiente comum, com até 12 pessoas. Quem abrir o mesmo servidor entra nesse ambiente, com posições iniciais diferentes, nomes sobre os personagens, movimentos e poses sincronizados. Use WASD ou as setas para andar; as interações locais de sentar e digitar também são visíveis aos outros. O chat permite conversar, acenar e enviar corações, com mensagens sobre o personagem. As falhas dos servidores, seus reparos, as portas da sala restrita e da entrada e os interruptores são compartilhados em tempo real. O backend decide quando ocorre uma falha; todos recebem o mesmo incidente e desafio, inclusive ao entrar ou reconectar. NPCs, geladeira e alterações do editor ainda têm simulações locais.
 
 A mesa de sinuca fica perto da estação do Alex. Clique nela para entrar em um dos dois lugares; mire clicando no pano e ajuste a força antes de tacar. As bolas, faltas, grupos, turnos e o resultado da partida são calculados e sincronizados pelo servidor para todos na sala.
 
-O botão **Copiar convite** aponta para a sala atual. URLs antigas de salas privadas continuam aceitando duas pessoas. Após atualizar o código, reinicie `npm start` e recarregue os navegadores com Ctrl+F5. A sessão é recuperada após atualizar a página; **Sair da sala** libera a vaga imediatamente.
+O botão **Copiar convite** aponta para a sala atual. URLs antigas de salas privadas continuam aceitando duas pessoas. Após atualizar o código, reinicie `node backend/server.mjs` e recarregue os navegadores com Ctrl+F5. A sessão é recuperada após atualizar a página; **Sair da sala** libera a vaga imediatamente.
 
 Os participantes podem escolher um filme local em qualquer monitor ou pelo painel da sala. O arquivo e transmitido diretamente por WebRTC; o Render faz a sinalizacao. Quem transmite controla a reproducao e precisa manter a pagina aberta. Veja [Assistir com um amigo](WATCH-PARTY.md) para publicar, usar e configurar TURN quando necessario.
 
