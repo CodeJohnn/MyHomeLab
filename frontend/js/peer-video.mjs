@@ -7,7 +7,31 @@ export function createPeerVideo({video,api,getSelfId,onDisplay,onStatus,onResume
     if(!iceServers)iceServers=(await api('rtc',{})).iceServers;
     return {iceServers};
   }
-  function removePeer(id){const peer=peers.get(id);if(peer){clearTimeout(peer.timeout);peer.pc.close();peers.delete(id);}}
+  function removePeer(id){const peer=peers.get(id);if(peer){clearTimeout(peer.timeout);clearTimeout(peer.diagnosticTimeout);peer.pc.close();peers.delete(id);}}
+  function diagnoseIncomingVideo(peer){
+    clearTimeout(peer.diagnosticTimeout);
+    peer.diagnosticTimeout=setTimeout(async()=>{
+      if(peers.get(peer.id)!==peer||!peer.remoteVideoTrack)return;
+      try{
+        const stats=await peer.pc.getStats();
+        if(peers.get(peer.id)!==peer)return;
+        const report=[...stats.values()];
+        const inbound=report.find(stat=>stat.type==='inbound-rtp'&&(stat.kind==='video'||stat.mediaType==='video'));
+        const received=inbound?.framesReceived||0,decoded=inbound?.framesDecoded||0;
+        if(decoded>0){
+          onStatus(video.videoWidth>0
+            ?`O dispositivo decodificou o video (${video.videoWidth}x${video.videoHeight}), mas o monitor continua preto.`
+            :'O dispositivo decodificou quadros, mas ainda nao exibiu a imagem.');
+        }else if(received>0){
+          onStatus('O dispositivo recebeu os quadros, mas nao conseguiu decodificar o video. Tente outro arquivo MP4 H.264.');
+        }else{
+          onStatus('A conexao esta ativa, mas nenhum quadro de video chegou ao espectador. Confirme se o filme continua tocando no computador.');
+        }
+      }catch(error){
+        onStatus('Nao foi possivel verificar a decodificacao do video: '+error.message);
+      }
+    },5000);
+  }
   function clear(){
     for(const id of peers.keys())removePeer(id);
     signalJobs.clear();localStream?.getTracks().forEach(track=>track.stop());localStream=null;
@@ -22,11 +46,12 @@ export function createPeerVideo({video,api,getSelfId,onDisplay,onStatus,onResume
   async function makePeer(id){
     if(peers.has(id))return peers.get(id);
     const pc=new RTCPeerConnection(await settings());
-    const peer={pc,candidates:[],timeout:null};peers.set(id,peer);
+    const peer={id,pc,candidates:[],timeout:null,diagnosticTimeout:null,remoteVideoTrack:null};peers.set(id,peer);
     pc.onicecandidate=event=>{if(event.candidate)send(id,'candidate',event.candidate.toJSON()).catch(()=>{});};
     pc.onconnectionstatechange=()=>{
       if(pc.connectionState==='connected'){
         clearTimeout(peer.timeout);onStatus(isHost()?'Transmitindo direto para seu amigo. Mantenha esta pagina aberta.':'Recebendo o filme diretamente do anfitriao.');
+        if(!isHost()&&peer.remoteVideoTrack)diagnoseIncomingVideo(peer);
       }else if(pc.connectionState==='failed'){
         removePeer(id);onStatus('Nao foi possivel conectar estas redes. Configure um servidor TURN para permitir retransmissao.');
       }
@@ -37,9 +62,13 @@ export function createPeerVideo({video,api,getSelfId,onDisplay,onStatus,onResume
     pc.ontrack=event=>{
       if(isHost()||!media)return;
       const stream=event.streams[0];if(!stream)return;
-      if(video.srcObject===stream)return;
-      video.dataset.peerRole='guest';video.srcObject=stream;video.muted=true;video.controls=false;video.playsInline=true;
-      onDisplay(video,media.screen);video.play().then(()=>onResume()).catch(()=>onResume());
+      if(event.track.kind==='video')peer.remoteVideoTrack=event.track;
+      if(video.srcObject!==stream){
+        video.dataset.peerRole='guest';video.srcObject=stream;video.muted=true;video.controls=false;video.playsInline=true;
+        onDisplay(video,media.screen);
+        video.play().then(onResume).catch(onResume);
+      }
+      if(peer.remoteVideoTrack)diagnoseIncomingVideo(peer);
     };
     return peer;
   }

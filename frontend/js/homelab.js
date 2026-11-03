@@ -17,7 +17,7 @@
       const { createRoomAudio } = await import('./room-audio.mjs?v=8');
       const { createAdminTerminal } = await import('./admin-terminal.mjs?v=3');
       const { normalizeMonitorUrl, embeddedMonitorUrl } = await import('./monitor-urls.mjs?v=3');
-      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=1');
+      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=2');
       const { replyToNpc } = await import('./npc-dialogue.mjs?v=5');
       const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
       const { RoundedBoxGeometry } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/geometries/RoundedBoxGeometry.js');
@@ -2926,20 +2926,17 @@
         document.getElementById('status').textContent = 'Você levantou da cadeira.';
       }
       const {avatarActions,poseAvatarAction}=await import('./avatar-actions.mjs');
+      const {mountReactionMenu}=await import('./reaction-menu.bundle.js?v=reactions-1');
       const actionMenu=document.createElement('section');actionMenu.className='characterMenu';actionMenu.hidden=true;actionMenu.setAttribute('aria-label','Menu do personagem');
       const actionTitle=document.createElement('header');actionTitle.className='characterIdentity';actionTitle.innerHTML='<strong></strong><span>Nivel 1 <i>Iniciante</i></span>';actionMenu.append(actionTitle);
       const actionButtons=document.createElement('div');actionButtons.className='characterSubmenu characterActions';actionButtons.hidden=true;actionMenu.append(actionButtons);document.body.append(actionMenu);
-      const reactionSection=document.createElement('section');reactionSection.className='characterSubmenu characterReactions';reactionSection.hidden=true;
-      const reactionHeading=document.createElement('strong');reactionHeading.textContent='Reagir';reactionSection.append(reactionHeading);actionTitle.after(reactionSection);
-      for(const [kind,label] of [['laugh','Rir'],['anger','Ficar com raiva'],['wave','Acenar'],['heart','Curtir']]){
-        const button=document.createElement('button');button.type='button';button.textContent=label;reactionSection.append(button);
-        button.onclick=()=>{
-          if(kind==='laugh'||kind==='anger'){if(sharedRoom)sharedRoom.react(kind);else showCharacterReaction(avatar,kind);}
+      const reactionSection=document.createElement('section');reactionSection.className='characterSubmenu characterReactions';reactionSection.hidden=true;actionTitle.after(reactionSection);
+      mountReactionMenu(reactionSection,kind=>{
+          if(characterReactions[kind]){if(sharedRoom)sharedRoom.react(kind);else showCharacterReaction(avatar,kind);}
           else if(kind==='wave'){actionButtons.querySelector('[data-action-wave]')?.click();sharedRoom?.sendSocialReaction(kind);}
           else{emitKissHearts({root:avatar},performance.now());sharedRoom?.sendSocialReaction(kind);}
           closeAvatarMenu();
-        };
-      }
+      });
       const actionsHeading=document.createElement('strong');actionsHeading.textContent='Acoes';actionButtons.append(actionsHeading);
       const icons={
         appearance:'<path d="m8 4 4 2 4-2 5 4-3 5-2-1v9H8v-9l-2 1-3-5Z"/>',
@@ -4873,7 +4870,7 @@
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=stable-23');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=stable-24');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -4891,7 +4888,7 @@
       });
       addEventListener('pagehide',()=>characterHover.dispose(),{once:true});
       let ownBubble=null,ownBubbleUntil=0;
-      const reactionSounds=Object.fromEntries(Object.entries(characterReactions).map(([type,reaction])=>{
+      const reactionSounds=Object.fromEntries(Object.entries(characterReactions).filter(([,reaction])=>reaction.audio).map(([type,reaction])=>{
         const audio=new Audio(new URL(reaction.audio,import.meta.url));
         audio.preload='auto';audio.volume=.85;
         return [type,audio];
@@ -4902,6 +4899,7 @@
         sprite.material.map.dispose();sprite.material.dispose();sprite.removeFromParent();
         character.userData.reactionSprite=null;
       }
+      const reduceReactionMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
       function showCharacterReaction(character,type,playSound=true) {
         const reaction=characterReactions[type];
         if(!reaction)return;
@@ -4912,9 +4910,10 @@
         const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
         const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false}));
         sprite.position.set(0,2.38,0);sprite.scale.set(.82,.82,1);sprite.renderOrder=101;
-        character.add(sprite);character.userData.reactionSprite=sprite;character.userData.reactionType=type;character.userData.reactionUntil=performance.now()+3200;
+        character.add(sprite);character.userData.reactionSprite=sprite;character.userData.reactionType=type;character.userData.reactionStart=performance.now();character.userData.reactionUntil=performance.now()+3200;
         if(!playSound)return;
         const audio=reactionSounds[type];
+        if(!audio)return;
         audio.currentTime=0;
         audio.play().catch(error=>{
           if(error.name==='NotAllowedError')sharedRoom?.notify('Clique em um botão de reação para ativar o áudio.');
@@ -4926,6 +4925,25 @@
         if(!sprite)return;
         const remaining=character.userData.reactionUntil-time;
         if(remaining<=0){clearCharacterReaction(character);return;}
+        const elapsed=time-character.userData.reactionStart;
+        if(!reduceReactionMotion){
+          const enter=Math.min(1,elapsed/240),bounce=1+Math.sin(elapsed*.018)*.1;
+          sprite.position.y=2.38+Math.min(1,elapsed/500)*.12;
+          if(character.userData.reactionType==='laugh'){
+            sprite.scale.setScalar(.82*enter*bounce);
+            sprite.rotation.z=Math.sin(elapsed*.025)*.12;
+          }else if(character.userData.reactionType==='anger'){
+            sprite.scale.setScalar(.82*enter);
+            sprite.rotation.z=Math.sin(elapsed*.075)*.17;
+            sprite.position.x=Math.sin(elapsed*.09)*.045;
+          }else if(character.userData.reactionType==='surprise'){
+            const pop=elapsed<300?1+Math.sin(elapsed/300*Math.PI)*.45:1+Math.sin(elapsed*.012)*.06;
+            sprite.scale.setScalar(.82*enter*pop);
+          }else{
+            sprite.scale.setScalar(.82*enter*(1+Math.sin(elapsed*.009)*.04));
+            sprite.rotation.z=-.1;
+          }
+        }
         sprite.material.opacity=Math.min(1,remaining/450);
       }
       const networkJoints=[...legs,...knees,...arms,...elbows];

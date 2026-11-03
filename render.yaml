@@ -3,7 +3,7 @@ services:
     name: homelab-sala
     runtime: node
     plan: free
-    buildCommand: node --version
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
     autoDeployTrigger: 'off'

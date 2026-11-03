@@ -21,6 +21,8 @@ O anfitriao precisa manter a pagina aberta. MP4 H.264/AAC e WebM sao boas opcoes
 
 A qualidade e a estabilidade dependem da capacidade de codificacao do aparelho e do upload do anfitriao. Cada espectador usa uma conexao de saida adicional. Recomendamos comecar com duas pessoas. Celulares podem interromper a reproducao ao bloquear a tela ou deixar a pagina em segundo plano.
 
+Se um celular mostrar tela preta enquanto o status diz que esta recebendo diretamente, aguarde alguns segundos: o painel diferencia quadros recebidos, quadros decodificados e ausencia de quadros. Isso ajuda a separar problema de conexao, decodificacao e exibicao do monitor 3D.
+
 ## Conexao entre redes diferentes
 
 O padrao usa um servidor STUN para tentar a conexao direta. Algumas redes, CGNATs e firewalls exigem um servidor TURN. Sem TURN, a conexao pode falhar mesmo com a sala e o chat funcionando. A interface informa essa situacao; nao envia silenciosamente o filme ao Render como alternativa.

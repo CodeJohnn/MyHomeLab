@@ -50,7 +50,7 @@ test('espectador recebe video e aceita candidatos que chegam antes da oferta',as
     await new Promise(r=>setTimeout(r,0));
     assert.deepEqual(order,['remote','candidate']);
     assert.ok(calls.some(c=>c.action==='signal'&&c.data.type==='answer'));
-    const stream={};connection.ontrack({streams:[stream]});
+    const stream={};connection.ontrack({streams:[stream],track:{kind:'video'}});
     assert.equal(video.srcObject,stream);assert.equal(video.dataset.peerRole,'guest');
     assert.equal(displayed.screen,'screen-3');assert.equal(video.controls,false);
     player.update(null,[]);assert.equal(player.active,false);assert.equal(video.srcObject,null);
