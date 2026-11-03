@@ -34,7 +34,7 @@ O Free pode entrar em repouso ap?s 15 minutos sem tr?fego e demora cerca de um m
 
 npm start entrega o site e a API juntos por padr?o. Com API_BASE_URL vazio, o frontend usa a mesma origem. Para testar o backend remoto, mantenha sua URL e adicione a origem local usada no navegador a ALLOWED_ORIGINS no Render.
 
-## Refer?ncias
+## Referências
 
 - https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site
 - https://render.com/docs/free
