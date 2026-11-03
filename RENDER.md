@@ -47,3 +47,9 @@ No Render, configure SERVER_ROOM_PASSWORD em Environment e publique novamente o 
 ## Filmes por transmissao direta
 
 Para a versao WebRTC, publique tambem o backend com Manual Deploy. Veja [WATCH-PARTY.md](WATCH-PARTY.md). WEBRTC_ICE_SERVERS e opcional para configurar um servidor TURN; sem ele, algumas redes nao conseguem conectar.
+
+## Sala publica unica
+
+O frontend entra automaticamente na sala publica para ate 12 participantes. POST /api/lobby e POST /api/rooms retornam a mesma sala, sem convites. Ela nao e excluida por ficar vazia e seu identificador permanece igual apos reinicios. O estado atual (chat, objetos, partidas e sessoes) ainda fica na memoria e reinicia junto com o processo.
+
+O plano gratuito do Render pode adormecer por inatividade: sala fixa nao garante servidor 24 horas. Para disponibilidade continua, use uma instancia que nao adormeca; para preservar o estado apos reinicios, sera necessario banco de dados. Nao foi adicionado ping artificial para manter o servico acordado.

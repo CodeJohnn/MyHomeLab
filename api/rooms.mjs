@@ -3,7 +3,8 @@ import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import {createWorld,tickWorld,actOnWorld,leaveBilliards} from '../backend/room-world.mjs';
 
 const rooms = new Map();
-let lobbyKey=null;
+const lobbyKey='000000000000000000000000000000000001';
+function publicRoom(createRoomWorld){if(!rooms.has(lobbyKey))rooms.set(lobbyKey,{members:new Map(),media:null,files:new Map(),messages:[],touched:Date.now(),capacity:12,world:createRoomWorld()});return lobbyKey;}
 const id = () => randomBytes(18).toString('hex');
 const limit = 100 * 1024 * 1024;
 function reply(res, code, data) { res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
@@ -22,12 +23,13 @@ function removeMember(room,token){
   room.messages||=[];room.messages.push({id:id(),kind:'system',event:'leave',name:member.name,text:`${member.name} saiu da sala.`,time:Date.now()});room.messages=room.messages.slice(-40);
   broadcast(room);
 }
-export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverRoomPassword=''}={}) {
+export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverRoomPassword='',privateRooms=false}={}) {
       if(req.method==='POST' && url.pathname==='/api/lobby') {
-        if(!lobbyKey||!rooms.has(lobbyKey)){lobbyKey=id();rooms.set(lobbyKey,{members:new Map(),media:null,files:new Map(),messages:[],touched:Date.now(),capacity:12});}
+        publicRoom(createRoomWorld);
         return reply(res,200,{room:lobbyKey});
       }
       if(req.method==='POST' && url.pathname==='/api/rooms') {
+        if(!privateRooms)return reply(res,200,{room:publicRoom(createRoomWorld)});
         if(rooms.size>=100) return reply(res,503,{error:'Servidor cheio.'});
         const raw=await body(req),input=raw.length?JSON.parse(raw.toString()):{};
         const capacity=input.capacity===12?12:2;
@@ -143,5 +145,5 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
       }
       if(url.pathname.startsWith('/api/'))return reply(res,404,{error:'Rota não encontrada.'});
 }
-const cleanup=setInterval(()=>{for(const [key,room] of rooms){for(const [token,m]of room.members)if(!m.stream&&Date.now()-m.seen>45000)removeMember(room,token);if(!room.members.size&&Date.now()-room.touched>600000)rooms.delete(key);}},15000);cleanup.unref();
+const cleanup=setInterval(()=>{for(const [key,room] of rooms){for(const [token,m]of room.members)if(!m.stream&&Date.now()-m.seen>45000)removeMember(room,token);if(key!==lobbyKey&&!room.members.size&&Date.now()-room.touched>600000)rooms.delete(key);}},15000);cleanup.unref();
 const worldClock=setInterval(()=>{for(const room of rooms.values()){if(!room.members.size)continue;room.world||=createWorld();if(tickWorld(room.world))broadcast(room);}},50);worldClock.unref();

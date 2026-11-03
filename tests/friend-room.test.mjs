@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from '../backend/server.mjs';
 
 test('sala de amigos recebe doze pessoas e rejeita a decima terceira',async()=>{
-  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const server=createServer({privateRooms:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const base=`http://127.0.0.1:${server.address().port}`;
   const post=(route,data)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
   try{

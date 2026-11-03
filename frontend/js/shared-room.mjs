@@ -1,3 +1,5 @@
+import {avatarModels} from './avatar-model-catalog.mjs?v=stable-6';
+import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
@@ -8,7 +10,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   panel.innerHTML=`<summary><span class="onlineHeading"><span class="onlineIndicator"></span>Conversa</span><span class="onlineCount" data-count>Conectando</span><button type="button" class="onlineOptions" aria-label="Opcoes da sala">&#8943;</button><span class="onlineChevron" aria-hidden="true">&#8964;</span></summary>
   <div class="onlineBody"><nav class="onlineTabs" role="tablist" aria-label="Painel online"><button type="button" id="online-tab-room" role="tab" aria-controls="online-page-room" aria-selected="true" data-tab="room">Sala</button><button type="button" id="online-tab-chat" role="tab" aria-controls="online-page-chat" aria-selected="false" tabindex="-1" data-tab="chat">Conversa</button><button type="button" id="online-tab-profile" role="tab" aria-controls="online-page-profile" aria-selected="false" tabindex="-1" data-tab="profile">Perfil</button><button type="button" id="online-tab-media" role="tab" aria-controls="online-page-media" aria-selected="false" tabindex="-1" data-tab="media">Tela</button></nav>
   <div class="onlineTabPages">
-    <section id="online-page-room" role="tabpanel" aria-labelledby="online-tab-room" data-page="room"><div class="onlineWelcome"><span class="onlineWelcomeIcon" aria-hidden="true">&#9672;</span><h3>Um espaço para jogar junto</h3><p>Crie uma sala e convide seus amigos para o laboratório.</p></div><div class="onlineRoomEntry"><button data-create class="onlinePrimary">Criar sala para amigos</button><button data-join>Entrar no mundo</button></div><div class="onlinePeople"><div class="onlineSectionTitle">PARTICIPANTES</div><div data-people class="onlinePeopleList"></div></div><div class="onlineActions"><button data-copy hidden>Copiar convite</button><button data-leave class="onlineLeave" hidden>Sair da sala</button></div></section>
+    <section id="online-page-room" role="tabpanel" aria-labelledby="online-tab-room" data-page="room"><div class="onlineWelcome"><span class="onlineWelcomeIcon" aria-hidden="true">&#9672;</span><h3>Um espaço para jogar junto</h3><p>Crie uma sala e convide seus amigos para o laboratório.</p></div><div class="onlineRoomEntry"><button data-join>Entrar na sala publica</button></div><div class="onlinePeople"><div class="onlineSectionTitle">PARTICIPANTES</div><div data-people class="onlinePeopleList"></div></div><div class="onlineActions"><button data-leave class="onlineLeave" hidden>Sair da sala</button></div></section>
     <section id="online-page-chat" role="tabpanel" aria-labelledby="online-tab-chat" data-page="chat" hidden><div class="onlineChatSlot"></div></section>
     <section id="online-page-profile" role="tabpanel" aria-labelledby="online-tab-profile" data-page="profile" hidden><div class="onlinePageHeading"><h3>Seu perfil</h3><p>Escolha como aparecer para o pessoal.</p></div><section class="onlineProfile"><label>Seu nome <input data-name maxlength="30" value="Visitante"></label></section></section>
     <section id="online-page-media" role="tabpanel" aria-labelledby="online-tab-media" data-page="media" hidden><div class="onlinePageHeading"><h3>Uma sessao de cinema</h3><p>Escolha um filme do seu computador para assistir com os amigos.</p></div><section class="onlineMedia"><p class="onlineMediaHint" data-no-session>Entre em uma sala para compartilhar.</p><label data-upload hidden class="onlineUpload"><span>Escolher um video</span><input data-file type="file" accept="video/mp4,video/webm,video/ogg"><small>Transmissao direta. Mantenha esta pagina aberta.</small></label><video data-video controls playsinline hidden></video><button data-stop hidden>Encerrar transmissao</button><button data-resume hidden>Ativar som / reproduzir</button></section></section>
@@ -56,21 +58,33 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   const saveName=document.createElement('button');saveName.type='submit';saveName.textContent='Salvar';nameForm.append(saveName);
   const nameFeedback=document.createElement('small');nameFeedback.setAttribute('role','status');nameForm.append(nameFeedback);
   const avatarEditor=document.createElement('form');avatarEditor.className='onlineAvatarEditor';
-  avatarEditor.innerHTML='<strong>Seu avatar</strong><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="long">Longo</option><option value="curly">Cacheado</option></select></label><div class="onlineAvatarColors"><label>Pele<input name="skin" type="color" value="#bd896c"></label><label>Cabelo<input name="hair" type="color" value="#292725"></label><label>Camisa<input name="shirt" type="color" value="#080808"></label><label>Calca<input name="pants" type="color" value="#17191e"></label></div><label><input name="glasses" type="checkbox" checked> Usar oculos</label><button class="onlinePrimary">Salvar avatar</button><small role="status" data-avatar-feedback></small>';
+  avatarEditor.innerHTML='<strong>Seu avatar</strong><label>Modelo<select name="model"><option value="default">Personalizado</option><option value="punk">Punk</option></select></label><small data-model-note hidden>Este personagem usa suas roupas e cabelo originais.</small><a href="./frontend/assets/credits.html" target="_blank" rel="noopener" style="font-size:10px;color:#9bc790">Creditos das imagens</a><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="long">Longo</option><option value="curly">Cacheado</option></select></label><div class="onlineWardrobe"><label>Parte de cima<select name="outfit"></select></label><label>Parte de baixo<select name="bottom"></select></label><label>Calcados<select name="footwear"></select></label><label>Acessorio<select name="hat"></select></label></div><div class="onlineAvatarColors"><label>Pele<input name="skin" type="color" value="#bd896c"></label><label>Cabelo<input name="hair" type="color" value="#292725"></label><label>Camisa<input name="shirt" type="color" value="#080808"></label><label>Calcado<input name="shoes" type="color" value="#20242b"></label><label>Calca<input name="pants" type="color" value="#17191e"></label></div><label><input name="glasses" type="checkbox" checked> Usar oculos</label><button class="onlinePrimary">Salvar avatar</button><small role="status" data-avatar-feedback></small>';
   panel.querySelector('.onlineProfile').append(avatarEditor);
   profileDialog.querySelector('.onlineProfileContent').append(panel.querySelector('.onlineProfile'));
   const avatarInput=name=>avatarEditor.elements.namedItem(name);
-  const readAvatar=()=>Object.fromEntries(['gender','hairStyle','skin','hair','shirt','pants','glasses'].map(key=>[key,key==='glasses'?avatarInput(key).checked:avatarInput(key).value]));
-  try{const saved=JSON.parse(localStorage.getItem('homelab.avatar')||'null');if(saved)for(const key of ['gender','hairStyle','skin','hair','shirt','pants','glasses']){if(key==='glasses')avatarInput(key).checked=saved[key]!==false;else if(typeof saved[key]==='string')avatarInput(key).value=saved[key];}}catch{}
+  function updateStyleOptions(reset=false){
+    const feminine=avatarInput('gender').value==='feminine';
+    const hairs=feminine?[['long','Longo'],['bob','Chanel'],['ponytail','Rabo de cavalo'],['curly','Cacheado']]:[['short','Curto'],['fade','Degrade'],['quiff','Topete'],['curly','Cacheado']];
+    for(const [key,choices] of [['hairStyle',hairs],['outfit',wardrobe.outfit],['bottom',wardrobe.bottom],['footwear',wardrobe.footwear],['hat',wardrobe.hat]]){
+      const previous=avatarInput(key).value;
+      avatarInput(key).replaceChildren(...choices.map(([value,label])=>new Option(label,value)));
+      avatarInput(key).value=!reset&&choices.some(([value])=>value===previous)?previous:choices[0][0];
+    }
+  }
+  updateStyleOptions();
+  avatarInput('model').replaceChildren(...avatarModels.map(model=>new Option(model.label,model.id)));
+  const readAvatar=()=>Object.fromEntries(['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses'].map(key=>[key,key==='glasses'?avatarInput(key).checked:avatarInput(key).value]));
+  try{const saved=JSON.parse(localStorage.getItem('homelab.avatar')||'null');if(saved){avatarInput('gender').value=saved.gender||'masculine';updateStyleOptions(true);}if(saved)for(const key of ['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses']){if(key==='glasses')avatarInput(key).checked=saved[key]!==false;else if(typeof saved[key]==='string'){avatarInput(key).value=saved[key];if(!avatarInput(key).value&&avatarInput(key).options)avatarInput(key).selectedIndex=0;}}}catch{}
   const avatarPresets=document.createElement('div');avatarPresets.className='onlineAvatarPresets';
   for(const [label,shirt,pants,hair]of [['Neutro','#c9c6ba','#343b43','#302923'],['Azul','#416580','#29333f','#382b25'],['Verde','#597969','#38413a','#242323']]){
     const button=document.createElement('button');button.type='button';button.textContent=label;button.style.setProperty('--preset-color',shirt);
     button.onclick=()=>{avatarInput('shirt').value=shirt;avatarInput('pants').value=pants;avatarInput('hair').value=hair;previewAvatar();};avatarPresets.append(button);
   }
   avatarEditor.querySelector('strong').after(avatarPresets);
-  function previewAvatar(){const appearance=readAvatar();onAvatar?.(appearance);avatarPreview?.update(appearance);avatarEditor.querySelector('[data-avatar-feedback]').textContent='Previa no personagem. Salve para atualizar na sala.';}
+  function syncModelControls(){const punk=avatarInput('model').value!=='default';const definition=avatarModels.find(model=>model.id===avatarInput('model').value);const note=avatarEditor.querySelector('[data-model-note]');note.hidden=!punk;note.textContent=definition?.motion==='rigid'?'Visual original. Este modelo nao tem animacoes de membros; usamos apenas movimento suave do corpo.':'Este personagem usa suas roupas e cabelo originais.';for(const name of ['gender','hairStyle','outfit','bottom','footwear','hat','skin','hair','shirt','pants','shoes','glasses'])avatarInput(name).disabled=punk;}
+  function previewAvatar(){const appearance=readAvatar();syncModelControls();onAvatar?.(appearance);avatarPreview?.update(appearance);avatarEditor.querySelector('[data-avatar-feedback]').textContent='Previa no personagem. Salve para atualizar na sala.';}
   avatarEditor.addEventListener('input',previewAvatar);
-  avatarInput('gender').onchange=()=>{avatarInput('hairStyle').value=avatarInput('gender').value==='feminine'?'long':'short';previewAvatar();};
+  avatarInput('gender').onchange=()=>{updateStyleOptions(false);previewAvatar();};
   avatarEditor.onsubmit=async event=>{
     event.preventDefault();const appearance=readAvatar(),name=nameInput.value.trim(),button=avatarEditor.querySelector('button.onlinePrimary');
     if(!name){nameFeedback.textContent='Digite um nome para continuar.';nameInput.focus();return;}
@@ -83,6 +97,8 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       panel.dataset.menu='false';selectOnlineTab('chat');panel.open=!matchMedia('(max-width:600px)').matches;
     }catch(error){avatarEditor.querySelector('[data-avatar-feedback]').textContent=error.message;}finally{button.disabled=false;}
   };
+  syncModelControls();
+  profileConfirmed=Boolean(localStorage.getItem('homelab.name')?.trim()&&localStorage.getItem('homelab.avatar'));
   onAvatar?.(readAvatar());
   const social=document.createElement('div');social.className='onlineSocial';
   social.innerHTML='<div class="onlineSectionTitle">CONVERSA</div><div data-chat role="log" aria-live="polite" aria-label="Conversa da sala"></div><form data-form><input data-message maxlength="280" placeholder="Escreva uma mensagem..." aria-label="Mensagem" autocomplete="off"><button class="onlinePrimary" aria-label="Enviar mensagem">Enviar</button></form><div class="onlineReactions"><button type="button" data-wave>&#128075; Acenar</button><button type="button" data-heart>&#9825; Curtir</button><button type="button" data-laugh>&#128514; Rir</button><button type="button" data-anger>😡 Raiva</button></div>';
@@ -96,7 +112,8 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     el('no-session').hidden=value;
   }
   setOnlineConnected(false);
-  let room=new URL(location.href).searchParams.get('sala'),token=null,selfId=null,events=null,offset=0,media=null,applying=false,lastPlayback='',closed=false;
+  let room=null,token=null,selfId=null,events=null,offset=0,media=null,applying=false,lastPlayback='',closed=false;
+  let reconnectTimer=null;
   const peer=createPeerVideo({video,api,getSelfId:()=>selfId,onDisplay:(player,screen)=>{player.hidden=false;onVideo(player,screen);},onStatus:text=>status(text),onResume:()=>{el('resume').hidden=false;el('resume').textContent='Ativar som / reproduzir';}});
   el('stop').onclick=()=>peer.stop().catch(showError);
   const seenMessages=new Set();
@@ -109,12 +126,14 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     const message=characterReactions[type]?.message;
     if(!message)return;
     onReaction?.(type);
-    void sendMessage(message);
+    if(token)void sendMessage(message);
   }
   el('laugh').onclick=()=>sendReaction('laugh');el('anger').onclick=()=>sendReaction('anger');
+  social.querySelector('.onlineReactions').remove();
   if(room){el('join').textContent='Entrar na sala';panel.open=true;}
   const status=text=>{if(el('status').textContent!==text)el('status').textContent=text;};
   async function api(action,data,raw=false){
+
     const response=await fetch(apiUrl(action==='lobby'?'/api/lobby':`/api/rooms${action==='create'?'':`/${room}/${action}`}`),{method:'POST',headers:{'Content-Type':raw?data.type:'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:raw?data:JSON.stringify(data)});
     if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('N?o foi poss?vel conectar. Tente novamente em instantes.');
     const result=await response.json();if(!response.ok)throw Object.assign(new Error(result.error||'Falha de conexao.'),{status:response.status});return result;
@@ -157,11 +176,12 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       sessionStorage.setItem(sessionKey(room),token);localStorage.setItem('homelab.name',el('name').value);onSpawn?.(joined.pose);
       onWorld?.(joined.world);
       await api('state',{pose:getPose()});
-      const address=new URL(location.href);address.searchParams.set('sala',room);history.replaceState(null,'',address);
-      for(const name of ['copy','leave','upload'])el(name).hidden=false;
+      const address=new URL(location.href);address.searchParams.delete('sala');history.replaceState(null,'',address);
+      for(const name of ['leave','upload'])el(name).hidden=false;
       el('join').hidden=true;
       events=new EventSource(apiUrl(`/api/rooms/${room}/events?token=${token}`));
       events.addEventListener('peer-signal',event=>{try{peer.signal(JSON.parse(event.data));}catch(error){showError(error);}});
+      events.onopen=()=>{clearTimeout(reconnectTimer);reconnectTimer=null;};
       events.onmessage=e=>{
         const state=JSON.parse(e.data);
         el('count').textContent=state.members.length+' online';
@@ -187,19 +207,17 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
         if(state.media)receiveMedia(state.media);
         else if(hadMedia){media=null;video.hidden=true;el('stop').hidden=true;onVideo(null,null);}
       };
-      events.onerror=()=>{status('Reconectando à sala… Se a sala expirou, saia e crie outra.');checkAvailability();};
-    }catch(e){if(e.status===404){if(room)sessionStorage.removeItem(sessionKey(room));room=null;token=null;el('join').hidden=false;el('join').textContent='Entrar em uma nova sala';status('Este convite expirou. Crie uma sala e compartilhe um novo convite.');}else showError(e);}finally{el('join').disabled=false;if(!token)el('count').textContent='Disponivel';}
+      events.onerror=()=>{
+        status('Reconectando a sala publica...');
+        if(reconnectTimer||closed)return;
+        reconnectTimer=setTimeout(()=>{
+          reconnectTimer=null;if(closed)return;events?.close();token=null;room=null;selfId=null;
+          peer.update(null,[]);onMembers([]);setOnlineConnected(false);
+          if(navigator.onLine)void el('join').onclick();
+        },3000);
+      };
+    }catch(e){if(e.status===404){if(room)sessionStorage.removeItem(sessionKey(room));room=null;token=null;el('join').hidden=false;el('join').textContent='Reconectar a sala publica';status('O servidor reiniciou. Entre novamente na sala publica.');}else showError(e);}finally{el('join').disabled=false;if(!token)el('count').textContent='Disponivel';}
   };
-  el('create').onclick=async()=>{
-    el('create').disabled=true;
-    try{
-      if(token){await api('leave',{});events?.close();peer.update(null,[]);onVideo(null,null);onMembers([]);onWorld?.(null);token=null;media=null;selfId=null;}
-      room=(await api('create',{capacity:12})).room;
-      await el('join').onclick();
-      if(token)status('Sala criada para ate 12 pessoas. Use Copiar convite e envie aos amigos.');
-    }catch(error){setOnlineConnected(Boolean(token));showError(error);}finally{el('create').disabled=false;}
-  };
-  el('copy').onclick=()=>navigator.clipboard.writeText(location.href).then(()=>status('Convite copiado!')).catch(()=>status(`Convite: ${location.href}`));
   async function uploadVideo(file,screen='screen-0'){
     if(!token)throw new Error('Entre na sala antes de compartilhar o vídeo.');
     const next=await peer.start(file,screen);media=next;el('stop').hidden=false;
@@ -210,10 +228,11 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     try{await uploadVideo(file);}catch(e){showError(e);}finally{el('file').disabled=false;el('file').value='';}
   };
   el('leave').onclick=async()=>{
+    clearTimeout(reconnectTimer);reconnectTimer=null;
     try{await api('leave',{});}catch(e){showError(e);return;}
     setOnlineConnected(false);peer.update(null,[]);onVideo(null,null);onWorld?.(null);
     sessionStorage.removeItem(sessionKey(room));closed=true;events?.close();token=null;media=null;video.pause();video.removeAttribute('src');video.load();video.hidden=true;onMembers([]);
-    for(const name of ['copy','leave','upload','resume','stop'])el(name).hidden=true;
+    for(const name of ['leave','upload','resume','stop'])el(name).hidden=true;
     el('count').textContent='Dispon\u00edvel';el('people').replaceChildren();
     room=null;el('join').hidden=false;el('join').textContent='Entrar no mundo';const address=new URL(location.href);address.searchParams.delete('sala');history.replaceState(null,'',address);status('Você saiu da sala.');
   };
@@ -242,10 +261,10 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     if(available&&!autoJoinStarted){autoJoinStarted=true;el('join').click();}
   }
   addEventListener('offline',()=>{panel.hidden=true;wasAvailable=false;onMembers([]);});
-  addEventListener('online',()=>checkAvailability(true));
+  addEventListener('online',()=>{checkAvailability(true);if(autoJoinStarted&&!token&&!closed)void el('join').onclick();});
   addEventListener('focus',()=>checkAvailability());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAvailability();});
   // Sem ping continuo: permite que o Render gratuito repouse sem jogadores.
   checkAvailability(true);
-  return {isOnline:()=>Boolean(token&&!closed&&!panel.hidden&&navigator.onLine),getSelfId:()=>selfId,uploadVideo,notify:status,sendWorldAction:async action=>{if(!token)throw new Error('Entre na sala para interagir.');try{return await api('state',{worldAction:action});}catch(e){showError(e);throw e;}}};
+  return {editProfile:()=>openOnlineProfile(),getProfile:()=>({name:nameInput.value,avatar:readAvatar(),level:1}),react:sendReaction,sendSocialReaction:type=>{if(token)void sendMessage(type==='wave'?'\u{1f44b}':'\u2764\ufe0f');},isOnline:()=>Boolean(token&&!closed&&!panel.hidden&&navigator.onLine),getSelfId:()=>selfId,uploadVideo,notify:status,sendWorldAction:async action=>{if(!token)throw new Error('Entre na sala para interagir.');try{return await api('state',{worldAction:action});}catch(e){showError(e);throw e;}}};
 }

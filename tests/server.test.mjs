@@ -4,7 +4,7 @@ import { createServer } from '../backend/server.mjs';
 import {createWorld} from '../backend/room-world.mjs';
 
 test('falha e reparo chegam às duas conexões SSE',async()=>{
-  const server=createServer({serverRoomPassword:'test-server-pass',createRoomWorld:()=>createWorld(0,()=>0)});
+  const server=createServer({privateRooms:true,serverRoomPassword:'test-server-pass',createRoomWorld:()=>createWorld(0,()=>0)});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const base=`http://127.0.0.1:${server.address().port}`,controllers=[];
   const post=(route,data={},token)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
@@ -48,7 +48,7 @@ test('falha e reparo chegam às duas conexões SSE',async()=>{
 });
 
 test('duas pessoas, acesso, vídeo com range, sincronização e saída',async()=>{
-  const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const server=createServer({privateRooms:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const base=`http://127.0.0.1:${server.address().port}`;
   const post=(route,data={},token)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
   try{
@@ -82,7 +82,7 @@ test('duas pessoas, acesso, vídeo com range, sincronização e saída',async()=
 });
 
 test('mundo comum, reconexão, poses e chat compartilhados',async()=>{
-  const server=createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const server=createServer({privateRooms:true});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const base=`http://127.0.0.1:${server.address().port}`;
   const post=(route,data={},token)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
   try{

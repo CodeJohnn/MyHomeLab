@@ -1,3 +1,4 @@
+import {createAccountAuth} from './account-auth.mjs';
 import http from 'node:http';
 import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
@@ -13,7 +14,7 @@ catch(error) { if(error.code!=='ENOENT')throw error; }
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.glb':'model/gltf-binary','.woff2':'font/woff2'};
 function reply(res, code, data) { res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
-export function createServer({createRoomWorld=createWorld,serverRoomPassword=process.env.SERVER_ROOM_PASSWORD||'',allowedOrigins=(process.env.ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean),serveFrontend=process.env.SERVE_FRONTEND!=='false'}={}) {
+export function createServer({privateRooms=false,createRoomWorld=createWorld,serverRoomPassword=process.env.SERVER_ROOM_PASSWORD||'',allowedOrigins=(process.env.ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean),accountAuth=createAccountAuth({url:process.env.SUPABASE_URL,key:process.env.SUPABASE_PUBLISHABLE_KEY}),serveFrontend=process.env.SERVE_FRONTEND!=='false'}={}) {
   return http.createServer(async (req,res)=>{
     try {
       const url=new URL(req.url,'http://localhost');
@@ -25,11 +26,13 @@ export function createServer({createRoomWorld=createWorld,serverRoomPassword=pro
         res.setHeader('Access-Control-Expose-Headers','Content-Range, Accept-Ranges');
       }
       if(req.method==='OPTIONS'){
-        res.writeHead(204,{'Access-Control-Allow-Methods':'GET, HEAD, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, Range','Access-Control-Max-Age':'600'});
+        res.writeHead(204,{'Access-Control-Allow-Methods':'GET, HEAD, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, Range, X-Account-Token','Access-Control-Max-Age':'600'});
         return res.end();
       }
       if(url.pathname==='/health' && ['GET','HEAD'].includes(req.method))return reply(res,200,{ok:true});
-      if(url.pathname.startsWith('/api/'))return await handleApi(req,res,url,{createRoomWorld,serverRoomPassword});
+      if(url.pathname==='/api/auth/config'&&req.method==='GET')return reply(res,200,accountAuth.publicConfig());
+      if(accountAuth.configured&&req.method==='POST'&&(url.pathname==='/api/rooms'||url.pathname==='/api/lobby'||/^\/api\/rooms\/[a-f0-9]{36}\/join$/.test(url.pathname)))await accountAuth.verify(req.headers['x-account-token']);
+      if(url.pathname.startsWith('/api/'))return await handleApi(req,res,url,{createRoomWorld,serverRoomPassword,privateRooms});
       if(!serveFrontend)return reply(res,404,{error:'Não encontrado.'});
       if(!['GET','HEAD'].includes(req.method))return reply(res,405,{error:'Método não permitido.'});
       const relative=decodeURIComponent(url.pathname).replace(/^\/+/, '')||'index.html';

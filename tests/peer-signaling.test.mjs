@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createServer} from '../backend/server.mjs';
 
 test('transmissao direta sinaliza apenas ao destinatario e restringe controle ao anfitriao',async()=>{
-  const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));
+  const server=createServer({privateRooms:true});await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const base=`http://127.0.0.1:${server.address().port}`;
   const post=(path,data,token)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
   const controller=new AbortController();

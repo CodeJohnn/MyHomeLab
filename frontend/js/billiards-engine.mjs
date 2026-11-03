@@ -1,3 +1,9 @@
+function soundEvent(state,type,speed,x,z){
+  if(speed<.08)return;
+  state.soundSequence=(state.soundSequence||0)+1;
+  (state.soundEvents||=[]).push({id:state.soundSequence,type,speed,x,z});
+  if(state.soundEvents.length>48)state.soundEvents.shift();
+}
 const BALL_RADIUS = 0.047;
 const TABLE_BOUNDS = { x: 1.08, z: 0.48 };
 const POCKETS = [
@@ -18,6 +24,7 @@ export function createBilliardsState() {
     winner: null,
     message: 'Entre na mesa para iniciar uma partida.',
     revision: 0,
+    soundSequence:0,soundEvents:[],
     lastShotBy: null,
     shotPotted: [],
     scratch: false,
@@ -55,6 +62,7 @@ export function shootBilliards(state, playerId, angle, power) {
   if (!cueBall?.alive) return false;
   cueBall.vx = Math.cos(angle) * power * 4.4;
   cueBall.vz = Math.sin(angle) * power * 4.4;
+  soundEvent(state,'cue',power*4.4,cueBall.x,cueBall.z);
   state.moving = true;
   state.lastShotBy = playerId;
   state.shotPotted = [];
@@ -104,6 +112,7 @@ export function stepBilliards(state, elapsed = 0.05) {
       ball.x += ball.vx * dt;
       ball.z += ball.vz * dt;
       if (POCKETS.some(([x, z]) => Math.hypot(ball.x - x, ball.z - z) < 0.13)) {
+        soundEvent(state,'pocket',Math.max(.5,Math.hypot(ball.vx,ball.vz)),ball.x,ball.z);
         ball.alive = false;
         ball.vx = 0;
         ball.vz = 0;
@@ -113,10 +122,12 @@ export function stepBilliards(state, elapsed = 0.05) {
       }
       if (ball.x < -TABLE_BOUNDS.x || ball.x > TABLE_BOUNDS.x) {
         ball.x = Math.max(-TABLE_BOUNDS.x, Math.min(TABLE_BOUNDS.x, ball.x));
+        soundEvent(state,'rail',Math.abs(ball.vx),ball.x,ball.z);
         ball.vx *= -0.88;
       }
       if (ball.z < -TABLE_BOUNDS.z || ball.z > TABLE_BOUNDS.z) {
         ball.z = Math.max(-TABLE_BOUNDS.z, Math.min(TABLE_BOUNDS.z, ball.z));
+        soundEvent(state,'rail',Math.abs(ball.vz),ball.x,ball.z);
         ball.vz *= -0.88;
       }
     }
@@ -136,10 +147,12 @@ export function stepBilliards(state, elapsed = 0.05) {
         const relativeSpeed = (first.vx - second.vx) * nx + (first.vz - second.vz) * nz;
         if (relativeSpeed > 0) {
           if(first.id===0||second.id===0)state.contacted=true;
-          first.vx -= relativeSpeed * nx;
-          first.vz -= relativeSpeed * nz;
-          second.vx += relativeSpeed * nx;
-          second.vz += relativeSpeed * nz;
+          soundEvent(state,'ball',relativeSpeed,first.x,first.z);
+          const impulse=relativeSpeed*.98;
+          first.vx -= impulse * nx;
+          first.vz -= impulse * nz;
+          second.vx += impulse * nx;
+          second.vz += impulse * nz;
         }
       }
     }

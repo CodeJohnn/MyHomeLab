@@ -63,7 +63,7 @@ test('a bola 8 só dá a vitória depois de limpar o próprio grupo',()=>{
 });
 
 test('a API sincroniza a partida e rejeita tacadas fora da vez',async()=>{
-  const server=createServer();
+  const server=createServer({privateRooms:true});
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const base=`http://127.0.0.1:${server.address().port}`;
   const post=(path,data={},token)=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
@@ -87,4 +87,17 @@ test('a API sincroniza a partida e rejeita tacadas fora da vez',async()=>{
     server.closeAllConnections();
     await new Promise(resolve=>server.close(resolve));
   }
+});
+
+test('sinuca registra sons de impactos e cacapas com historico limitado',()=>{
+  const game=createBilliardsState();game.players=[{id:'a',name:'A'},{id:'b',name:'B'}];
+  game.balls=game.balls.slice(0,2);game.balls[0].x=0;game.balls[0].z=0;game.balls[0].vx=1;game.balls[1].x=.09;game.balls[1].z=0;game.moving=true;
+  stepBilliards(game,.008);assert.ok(game.soundEvents.some(e=>e.type==='ball'));
+  game.balls[0].x=1.079;game.balls[0].z=0;game.balls[0].vx=1;
+  stepBilliards(game,.008);assert.ok(game.soundEvents.some(e=>e.type==='rail'));
+  game.balls[1].x=0;game.balls[1].z=.47;game.balls[1].vz=.5;
+  stepBilliards(game,.008);assert.ok(game.soundEvents.some(e=>e.type==='pocket'));
+  for(let i=0;i<70;i++){game.moving=true;game.balls[0].x=1.079;game.balls[0].z=0;game.balls[0].vx=1;stepBilliards(game,.008);}
+  assert.ok(game.soundEvents.length<=48);
+  assert.equal(new Set(game.soundEvents.map(e=>e.id)).size,game.soundEvents.length);
 });

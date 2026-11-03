@@ -4,7 +4,7 @@ import {createServer} from '../backend/server.mjs';
 
 test('frontend externo acessa API; origem desconhecida é bloqueada e backend não entrega site',async()=>{
   const origin='https://exemplo.github.io';
-  const server=createServer({allowedOrigins:[origin],serveFrontend:false});
+  const server=createServer({privateRooms:true,allowedOrigins:[origin],serveFrontend:false});
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const base=`http://127.0.0.1:${server.address().port}`;
   try{

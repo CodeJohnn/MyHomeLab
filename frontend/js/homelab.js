@@ -7,7 +7,7 @@
     window.addEventListener('error',e=>fail(e.error||e.message));
     window.addEventListener('unhandledrejection',e=>fail(e.reason));
     try {
-      const { createInteractionAudio } = await import('./interaction-audio.mjs?v=3');
+      const { createInteractionAudio } = await import('./interaction-audio.mjs?v=actions-5');
       const interactionAudio=createInteractionAudio();
       const { guedesConversations } = await import('./guedessec-dialogue.mjs?v=2');
       const { naturalNpcText } = await import('./npc-portuguese.mjs?v=1');
@@ -234,19 +234,8 @@
 
       const objects = [], byId = {}; function item(id, label, kind, x, y, z, desc) { const g = new THREE.Group(); g.position.set(x, y, z); g.userData.id = id; scene.add(g); const o = { id, label, kind, g, desc, baseY: y, initial: [x, y, z, 0] }; objects.push(o); byId[id] = o; return g }
       const billiardsTable=item('mesaSinuca','Mesa de sinuca','floor',6.7,0,6.2,'Mesa de sinuca com partida online para duas pessoas.');
-      const billiardsWood=M('#533520',.12,.42),billiardsCushion=M('#236344',.02,.82),billiardsFelt=M('#176b43',0,.92),billiardsPocket=M('#101713',.08,.82);
-      box(billiardsTable,2.9,.13,1.7,billiardsWood,0,.7,0,.025);
-      box(billiardsTable,2.56,.055,1.36,billiardsFelt,0,.793,0,.008);
-      for(const x of [-.66,.66])for(const z of [-.72,.72])box(billiardsTable,1.02,.13,.16,billiardsCushion,x,.858,z,.025);
-      for(const x of [-1.37,1.37])for(const z of [-.32,.32])box(billiardsTable,.16,.13,.48,billiardsCushion,x,.858,z,.025);
-      const billiardsPockets=[];
-      for(const x of [-1.12,0,1.12])for(const z of [-.52,.52]){
-        const pocket=new THREE.Mesh(new THREE.CircleGeometry(.105,24),billiardsPocket);pocket.rotation.x=-Math.PI/2;pocket.position.set(x,.823,z);billiardsTable.add(pocket);billiardsPockets.push(pocket);
-        const lip=new THREE.Mesh(new THREE.TorusGeometry(.098,.012,6,24),billiardsWood);lip.rotation.x=Math.PI/2;lip.position.set(x,.829,z);billiardsTable.add(lip);
-      }
-      for(const x of [-1.05,-.78,-.51,0,.51,.78,1.05])for(const z of [-.735,.735])sphere(billiardsTable,.018,M('#d9c596',.08,.4),x,.93,z);
-      for(const x of [-1.28,1.28])for(const z of [-.55,.55])box(billiardsTable,.13,.65,.13,billiardsWood,x,.34,z,.025);
-      for(const x of [-.96,.96])box(billiardsTable,.14,.12,.14,billiardsWood,x,.09,0,.025);
+      const {buildBilliardsTable}=await import('./billiards-table.mjs');
+      buildBilliardsTable({THREE,table:billiardsTable,box});
       const billiardsBallColors=['#f5f4ed','#f6d32d','#2476db','#d83832','#8e45ba','#e98428','#319458','#812b36','#17191c'];
       const billiardsBalls=[];
       for(let id=0;id<16;id++){
@@ -265,12 +254,14 @@
         billiardsBalls.push(ball);
       }
       const cueStick=new THREE.Mesh(new THREE.CylinderGeometry(.009,.016,1.15,10),M('#d4b37b',.08,.55));
+      const cueTip=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,.014,10),M('#6cabc1',0,.8));cueTip.position.y=.579;cueStick.add(cueTip);
+      const cueGrip=new THREE.Mesh(new THREE.CylinderGeometry(.014,.016,.27,10),M('#30251f',0,.92));cueGrip.position.y=-.39;cueStick.add(cueGrip);
       cueStick.visible=false;billiardsTable.add(cueStick);
       const defaultBilliardsBalls=[{id:0,x:-.7,z:0,alive:true}];
       const billiardsRack=[[1,0,0],[2,1,-.5],[3,1,.5],[4,2,-1],[8,2,0],[5,2,1],[6,3,-1.5],[7,3,-.5],[9,3,.5],[10,3,1.5],[11,4,-2],[12,4,-1],[13,4,0],[14,4,1],[15,4,2]];
       for(const [id,row,offset] of billiardsRack)defaultBilliardsBalls.push({id,x:.23+row*.047*2.05,z:offset*.047*2.05,alive:true});
       const {createBilliardsState,shootBilliards,stepBilliards,resetBilliards}=await import('./billiards-engine.mjs');
-      const {createBilliardsBoard}=await import('./billiards-board.mjs?v=arcade-3');
+      const {createBilliardsBoard}=await import('./billiards-board.mjs?v=detail-5');
       let billiardsState=null,billiardsAngle=0,billiardsTargets=defaultBilliardsBalls,onlineBilliardsState=null,localBilliards=false,billiardsShotPending=false;
       function billiardsSelfId(){return localBilliards?billiardsState?.players?.[billiardsState.turn]?.id:sharedRoom?.getSelfId();}
       const billiardsDialog=document.createElement('dialog');billiardsDialog.className='billiardsDialog';
@@ -344,11 +335,7 @@
         for(let id=0;id<billiardsBalls.length;id++){
           const mesh=billiardsBalls[id],ball=targets.get(id);
           mesh.visible=ball?.alive!==false;
-          if(ball?.alive)mesh.position.lerp(new THREE.Vector3(ball.x,.85,ball.z),blend);
-        }
-        if(billiardsDialog.open){
-          const display={...(billiardsState||{}),balls:(billiardsTargets||[]).map(ball=>({...ball,x:billiardsBalls[ball.id].position.x,z:billiardsBalls[ball.id].position.z}))};
-          billiardsBoard.draw(display,billiardsAngle,Boolean(billiardsState&&billiardsSelfId()&&billiardsState.players[billiardsState.turn]?.id===billiardsSelfId()),Number(billiardsControl('power').value)/100);
+          if(ball?.alive){const oldX=mesh.position.x,oldZ=mesh.position.z;mesh.position.lerp(new THREE.Vector3(ball.x,.85,ball.z),blend);mesh.rotation.x+=(mesh.position.z-oldZ)/.047;mesh.rotation.z-=(mesh.position.x-oldX)/.047;}
         }
         const cue=billiardsTargets?.[0],selfId=billiardsSelfId();
         if(billiardsDialog.open){
@@ -2685,179 +2672,13 @@
         if(time>3.7){energyDrinkTime=-1;drinkingCan.visible=false;fridgeOpen=false;document.getElementById('status').textContent='Energetico tomado!';}
       }
       // Avatar.
-      const avatar = new THREE.Group(); scene.add(avatar);
-      const skin = M('#bd896c'), shirt = M('#080808'), shirtLight = M('#151515'), pants = M('#17191e'), hair = M('#292725'), shoeMat = M('#20242b'), eyeMat = M('#16191d');
-      box(avatar, .34, .2, .22, pants, 0, .7, 0, .055);
-      const johnBodyShape=[new THREE.Vector2(.19,0),new THREE.Vector2(.21,.04),new THREE.Vector2(.22,.2),new THREE.Vector2(.24,.35),new THREE.Vector2(.205,.43),new THREE.Vector2(.095,.49)];
-      const johnTorso=new THREE.Mesh(new THREE.LatheGeometry(johnBodyShape,24),shirt);johnTorso.position.y=.79;johnTorso.scale.z=.8;johnTorso.castShadow=true;avatar.add(johnTorso);
-      function johnLimb(parent,width,length,depth,material,x,y,z) {
-        const part=new THREE.Mesh(new THREE.CapsuleGeometry(1,6,5,12),material);part.scale.set(width/2,length/8,depth/2);part.position.set(x,y,z);part.castShadow=true;parent.add(part);return part;
-      }
-      const johnCollar=new THREE.Mesh(new THREE.TorusGeometry(.078,.014,8,24),shirtLight);johnCollar.rotation.x=Math.PI/2;johnCollar.position.y=1.29;avatar.add(johnCollar);
-      box(avatar, .36, .12, .255, black, 0, .81, .004, .025);
-      box(avatar, .07, .018, .008, M('#bd9a57'), 0, .81, .136, .003);
-      // Estampa GuedesSEC na frente e nas costas da camisa.
-      const shirtLogo = new THREE.TextureLoader().load(guedesLogoUrl);
-      shirtLogo.colorSpace = THREE.SRGBColorSpace;
-      shirtLogo.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      const shirtPrintMaterial=new THREE.MeshStandardMaterial({map:shirtLogo,roughness:.95,metalness:0,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
-      function addUniformLogo(torso,profile,centerY=.275) {
-        function radiusAt(y) {
-          for(let i=1;i<profile.length;i++)if(y<=profile[i].y) {
-            const t=THREE.MathUtils.clamp((y-profile[i-1].y)/(profile[i].y-profile[i-1].y),0,1);
-            return THREE.MathUtils.lerp(profile[i-1].x,profile[i].x,t);
-          }
-          return profile[profile.length-1].x;
-        }
-        for(const side of [-1]) {
-          const geometry=new THREE.PlaneGeometry(.24,.255,20,20),positions=geometry.attributes.position;
-          for(let i=0;i<positions.count;i++) {
-            const x=positions.getX(i)*side,y=positions.getY(i)+centerY,r=radiusAt(y);
-            positions.setXYZ(i,x,y,side*(Math.sqrt(Math.max(.00001,r*r-x*x))+.0015));
-          }
-          geometry.computeVertexNormals();
-          const print=new THREE.Mesh(geometry,shirtPrintMaterial);torso.add(print);
-        }
-      }
-      function addBlackLabCoat(root) {
-        const cloth=M('#080808',0,.94),seam=M('#30343a');
-        const profile=[new THREE.Vector2(.205,0),new THREE.Vector2(.208,.06),new THREE.Vector2(.18,.34),new THREE.Vector2(.20,.60),new THREE.Vector2(.17,.68),new THREE.Vector2(.09,.73)];
-        const coat=new THREE.Mesh(new THREE.LatheGeometry(profile,24),cloth);
-        coat.position.y=.55;coat.scale.z=.8;coat.castShadow=true;root.add(coat);
-        addUniformLogo(coat,profile,.49);
-        box(root,.008,.46,.009,seam,0,.80,.167,.002);
-        for(const side of [-1,1]){
-          box(root,.095,.09,.014,cloth,side*.105,.69,.166,.008);
-          box(root,.095,.008,.012,seam,side*.105,.733,.176,.002);
-        }
-        for(const y of [.62,.78,.94])sphere(root,.008,seam,0,y,.176);
-        return coat;
-      }
-      const originalUniformParts=new Set(avatar.children);
-      addBlackLabCoat(avatar);
-      for(const part of avatar.children)if(!originalUniformParts.has(part))part.userData.avatarHide=true;
-      cyl(avatar, .075, .12, skin, 0, 1.32, 0);
-      const playerHead=sphere(avatar,.18,skin,0,1.555,.01);playerHead.scale.set(.88,1.13,.94);
-      const playerJaw=sphere(avatar,.125,skin,0,1.465,.035);playerJaw.scale.set(.97,.72,.9);
-      const studs=M('#cbd3db',.85,.25),naturalHair=M('#171615',.02,.92);
-      const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.184,28,16,0,Math.PI*2,0,1.35),naturalHair);
-      hairCap.position.set(0,1.565,.005);hairCap.scale.set(.91,1.13,.95);hairCap.castShadow=true;avatar.add(hairCap);
-      for(const side of [-1,1]) {
-        const sideburn=sphere(avatar,.035,naturalHair,side*.148,1.595,.022);sideburn.scale.set(.32,1.8,1);
-
-      }
-      const playerChin=sphere(avatar,.047,naturalHair,0,1.435,.126);playerChin.scale.set(.72,.72,.4);
-      cyl(avatar, .079, .035, shirt, 0, 1.35, 0);
-      for (const x of [-.04, 0, .04]) sphere(avatar, .009, studs, x, 1.35, .075);
-      // Corrente prateada pendurada no quadril.
-      for (let i = 0; i < 9; i++) {
-        const link = new THREE.Mesh(new THREE.TorusGeometry(.014, .004, 5, 10), studs);
-        link.position.set(.09 + i * .013, .79 - .065 * Math.sin(i / 8 * Math.PI), .145);
-        avatar.add(link);
-      }
-      for (const side of [-1, 1]) {
-        const playerEar=sphere(avatar,.034,skin,side*.163,1.55,.005);playerEar.scale.set(.55,1.12,.7);
-        const innerEar=sphere(avatar,.019,M('#b67f64'),side*.169,1.55,.017);innerEar.scale.set(.4,1,.6);
-        sphere(avatar, .021, white, side * .071, 1.56, .181);
-        sphere(avatar, .010, eyeMat, side * .071, 1.56, .198);
-        box(avatar, .045, .012, .012, hair, side * .071, 1.595, .188, .004);
-      }
-      sphere(avatar, .026, skin, 0, 1.515, .205);
-      box(avatar, .055, .009, .008, M('#764c45'), 0, 1.468, .19, .003);
-      box(avatar, .17, .018, .008, shirtLight, 0, 1.26, .132, .004);
-      const legs = [], knees = [], arms = [], elbows = [];
-      for (const side of [-1, 1]) {
-        const hip = new THREE.Group();
-        hip.position.set(side * .115, .68, 0);
-        avatar.add(hip);
-        legs.push(hip);
-        johnLimb(hip,.17,.36,.18,pants,0,-.18,0);
-        const knee = new THREE.Group();
-        knee.position.y = -.36;
-        hip.add(knee);
-        knees.push(knee);
-        sphere(knee, .073, pants, 0, 0, 0);
-        johnLimb(knee,.15,.35,.16,pants,0,-.17,0);
-        const johnShoe=sphere(knee,.105,shoeMat,0,-.35,.055);johnShoe.scale.set(.9,.7,1.5);
-        box(knee, .16, .18, .18, shoeMat, 0, -.25, .005, .02);
-        box(knee, .17, .035, .29, black, 0, -.39, .045, .008);
-        for (let i = 0; i < 4; i++) box(knee, .065, .008, .012, studs, 0, -.19 - i * .033, .1, .002);
-        box(knee, .11, .07, .012, skin, 0, -.015, .079, .008);
-
-        const shoulder = new THREE.Group();
-        shoulder.position.set(side * .275, 1.22, 0);
-        avatar.add(shoulder);
-        arms.push(shoulder);
-        sphere(shoulder, .105, shirtLight, 0, 0, 0);
-        johnLimb(shoulder,.19,.3,.2,shirt,0,-.145,0);
-        const elbow = new THREE.Group();
-        elbow.position.y = -.28;
-        shoulder.add(elbow);
-        elbows.push(elbow);
-        sphere(elbow, .055, shirt, 0, 0, 0);
-        johnLimb(elbow,.15,.26,.16,shirtLight,0,-.12,0);
-        box(elbow, .12, .055, .125, black, 0, -.215, 0, .01);
-        for (const x of [-.035, 0, .035]) sphere(elbow, .01, studs, x, -.215, .067);
-        const johnHand=sphere(elbow,.05,skin,0,-.265,.015);johnHand.scale.set(.85,1.15,.72);
-        for (let finger = 0; finger < 3; finger++) box(elbow, .014, .042, .014, skin, -.02 + finger * .02, -.285, .035, .006);
-      }
-      const johnCartoonHead=new THREE.Group();johnCartoonHead.position.set(0,1.6,0);avatar.add(johnCartoonHead);
-      const headParts=avatar.children.filter(child=>child!==johnCartoonHead && child.position.y>1.41);
-      for(const part of headParts){part.position.y-=1.555;johnCartoonHead.add(part);}
-      // Substitui os pequenos olhos por olhos expressivos atras dos oculos.
-      for(const part of [...johnCartoonHead.children]) {
-        if(part.position.z>=.17 && part.position.y>-.12 && part.position.y<.08){part.removeFromParent();}
-      }
-      for(const side of [-1,1]) {
-        const eye=sphere(johnCartoonHead,.035,white,side*.065,.018,.173);eye.scale.set(.85,.83,.48);
-        const iris=sphere(johnCartoonHead,.024,M('#5e4635'),side*.065,.018,.19);iris.scale.set(.8,1,.3);
-        const pupil=sphere(johnCartoonHead,.014,eyeMat,side*.065,.018,.198);pupil.scale.set(.8,1.2,.3);
-        sphere(johnCartoonHead,.006,white,side*.065-.008,.032,.203);
-        const glasses=new THREE.Group();glasses.position.set(side*.066,.018,.209);
-        for(const y of [-.035,.035])box(glasses,.093,.009,.009,hair,0,y,0,.003);
-        for(const x of [-.042,.042])box(glasses,.009,.07,.009,hair,x,0,0,.003);
-        box(glasses,.009,.008,.095,hair,side*.045,.024,-.04,.002);glasses.userData.avatarGlasses=true;johnCartoonHead.add(glasses);
-        const angryBrow=box(johnCartoonHead,.058,.016,.014,hair,side*.065,.067,.187,.005);angryBrow.rotation.z=side*.3;
-      }
-      box(johnCartoonHead,.04,.006,.008,hair,0,.025,.21,.002);
-      const johnNose=sphere(johnCartoonHead,.023,skin,0,-.021,.19);johnNose.scale.set(.9,.9,1.15);
-      const johnMouth=box(johnCartoonHead,.047,.005,.008,M('#754838'),0,-.077,.167,.002);
-      // Capuz continuo com abertura frontal; a superficie nao cruza o rosto.
-      hairCap.visible=true;
-      const hoodMaterial=M('#080808',.02,.96),hoodLining=M('#151515',.02,1);
-      hoodMaterial.side=THREE.DoubleSide;
-      const hoodGeometry=new THREE.SphereGeometry(.245,32,22,0,Math.PI*2,1.02,Math.PI-1.02);
-      hoodGeometry.rotateX(Math.PI/2);
-      const hood=new THREE.Mesh(hoodGeometry,hoodMaterial);hood.position.set(0,.015,-.015);hood.scale.set(.98,1.16,1);hood.castShadow=true;johnCartoonHead.add(hood);
-      const openingRadius=.245*Math.sin(1.02),openingZ=.245*Math.cos(1.02)-.015;
-      const rim=[];
-      for(let i=0;i<64;i++){const angle=i/64*Math.PI*2;rim.push(new THREE.Vector3(Math.cos(angle)*openingRadius*.98,.015+Math.sin(angle)*openingRadius*1.16,openingZ));}
-      const hoodEdge=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rim,true),64,.011,6,true),hoodLining);johnCartoonHead.add(hoodEdge);
-      // Franja curta visivel entre o capuz e a testa.
-      for(let i=0;i<3;i++) {
-        const fringe=sphere(johnCartoonHead,.054,naturalHair,-.055+i*.045,.165-i*.012,.128);
-        fringe.scale.set(.9,.48,.7);fringe.rotation.z=-.25;
-      }
-      for(const side of [-1,1]) {
-        const cord=box(avatar,.01,.19,.01,M('#b9c2c7'),side*.075,1.18,.155,.003);cord.rotation.z=side*.05;
-        box(avatar,.013,.024,.013,metal,side*.08,1.075,.155,.003);
-      }
-      box(avatar,.27,.1,.035,shirtLight,0,.9,.177,.025);
-      johnCartoonHead.scale.setScalar(1.48);
-      avatar.position.set(-1.2, 0, 2.45);
-      // NPCs independentes do personagem controlado pelo jogador.
-      johnCartoonHead.name='onlineAvatarHead';johnTorso.userData.avatarTorso=true;
-      for(const node of [hood,hoodEdge,hairCap])node.userData.avatarHide=true;
-      avatar.traverse(node=>{
-        if(node.material===studs)node.userData.avatarHide=true;
-        if(node.material===skin)node.userData.avatarPart='skin';
-        else if(node.material===shirt||node.material===shirtLight)node.userData.avatarPart='shirt';
-        else if(node.material===pants)node.userData.avatarPart='pants';
-        else if(node.material===hair||node.material===naturalHair){node.userData.avatarPart='hair';if(node.material===naturalHair)node.userData.avatarHide=true;}
-      });
+      const {createPlayerAvatar}=await import('./player-avatar.mjs?v=underwear-5');
+      const {avatar,skin,shirt,shirtLight,pants,hair,shoeMat,eyeMat,studs,naturalHair,legs,knees,arms,elbows,johnLimb,addBlackLabCoat,johnCartoonHead,johnTorso}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile,anisotropy:renderer.capabilities.getMaxAnisotropy()});
+      scene.add(avatar);
       const avatarTemplate=avatar.clone(true);
-      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=clean-skins-2');
-      const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs');
+      const {updateAvatarModel,disposeAvatarModel}=await import('./avatar-models.mjs?v=stable-6');
+      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=avatar-stable-22');
+      const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=stable-8');
       const npcs = [];
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
         const root = new THREE.Group();
@@ -3091,6 +2912,7 @@
       function stopInteraction() {
         if (!interactionPose) return;
         const wasToilet=interactionPose==='toilet';
+        if(interactionPose.startsWith('emote:')){gestureFinger.visible=false;avatar.rotation.z=0;}
         interactionPose = null;
         activePlayerChair=null;activeTypingKeyboard=null;
         if (savedAvatarPosition) avatar.position.copy(savedAvatarPosition);
@@ -3103,6 +2925,65 @@
         if(wasToilet){document.getElementById('status').textContent='Banheiro utilizado. Tudo pronto!';return;}
         document.getElementById('status').textContent = 'Você levantou da cadeira.';
       }
+      const {avatarActions,poseAvatarAction}=await import('./avatar-actions.mjs');
+      const actionMenu=document.createElement('section');actionMenu.className='characterMenu';actionMenu.hidden=true;actionMenu.setAttribute('aria-label','Menu do personagem');
+      const actionTitle=document.createElement('header');actionTitle.className='characterIdentity';actionTitle.innerHTML='<strong></strong><span>Nivel 1 <i>Iniciante</i></span>';actionMenu.append(actionTitle);
+      const actionButtons=document.createElement('div');actionButtons.className='characterSubmenu characterActions';actionButtons.hidden=true;actionMenu.append(actionButtons);document.body.append(actionMenu);
+      const reactionSection=document.createElement('section');reactionSection.className='characterSubmenu characterReactions';reactionSection.hidden=true;
+      const reactionHeading=document.createElement('strong');reactionHeading.textContent='Reagir';reactionSection.append(reactionHeading);actionTitle.after(reactionSection);
+      for(const [kind,label] of [['laugh','Rir'],['anger','Ficar com raiva'],['wave','Acenar'],['heart','Curtir']]){
+        const button=document.createElement('button');button.type='button';button.textContent=label;reactionSection.append(button);
+        button.onclick=()=>{
+          if(kind==='laugh'||kind==='anger'){if(sharedRoom)sharedRoom.react(kind);else showCharacterReaction(avatar,kind);}
+          else if(kind==='wave'){actionButtons.querySelector('[data-action-wave]')?.click();sharedRoom?.sendSocialReaction(kind);}
+          else{emitKissHearts({root:avatar},performance.now());sharedRoom?.sendSocialReaction(kind);}
+          closeAvatarMenu();
+        };
+      }
+      const actionsHeading=document.createElement('strong');actionsHeading.textContent='Acoes';actionButtons.append(actionsHeading);
+      const icons={
+        appearance:'<path d="m8 4 4 2 4-2 5 4-3 5-2-1v9H8v-9l-2 1-3-5Z"/>',
+        dance:'<circle cx="14" cy="4" r="2"/><path d="m6 6 5 4 4-1 4-5M11 10l-2 5 4 3-3 4m-1-7-5 3M15 9l2 6 4 1"/>',
+        reactions:'<circle cx="12" cy="12" r="9"/><path d="M8 14q4 6 8 0M8 8v2m8-2v2"/>',
+        actions:'<path d="M9 12V5a2 2 0 0 1 4 0v7m0-4a2 2 0 0 1 4 0v4m0-2a2 2 0 0 1 4 0v5q0 7-7 7h-2q-3 0-5-4l-3-5q-1-3 2-3l3 4"/>',
+        about:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v1"/>'
+      };
+      const about=document.createElement('section');about.className='characterSubmenu characterAbout';about.hidden=true;about.innerHTML='<strong>Meu perfil</strong><p data-about-name></p><p>Nivel 1 &middot; Iniciante</p><small>A progressao de XP ainda nao esta ativa.</small>';actionMenu.append(about);
+      const categories=[];
+      function selectCharacterCategory(name){
+        reactionSection.hidden=name!=='reactions';actionButtons.hidden=name!=='actions';about.hidden=name!=='about';
+        categories.forEach(button=>button.setAttribute('aria-expanded',String(button.dataset.category===name)));
+      }
+      for(const [kind,label] of [['appearance','Aparencia'],['dance','Dancas'],['reactions','Reacoes'],['actions','Acoes'],['about','Sobre mim']]){
+        const button=document.createElement('button');button.type='button';button.className='characterOrbitButton '+kind;button.dataset.category=kind;button.setAttribute('aria-label',label);button.setAttribute('aria-expanded','false');
+        button.innerHTML='<span class="characterOrbitIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[kind]+'</svg></span><span>'+label+'</span>';
+        button.onclick=()=>{if(kind==='appearance'){closeAvatarMenu();sharedRoom?.editProfile();return;}if(kind==='dance'){actionButtons.querySelector('[data-action="dance"]')?.click();return;}selectCharacterCategory(button.getAttribute('aria-expanded')==='true'?null:kind);};
+        categories.push(button);actionMenu.append(button);
+      }
+      const closeCharacterMenu=document.createElement('button');closeCharacterMenu.type='button';closeCharacterMenu.className='characterMenuClose';closeCharacterMenu.setAttribute('aria-label','Fechar menu do personagem');closeCharacterMenu.innerHTML='&#10005;';closeCharacterMenu.onclick=()=>closeAvatarMenu();actionMenu.append(closeCharacterMenu);
+      function closeAvatarMenu(){actionMenu.hidden=true;actionMenu.open=false;}
+      function openAvatarMenu(x=innerWidth/2,y=innerHeight/2){
+        const name=sharedRoom?.getProfile()?.name||localStorage.getItem('homelab.name')||'Visitante';actionTitle.querySelector('strong').textContent=name;about.querySelector('[data-about-name]').textContent=name;selectCharacterCategory(null);
+        actionMenu.hidden=false;keys.clear();walkTarget=null;walkPath=[];
+        const bounds=actionMenu.getBoundingClientRect();actionMenu.style.left=Math.max(8,Math.min(x-bounds.width/2,innerWidth-bounds.width-8))+'px';actionMenu.style.top=Math.max(8,Math.min(y-150,innerHeight-bounds.height-8))+'px';
+      }
+      document.addEventListener('pointerdown',event=>{if(!actionMenu.contains(event.target)&&event.target!==renderer.domElement)closeAvatarMenu();});
+      document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAvatarMenu();});
+      let avatarActionBaseY=0;
+      const gestureFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.065,4,8),skin.clone());gestureFinger.position.set(0,-.335,.02);gestureFinger.visible=false;elbows[1].add(gestureFinger);
+      for(const [kind,label] of [...avatarActions,['wave','Acenar']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.action=kind;if(kind==='wave')button.dataset.actionWave='true';actionButtons.append(button);
+        button.onclick=()=>{
+          if(edit)return;
+          if(spouseKiss){releaseKissNpc(spouseKiss.npc);spouseKiss=null;}
+          stopInteraction();keys.clear();walkTarget=null;walkPath=[];
+          savedAvatarPosition=avatar.position.clone();savedAvatarRotation=avatar.rotation.y;avatarActionBaseY=avatar.position.y;
+          interactionPose='emote:'+kind;interactionTime=0;gestureFinger.visible=kind==='finger'||kind==='point';gestureFinger.material.color.set(skin.color);
+          if(kind==='fart')interactionAudio.play('fart');
+          closeAvatarMenu();document.getElementById('status').textContent=label+' - E para parar.';
+        };
+      }
+      const stopAction=document.createElement('button');stopAction.type='button';stopAction.textContent='Parar animacao';stopAction.onclick=()=>{stopInteraction();closeAvatarMenu();};actionButtons.append(stopAction);
+      for(const type of ['keydown','keyup','pointerdown','pointerup'])actionMenu.addEventListener(type,e=>e.stopPropagation());
       function startInteraction(action, seat = null) {
         if(action==='mouse')interactionAudio.play('mouse');
         if (!savedAvatarPosition) {
@@ -3594,34 +3475,62 @@
       spouseActions.innerHTML='<button type="button" data-spouse="call">Chamar / levantar</button><button type="button" data-spouse="kiss">Dar um beijo</button>';
       conversation.querySelector('header').after(spouseActions);
       let spouseKiss=null;
+      const kissHearts=[];
+      function emitKissHearts(npc,time){
+        interactionAudio.play('kiss');
+        const origin=avatar.position.clone().add(npc.root.position).multiplyScalar(.5);origin.y=2.05;
+        for(let i=0;i<7;i++){
+          const heart=document.createElement('span');heart.textContent='\u2665';heart.setAttribute('aria-hidden','true');
+          heart.style.cssText='position:fixed;left:0;top:0;pointer-events:none;z-index:80;color:#ff689b;text-shadow:0 2px 8px #9d154c88;font-size:'+ (20+i%3*6)+'px;will-change:transform,opacity';document.body.append(heart);
+          kissHearts.push({element:heart,origin:origin.clone(),start:time+i*95,side:(i-3)*.13});
+        }
+      }
+      function updateKissHearts(time){
+        for(let i=kissHearts.length-1;i>=0;i--){
+          const heart=kissHearts[i],age=(time-heart.start)/1000;
+          if(age>1.9){heart.element.remove();kissHearts.splice(i,1);continue;}
+          if(age<0){heart.element.style.opacity=0;continue;}
+          const point=heart.origin.clone();point.x+=heart.side*(1+age);point.y+=age*.6;point.project(camera);
+          heart.element.style.opacity=point.z>1||point.z< -1?0:Math.min(1,age*8)*Math.max(0,1-age/1.9);
+          heart.element.style.transform='translate('+((point.x*.5+.5)*innerWidth)+'px,'+((-point.y*.5+.5)*innerHeight)+'px) translate(-50%,-50%) rotate('+Math.sin(age*3+heart.side)*12+'deg)';
+        }
+      }
+      function releaseKissNpc(npc){
+        npc.spouseHoldUntil=0;npc.wait=0;npc.root.rotation.z=0;npc.head.rotation.y=0;
+        npc.path=[];npc.task=null;
+        if(!edit)planNpcTask(npc);
+      }
       function callVitoria(){
-        const npc=npcs.find(n=>n.name==='Vitória');if(!npc)return null;
+        const npc=talkingNpc;if(!npc)return null;
         standNpc(npc);npc.path=[];npc.task=null;npc.wait=30;npc.spouseHoldUntil=performance.now()+30000;
         npc.callRemaining=0;npc.pendingPhoneLine=null;
         if(npc.phoneReceiver)npc.phoneReceiver.visible=false;
         return npc;
       }
       spouseActions.querySelector('[data-spouse="call"]').onclick=()=>{
-        const npc=callVitoria();if(npc)npcSay(npc,'Ja levantei, amor. Pode falar!');
+        const npc=callVitoria();if(npc)npcSay(npc,'Estou aqui! Pode falar.',true);
       };
       spouseActions.querySelector('[data-spouse="kiss"]').onclick=()=>{
+        if(spouseKiss){releaseKissNpc(spouseKiss.npc);spouseKiss=null;avatar.rotation.z=0;}
         stopInteraction();const npc=callVitoria();if(!npc)return;
         const away=avatar.position.clone().sub(npc.root.position);away.y=0;if(away.lengthSq()<.01)away.set(0,0,1);away.normalize();
         const destination=npc.root.position.clone().addScaledVector(away,.52);
-        if(!walkTo(destination)){npcSay(npc,'Amor, chega mais perto de mim.');return;}
+        if(!walkTo(destination)){releaseKissNpc(npc);npcSay(npc,'Chega mais perto de mim.',true);return;}
         spouseKiss={npc,stage:'approach',until:performance.now()+15000};
         conversation.hidden=true;talkingNpc=null;npcVoices.stop();
       };
       function updateSpouseInteraction(time){
+        updateKissHearts(time);
         if(!spouseKiss)return;
         const state=spouseKiss,npc=state.npc;
-        if(edit||time>state.until){if(state.stage==='kiss'){avatar.rotation.z=0;npc.root.rotation.z=0;stopInteraction();}spouseKiss=null;return;}
+        if(edit||time>state.until){if(state.stage==='kiss'){avatar.rotation.z=0;stopInteraction();}releaseKissNpc(npc);spouseKiss=null;return;}
         const distance=Math.hypot(avatar.position.x-npc.root.position.x,avatar.position.z-npc.root.position.z);
         if(state.stage==='approach' && distance<.7){
           walkTarget=null;walkPath=[];keys.clear();interactionPose='kiss';state.stage='kiss';state.until=time+1800;
           avatar.rotation.y=Math.atan2(npc.root.position.x-avatar.position.x,npc.root.position.z-avatar.position.z);
           npc.root.rotation.y=Math.atan2(avatar.position.x-npc.root.position.x,avatar.position.z-npc.root.position.z);
-          const bubble=npcChatBubbles.find(b=>b.npc===npc);bubble.element.textContent='\u2665';bubble.remaining=2.5;
+          emitKissHearts(npc,time);
+          const bubble=npcChatBubbles.find(b=>b.npc===npc);if(bubble){bubble.element.textContent='\u2665';bubble.remaining=2.5;}
         }
         if(state.stage==='kiss'){
           const lean=Math.sin(Math.max(0,1-(state.until-time)/1800)*Math.PI)*.10;
@@ -3629,7 +3538,7 @@
         }
       }
       function openNpcConversation(npc) {
-        spouseActions.hidden=npc.name!=='Vitória';
+        spouseActions.hidden=false;
         talkingNpc = npc; keys.clear(); walkTarget = null;
         npc.path = []; npc.wait = 3;
         npc.legs.forEach(leg => leg.rotation.x = 0); npc.arms.forEach(arm => arm.rotation.x = 0);
@@ -4184,6 +4093,12 @@
       function activateAt(e) {
         if(bookLibrary.isOpen)return;
         point(e);
+        if(!edit&&avatar.visible){
+          const selfHit=ray.intersectObject(avatar,true).find(h=>isSceneVisible(h.object));
+          const blocker=selfHit&&ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root)],true).find(h=>isSceneVisible(h.object));
+          if(selfHit&&(!blocker||selfHit.distance<=blocker.distance+.025)){openAvatarMenu(e.clientX,e.clientY);return;}
+        }
+        closeAvatarMenu();
         const bookHit=ray.intersectObjects(bookLibrary.meshes,true).find(h=>isSceneVisible(h.object));
         if(bookHit&&!edit){
           const blocker=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
@@ -4715,6 +4630,7 @@
         if (e.target.matches('input, textarea, select')) return;
         const k = e.key.toLowerCase();
         if (e.repeat) return;
+        if(k==='r'&&!edit){openAvatarMenu();return;}
         if(k==='v'){toggleFirstPerson();return;}
         if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
         if (edit) return;
@@ -4890,6 +4806,7 @@
         }
         if (interactionPose) {
           interactionTime += dt;
+          if(interactionPose?.startsWith('emote:')){const kind=interactionPose.slice(6);poseAvatarAction(kind,interactionTime,{avatar,legs,knees,arms,elbows,baseY:avatarActionBaseY});if(['fart','finger','point'].includes(kind)&&interactionTime>3)stopInteraction();}
           if(interactionPose==='toilet'&&interactionTime>=8){stopInteraction();}
 
           if (interactionPose === 'typing') {
@@ -4949,19 +4866,30 @@
         updateMobileContactShadows(t);
         updateMobileQuality(t);
         updateLightBudget(t);
-        updateGuests(dt,t);
+        updateGuests(dt,t);updateAvatarModel(avatar,dt);for(const guest of guests.values())updateAvatarModel(guest,dt);
         updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
-        renderer.render(scene, camera);
+        if(!document.querySelector('.onlineProfileDialog[open]'))renderer.render(scene, camera);
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=avatar-preview-11');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=stable-23');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
       let sharedVideoMonitor=null;
       const guests = new Map();
+      const {createCharacterHover}=await import('./character-hover.mjs');
+      const characterHover=createCharacterHover({THREE,canvas:renderer.domElement,getCamera:()=>camera,
+        isEnabled:()=>!edit&&!camDrag&&!panDrag&&actionMenu.hidden&&conversation.hidden&&!document.querySelector('dialog[open]'),
+        getBlockers:()=>[...objects.map(o=>o.g),...wallOccluders],
+        getCharacters:()=>[
+          {root:avatar,name:sharedRoom?.getProfile()?.name||localStorage.getItem('homelab.name')||'Visitante',kind:'Meu personagem',online:sharedRoom?.isOnline()},
+          ...npcs.map(npc=>({root:npc.root,name:npc.name,kind:'Equipe GuedesSEC',npc:true,description:'Clique para conversar com '+npc.name+'.'})),
+          ...[...guests.values()].map(guest=>({root:guest,name:guest.userData.displayName||'Visitante',kind:'Jogador',online:true,description:'Participante da sala publica.'}))
+        ]
+      });
+      addEventListener('pagehide',()=>characterHover.dispose(),{once:true});
       let ownBubble=null,ownBubbleUntil=0;
       const reactionSounds=Object.fromEntries(Object.entries(characterReactions).map(([type,reaction])=>{
         const audio=new Audio(new URL(reaction.audio,import.meta.url));
@@ -5045,7 +4973,7 @@
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
         getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z])}),
         onMembers: members => {
-          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
+          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeAvatarModel(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}

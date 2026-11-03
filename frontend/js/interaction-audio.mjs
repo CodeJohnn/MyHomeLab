@@ -21,6 +21,8 @@ export function createInteractionAudio(){
     }
     if(kind==='mouse'){noise(2600,.022,.08);noise(1800,.025,.045,.06);}
     if(kind==='step'){noise(240,.11,.16*attenuation,0,'lowpass');tone(100,.075,.025*attenuation);}
+    if(kind==='fart'){for(let i=0;i<6;i++){noise(90+i%2*50,.12,.16,i*.065,'lowpass');tone(65+i%3*12,.09,.08,i*.065);}}
+    if(kind==='kiss'){noise(750,.12,.13,0,'bandpass');noise(1800,.055,.16,.105,'bandpass');tone(660,.11,.04,.13);}
     if(kind==='coffee'){noise(800,.38,.075,0,'bandpass');noise(1200,.16,.045,.25);tone(1300,.09,.035,.65);}
     if(kind==='phoneRing'){tone(820,.12,.07*attenuation);tone(1050,.12,.06*attenuation,.16);}
     if(kind==='serverAlert'){tone(880,.22,.13);tone(660,.28,.11,.3);}
