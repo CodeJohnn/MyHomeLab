@@ -57,7 +57,7 @@ export function createServer({privateRooms=false,createRoomWorld=createWorld,ser
       if(relative!=='index.html' && !/^frontend\/(?:ambiente\.json$|(?:js|css|assets)\/)/.test(relative))return reply(res,404,{error:'Não encontrado.'});
       const target=path.resolve(root,relative);if(!target.startsWith(root+path.sep))return reply(res,403,{error:'Acesso negado.'});
       const info=await stat(target);if(!info.isFile())return reply(res,404,{error:'Não encontrado.'});
-      res.writeHead(200,{'Content-Type':types[path.extname(target)]||'application/octet-stream','Content-Length':info.size,'X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();createReadStream(target).pipe(res);
+      res.writeHead(200,{'Content-Type':types[path.extname(target)]||'application/octet-stream','Content-Length':info.size,'X-Content-Type-Options':'nosniff',...(['.html','.js','.mjs','.css'].includes(path.extname(target))?{'Cache-Control':'no-cache'}:{})});if(req.method==='HEAD')return res.end();createReadStream(target).pipe(res);
     } catch(error) {if(!res.headersSent)reply(res,error.status|| (error instanceof SyntaxError?400:500),{error:error.code==='ENOENT'?'Não encontrado.':error.status?error.message:'Não foi possível concluir a solicitação.'});else res.end();}
   });
 }

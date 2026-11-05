@@ -1,7 +1,7 @@
 import {createLandingMatrix} from './landing-matrix.mjs?v=color-3';
 import {showRoomLoading,hideRoomLoading,completeRoomLoading} from './room-loading.mjs';
-import {createUserHome} from './user-home.mjs?v=auth-gate-23';
-import {createAccountDialog,verifiedAccount,accountClient} from './account-auth.mjs';
+import {createUserHome} from './user-home.mjs?v=auth-errors-24';
+import {createAccountDialog,verifiedAccount,accountClient} from './account-auth.mjs?v=errors-3';
 const host=document.getElementById('landing'),matrix=createLandingMatrix(host);
 let starting=false;
 let currentAccount=null;
@@ -9,7 +9,7 @@ const login=createAccountDialog(host,async user=>{currentAccount=user;if(user.us
 const logout=document.createElement('button');logout.type='button';logout.className='accountLogout';logout.textContent='Sair da conta';logout.hidden=true;
 const home=createUserHome({host,onRequireLogin:()=>login.open({signup:true}),onPlay:async()=>{
   if(starting)return;starting=true;
-  try{currentAccount=await verifiedAccount();if(!currentAccount){login.open({signup:true});throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=ready-293');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');await completeRoomLoading();}
+  try{currentAccount=await verifiedAccount();if(!currentAccount){login.open({signup:true});throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=auth-errors-294');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');await completeRoomLoading();}
   catch(error){hideRoomLoading();starting=false;throw error;}
 }});
 host.querySelector('.userHomeHeader').append(logout);

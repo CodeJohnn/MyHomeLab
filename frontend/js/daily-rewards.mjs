@@ -1,5 +1,5 @@
 import {apiUrl} from './config.mjs';
-import {progressionAccountHeaders,renderNobility,showNoblePromotion} from './nobility-ui.mjs';
+import {progressionAccountHeaders,renderNobility,showNoblePromotion} from './nobility-ui.mjs?v=auth-2';
 import {waitForWorldEntry} from './room-loading.mjs';
 let inFlight=null,pendingAward=null,welcomeKey='';
 export async function claimDailyReward({showPanel=false,award=null}={}){

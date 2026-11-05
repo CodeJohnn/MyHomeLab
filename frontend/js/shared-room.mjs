@@ -3,8 +3,8 @@ import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
-import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs';
-import {claimDailyReward} from './daily-rewards.mjs';
+import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs?v=auth-2';
+import {claimDailyReward} from './daily-rewards.mjs?v=auth-2';
 
 export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview,onSelfProgression}) {
   let selfProgression={level:1,xp:0},previousSelfLevel=null,selfProgressionSignature='';

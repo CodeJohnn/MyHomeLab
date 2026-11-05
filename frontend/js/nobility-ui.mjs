@@ -5,7 +5,7 @@ export async function progressionAccountHeaders(){
   if(!configuration)configuration=fetch(apiUrl('/api/auth/config')).then(async response=>{if(!response.ok)throw new Error('Falha ao consultar conta.');return response.json();}).catch(error=>{configuration=null;throw error;});
   const settings=await configuration;
   if(!settings.url||!settings.key)return {};
-  const {accountToken}=await import('./account-auth.mjs');return {'X-Account-Token':await accountToken()};
+  const {accountToken}=await import('./account-auth.mjs?v=errors-3');return {'X-Account-Token':await accountToken()};
 }
 export function renderNobility(container,progression={level:1}){
   const title=nobleTitle(progression.level);container.classList.add('nobleIdentity');
@@ -24,7 +24,7 @@ export async function fetchAccountProgression(){
   const config=await fetch(apiUrl('/api/auth/config'));if(!config.ok)throw new Error('Não foi possível consultar sua conta.');
   const settings=await config.json();
   if(!settings.url||!settings.key)return {level:1,xp:0,source:'guest'};
-  const {accountToken}=await import('./account-auth.mjs');
+  const {accountToken}=await import('./account-auth.mjs?v=errors-3');
   const response=await fetch(apiUrl('/api/progression'),{headers:{'X-Account-Token':await accountToken()},cache:'no-store'});
   if(!response.ok)throw new Error('Não foi possível carregar seu prestígio.');
   return response.json();
