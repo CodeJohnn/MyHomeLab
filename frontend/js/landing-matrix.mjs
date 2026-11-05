@@ -14,7 +14,7 @@ export function createLandingMatrix(host){
     columns.forEach((column,index)=>{
       for(let i=0;i<column.length;i++){
         const y=column.y-i*size;if(y<0||y>height)continue;
-        ctx.fillStyle=i===0?'rgba(165,239,202,.65)':'rgba(70,181,126,'+((1-i/column.length)*.42)+')';
+        ctx.fillStyle=i===0?'rgba(225,225,225,.65)':'rgba(140,140,140,'+((1-i/column.length)*.42)+')';
         ctx.fillText(characters[Math.floor(Math.random()*characters.length)],index*size,y);
       }
       if(!staticFrame){column.y+=column.speed*size*.2;if(column.y-column.length*size>height){column.y=-size;column.speed=1+Math.random()*1.8;}}

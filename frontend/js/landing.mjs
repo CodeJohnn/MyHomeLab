@@ -1,4 +1,4 @@
-import {createLandingMatrix} from './landing-matrix.mjs';
+import {createLandingMatrix} from './landing-matrix.mjs?v=monochrome-2';
 import {showRoomLoading,hideRoomLoading} from './room-loading.mjs';
 import {createUserHome} from './user-home.mjs?v=avatar3d-20';
 const host=document.getElementById('landing'),matrix=createLandingMatrix(host);
