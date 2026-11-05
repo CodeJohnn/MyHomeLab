@@ -1,4 +1,5 @@
 import {apiUrl} from './config.mjs';
+import {authErrorMessage} from './auth-errors.mjs';
 let clientPromise;
 export async function accountClient(){
   if(!clientPromise)clientPromise=(async()=>{
@@ -43,7 +44,7 @@ export function createAccountDialog(host,onAuthenticated){
     try{
       const client=await accountClient(),email=form.elements.email.value.trim(),password=form.elements.password.value;
       const result=signup?await client.auth.signUp({email,password,options:{data:{display_name:form.elements.name.value.trim()},emailRedirectTo:location.origin+location.pathname}}):await client.auth.signInWithPassword({email,password});
-      if(result.error){feedback.textContent=signup?'Nao foi possivel cadastrar. Confira os dados e tente novamente.':'E-mail ou senha invalidos, ou e-mail ainda nao confirmado.';return;}
+      if(result.error){feedback.textContent=authErrorMessage(result.error,signup);return;}
       form.elements.password.value='';
       if(!result.data.session){feedback.textContent='Confira seu e-mail para confirmar o cadastro. Depois, entre com sua senha.';return;}
       const user=await verifiedAccount();if(!user)throw new Error('Confirme seu e-mail antes de entrar.');
