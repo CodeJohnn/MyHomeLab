@@ -1,3 +1,4 @@
+import {nobleLabel} from './nobility.mjs';
 export function createCharacterHover({THREE,canvas,getCamera,getCharacters,getBlockers,isEnabled}){
   const card=document.createElement('aside');card.className='characterHoverCard';card.hidden=true;card.setAttribute('role','tooltip');
   card.innerHTML='<header><span class="hoverAvatar"></span><div><small data-kind></small><strong data-name></strong></div><span class="hoverLevel"></span></header><div class="hoverFacts"><span data-level></span><span data-status></span></div><p data-description></p><footer>HomeLab &middot; GuedesSEC</footer>';document.body.append(card);
@@ -15,8 +16,8 @@ export function createCharacterHover({THREE,canvas,getCamera,getCharacters,getBl
     active=character.root;
     card.querySelector('[data-name]').textContent=character.name;card.querySelector('[data-kind]').textContent=character.kind;
     card.querySelector('.hoverAvatar').textContent=character.name.trim().slice(0,2).toLocaleUpperCase('pt-BR');
-    card.querySelector('.hoverLevel').textContent=character.npc?'NPC':'1';
-    card.querySelector('[data-level]').textContent=character.npc?'Equipe do laboratorio':'Nivel 1 ? Iniciante';
+    card.querySelector('.hoverLevel').textContent=character.npc?'NPC':String(character.root.userData.nobleLevel||1);
+    card.querySelector('[data-level]').textContent=character.npc?'Equipe do laboratorio':nobleLabel(character.root.userData.nobleLevel||1);
     card.querySelector('[data-status]').textContent=character.online?'? Online':character.npc?'? Personagem virtual':'Perfil local';
     card.querySelector('[data-description]').textContent=character.description||'Clique no personagem para ver as opcoes.';
     card.hidden=false;const size=card.getBoundingClientRect();card.style.left=Math.max(8,Math.min(event.x+18,innerWidth-size.width-8))+'px';card.style.top=Math.max(8,Math.min(event.y+18,innerHeight-size.height-8))+'px';

@@ -1,3 +1,4 @@
+    import {nobleLabel,nobleTitle} from './nobility.mjs';
     const errorBox = document.getElementById('error');let sceneReady=false;
     function fail(e) {
       errorBox.style.display='block';
@@ -2957,7 +2958,7 @@
       }
       const {avatarActions,poseAvatarAction}=await import('./avatar-actions.mjs');
       const actionMenu=document.createElement('section');actionMenu.className='characterMenu';actionMenu.hidden=true;actionMenu.setAttribute('aria-label','Menu do personagem');
-      const actionTitle=document.createElement('header');actionTitle.className='characterIdentity';actionTitle.innerHTML='<strong></strong><span>Nivel 1 <i>Iniciante</i></span>';actionMenu.append(actionTitle);
+      const actionTitle=document.createElement('header');actionTitle.className='characterIdentity';actionTitle.innerHTML='<strong></strong><span>Camponês • Nível 1</span>';actionMenu.append(actionTitle);
       const actionButtons=document.createElement('div');actionButtons.className='characterSubmenu characterActions';actionButtons.hidden=true;actionMenu.append(actionButtons);document.body.append(actionMenu);
       const reactionSection=document.createElement('section');reactionSection.className='characterSubmenu characterReactions';reactionSection.hidden=true;
       const reactionHeading=document.createElement('strong');reactionHeading.textContent='Reagir';reactionSection.append(reactionHeading);actionTitle.after(reactionSection);
@@ -2978,7 +2979,7 @@
         actions:'<path d="M9 12V5a2 2 0 0 1 4 0v7m0-4a2 2 0 0 1 4 0v4m0-2a2 2 0 0 1 4 0v5q0 7-7 7h-2q-3 0-5-4l-3-5q-1-3 2-3l3 4"/>',
         about:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v1"/>'
       };
-      const about=document.createElement('section');about.className='characterSubmenu characterAbout';about.hidden=true;about.innerHTML='<strong>Meu perfil</strong><p data-about-name></p><p>Nivel 1 &middot; Iniciante</p><small>A progressao de XP ainda nao esta ativa.</small>';actionMenu.append(about);
+      const about=document.createElement('section');about.className='characterSubmenu characterAbout';about.hidden=true;about.innerHTML='<strong>Meu perfil</strong><p data-about-name></p><p>Camponês &middot; Nível 1</p><small>A progressao de XP ainda nao esta ativa.</small>';actionMenu.append(about);
       const categories=[];
       function selectCharacterCategory(name){
         reactionSection.hidden=name!=='reactions';actionButtons.hidden=name!=='actions';about.hidden=name!=='about';
@@ -4912,7 +4913,7 @@
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=compact-27');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=nobility-28');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -4969,7 +4970,7 @@
       }
       const networkJoints=[...legs,...knees,...arms,...elbows];
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
-      function nameTag(text,bubble=false,sender='') {
+      function nameTag(text,bubble=false,sender='',level=1) {
         const canvas=document.createElement('canvas');canvas.width=768;
         const ctx=canvas.getContext('2d');ctx.font='30px Arial';
         const lines=[];let line='';
@@ -4977,7 +4978,7 @@
           if(char==='\n'||ctx.measureText(line+char).width>650){lines.push(line);line=char==='\n'?'':char;}else line+=char;
         }
         if(line||!lines.length)lines.push(line);
-        canvas.height=bubble?116+lines.length*42:94;
+        canvas.height=bubble?116+lines.length*42:132;
         const h=canvas.height;ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=12;ctx.shadowOffsetY=5;
         ctx.beginPath();ctx.roundRect(12,8,744,h-(bubble?32:20),bubble?24:30);ctx.fillStyle=bubble?'#f3faf7':'rgba(12,29,35,.94)';ctx.fill();
         ctx.shadowBlur=0;ctx.shadowOffsetY=0;
@@ -4985,7 +4986,7 @@
           ctx.beginPath();ctx.moveTo(365,h-30);ctx.lineTo(384,h-7);ctx.lineTo(403,h-30);ctx.fill();
           ctx.fillStyle='#238567';ctx.font='bold 22px Arial';ctx.textAlign='left';ctx.fillText(sender,42,43,650);
           ctx.fillStyle='#173b35';ctx.font='30px Arial';lines.forEach((value,i)=>ctx.fillText(value,42,85+i*42));
-        }else{ctx.fillStyle='#8effcd';ctx.font='bold 32px Arial';ctx.textAlign='center';ctx.fillText(text,384,59,680);}
+        }else{ctx.fillStyle='#f5f5f5';ctx.font='bold 32px Arial';ctx.textAlign='center';ctx.fillText(text,384,49,680);ctx.fillStyle=nobleTitle(level).color;ctx.font='27px Arial';ctx.fillText(nobleLabel(level),384,93,680);}
         const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
         const material=new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false});
         const sprite=new THREE.Sprite(material);const width=bubble?2.4:1.65;sprite.position.y=bubble?2.3+(width*h/768)/2:2.1;sprite.scale.set(width,width*h/768,1);sprite.renderOrder=100;return sprite;
@@ -5004,7 +5005,9 @@
           if(guest.userData.waveUntil>t){const arm=guest.getObjectByName('networkJoint5');if(arm){arm.rotation.z=-2.5;arm.rotation.x=Math.sin(t*.014)*.3;}}
         }
       }
+      let ownNobleTag=null;
       sharedRoom=createSharedRoom({
+        onSelfProgression:member=>{if(ownNobleTag)disposeTag(ownNobleTag);ownNobleTag=nameTag(member.name,false,'',member.progression.level);avatar.add(ownNobleTag);avatar.userData.nobleLevel=member.progression.level;actionTitle.querySelector('span').textContent=nobleLabel(member.progression.level);about.querySelectorAll('p')[1].textContent=nobleLabel(member.progression.level);},
         onWorld:world=>{applyRoomWorld(world);updateBilliardsState(world?.billiards);},
         onReaction:type=>showCharacterReaction(avatar,type),
         mountAvatarPreview: container=>createAvatarEditorPreview({container,THREE,template:avatarTemplate,applyAppearance:applyAvatarAppearance}),
@@ -5016,7 +5019,7 @@
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
-            if(guest.userData.displayName!==member.name){disposeTag(guest.userData.tag);guest.userData.tag=nameTag(member.name);guest.add(guest.userData.tag);guest.userData.displayName=member.name;}
+            if(guest.userData.displayName!==member.name||guest.userData.nobleLevel!==(member.progression?.level||1)){disposeTag(guest.userData.tag);guest.userData.tag=nameTag(member.name,false,'',member.progression?.level||1);guest.add(guest.userData.tag);guest.userData.displayName=member.name;guest.userData.nobleLevel=member.progression?.level||1;}
             if(member.avatar)applyAvatarAppearance(guest,member.avatar,THREE);
             guest.userData.networkPose=member.pose;
           }

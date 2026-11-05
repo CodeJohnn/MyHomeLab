@@ -1,4 +1,5 @@
 import {createAccountAuth} from './account-auth.mjs';
+import {accountProgression} from './progression.mjs';
 import http from 'node:http';
 import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
@@ -31,8 +32,10 @@ export function createServer({privateRooms=false,createRoomWorld=createWorld,ser
       }
       if(url.pathname==='/health' && ['GET','HEAD'].includes(req.method))return reply(res,200,{ok:true});
       if(url.pathname==='/api/auth/config'&&req.method==='GET')return reply(res,200,accountAuth.publicConfig());
-      if(accountAuth.configured&&req.method==='POST'&&(url.pathname==='/api/rooms'||url.pathname==='/api/lobby'||/^\/api\/rooms\/[a-f0-9]{36}\/join$/.test(url.pathname)))await accountAuth.verify(req.headers['x-account-token']);
-      if(url.pathname.startsWith('/api/'))return await handleApi(req,res,url,{createRoomWorld,serverRoomPassword,privateRooms});
+      if(url.pathname==='/api/progression'&&req.method==='GET')return reply(res,200,accountProgression(await accountAuth.verify(req.headers['x-account-token'])));
+      let account=null;
+      if(accountAuth.configured&&req.method==='POST'&&(url.pathname==='/api/rooms'||url.pathname==='/api/lobby'||/^\/api\/rooms\/[a-f0-9]{36}\/(join|prestige)$/.test(url.pathname)))account=await accountAuth.verify(req.headers['x-account-token']);
+      if(url.pathname.startsWith('/api/'))return await handleApi(req,res,url,{createRoomWorld,serverRoomPassword,privateRooms,account});
       if(!serveFrontend)return reply(res,404,{error:'Não encontrado.'});
       if(!['GET','HEAD'].includes(req.method))return reply(res,405,{error:'Método não permitido.'});
       const relative=decodeURIComponent(url.pathname).replace(/^\/+/, '')||'index.html';

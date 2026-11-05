@@ -4,8 +4,10 @@ import {createPeerVideo} from './peer-video.mjs';
 import {showRoomLoading,hideRoomLoading} from './room-loading.mjs';
 import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
+import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs';
 
-export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview}) {
+export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview,onSelfProgression}) {
+  let selfProgression={level:1,xp:0},previousSelfLevel=null,selfProgressionSignature='';
   const onlineDock=document.createElement('details');
   onlineDock.className='roomOnlineDock';onlineDock.hidden=true;onlineDock.open=true;
   onlineDock.innerHTML='<summary>Pessoas online <span data-total>0</span><span aria-hidden="true">⌄</span></summary><div class="roomOnlineMembers" aria-label="Pessoas na sala"></div>';
@@ -13,14 +15,19 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   let dockSignature='';
   const initials=name=>(name||'Visitante').trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase('pt-BR');
   function updateOnlineDock(members){
-    const signature=JSON.stringify(members.map(member=>[member.id,member.name]));
+    const signature=JSON.stringify(members.map(member=>[member.id,member.name,member.progression?.level]));
     if(signature===dockSignature)return;dockSignature=signature;
     onlineDock.querySelector('[data-total]').textContent=members.length;
     onlineDock.querySelector('.roomOnlineMembers').replaceChildren(...members.map(member=>{
       const tile=document.createElement('div');tile.className='roomOnlineMember';
       const portrait=document.createElement('span');portrait.className='roomMemberPortrait';portrait.textContent=initials(member.name);portrait.setAttribute('aria-hidden','true');
       const name=document.createElement('span');name.textContent=member.name+(member.id===selfId?' (você)':'');
-      tile.title=name.textContent;tile.append(portrait,name);return tile;
+      const rank=document.createElement('span');renderNobility(rank,member.progression);
+      tile.title=name.textContent;tile.append(portrait,name,rank);return tile;
+    }));
+    const ranking=onlineDock.querySelector('.nobleRanking ol');
+    ranking.replaceChildren(...[...members].sort((a,b)=>(b.progression?.level||1)-(a.progression?.level||1)||(b.progression?.xp||0)-(a.progression?.xp||0)||a.name.localeCompare(b.name)).map(member=>{
+      const row=document.createElement('li'),name=document.createElement('strong'),rank=document.createElement('span');name.textContent=member.name;renderNobility(rank,member.progression);row.append(name,rank);return row;
     }));
   }
   const presenceNotices=document.createElement('div');
@@ -81,6 +88,8 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     apply();visibilityControls.append(button);
   }
   document.body.append(visibilityControls);
+  const ranking=document.createElement('details');ranking.className='nobleRanking';ranking.innerHTML='<summary>Prestígio • nesta sala</summary><ol></ol>';onlineDock.append(ranking);
+  const profilePrestige=document.createElement('div');renderNobility(profilePrestige);panel.querySelector('[data-page="profile"]').prepend(profilePrestige);
   const profileDialog=document.createElement('dialog');profileDialog.className='onlineProfileDialog';
   profileDialog.innerHTML='<header><div><small>SEU LUGAR NO LABORATORIO</small><h2>Como voce quer aparecer?</h2><p>Escolha seu nome e personalize seu avatar antes de entrar.</p></div><button type="button" data-profile-close aria-label="Fechar">&#10005;</button></header><div class="onlineProfileLayout"><aside class="onlineAvatarPreview"><div class="onlineAvatarPreviewHeading"><span>SEU AVATAR</span><span class="onlineAvatarLive">AO VIVO</span></div><div class="onlineAvatarPreviewStage"></div><div class="onlineAvatarPreviewAngles"><button type="button" data-preview-front>Frente</button><button type="button" data-preview-back>Costas</button></div><small>Arraste o personagem para girar</small></aside><div class="onlineProfileContent"></div></div>';
   document.body.append(profileDialog);
@@ -199,8 +208,9 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   if(room){el('join').textContent='Entrar na sala';panel.open=true;}
   const status=text=>{if(el('status').textContent!==text)el('status').textContent=text;};
   async function api(action,data,raw=false){
+    const accountHeaders=['join','lobby','create','prestige'].includes(action)?await progressionAccountHeaders():{};
 
-    const response=await fetch(apiUrl(action==='lobby'?'/api/lobby':`/api/rooms${action==='create'?'':`/${room}/${action}`}`),{method:'POST',headers:{'Content-Type':raw?data.type:'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:raw?data:JSON.stringify(data)});
+    const response=await fetch(apiUrl(action==='lobby'?'/api/lobby':`/api/rooms${action==='create'?'':`/${room}/${action}`}`),{method:'POST',headers:{...accountHeaders,'Content-Type':raw?data.type:'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:raw?data:JSON.stringify(data)});
     if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('N?o foi poss?vel conectar. Tente novamente em instantes.');
     const result=await response.json();if(!response.ok)throw Object.assign(new Error(result.error||'Falha de conexao.'),{status:response.status});return result;
   }
@@ -237,6 +247,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     try {
       if(!profileConfirmed&&!(await openOnlineProfile(true)))return;
       previousMembers=null;
+      previousSelfLevel=null;selfProgressionSignature='';
       await showRoomLoading('Conectando à sala pública...');
       el('count').textContent='Entrando';
       if(!room)room=(await api('lobby',{})).room;
@@ -252,6 +263,14 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       events.onopen=()=>{clearTimeout(reconnectTimer);reconnectTimer=null;};
       events.onmessage=e=>{
         const state=JSON.parse(e.data);
+        const self=state.members.find(member=>member.id===selfId);
+        if(self&&JSON.stringify([self.id,self.name,self.progression])!==selfProgressionSignature){
+          selfProgressionSignature=JSON.stringify([self.id,self.name,self.progression]);
+          const next=self.progression||{level:1,xp:0};
+          if(previousSelfLevel!==null)showNoblePromotion({level:previousSelfLevel},next);
+          previousSelfLevel=next.level;selfProgression=next;
+          renderNobility(profilePrestige,next);onSelfProgression?.({...self,progression:next});
+        }
         onlineDock.hidden=panel.hidden;
         updateOnlineDock(state.members);
         updatePresence(state.members);
@@ -310,6 +329,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   let sending=false;
   setInterval(async()=>{if(!token||closed||sending)return;sending=true;try{await api('state',{pose:getPose()});}catch(e){showError(e);}finally{sending=false;}},100);
   setInterval(()=>{if(token&&media)apply();},5000);
+  setInterval(()=>{if(token&&!closed&&!document.hidden)void api('prestige',{}).catch(()=>{});},60000);
   addEventListener('pagehide',()=>{events?.close();peer.close();avatarPreview?.dispose();});
   el('join').textContent='Entrar no mundo';
   let checkingAvailability=false,lastAvailabilityCheck=-Infinity,wasAvailable=false,autoJoinStarted=false,availabilityAttempts=0;
@@ -339,5 +359,5 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAvailability();});
   // Sem ping continuo: permite que o Render gratuito repouse sem jogadores.
   checkAvailability(true);
-  return {editProfile:()=>openOnlineProfile(),getProfile:()=>({name:nameInput.value,avatar:readAvatar(),level:1}),react:sendReaction,sendSocialReaction:type=>{if(token)void sendMessage(type==='wave'?'\u{1f44b}':'\u2764\ufe0f');},isOnline:()=>Boolean(token&&!closed&&!panel.hidden&&navigator.onLine),getSelfId:()=>selfId,uploadVideo,notify:status,sendWorldAction:async action=>{if(!token)throw new Error('Entre na sala para interagir.');try{return await api('state',{worldAction:action});}catch(e){showError(e);throw e;}}};
+  return {editProfile:()=>openOnlineProfile(),getProfile:()=>({name:nameInput.value,avatar:readAvatar(),level:selfProgression.level,progression:selfProgression}),react:sendReaction,sendSocialReaction:type=>{if(token)void sendMessage(type==='wave'?'\u{1f44b}':'\u2764\ufe0f');},isOnline:()=>Boolean(token&&!closed&&!panel.hidden&&navigator.onLine),getSelfId:()=>selfId,uploadVideo,notify:status,sendWorldAction:async action=>{if(!token)throw new Error('Entre na sala para interagir.');try{return await api('state',{worldAction:action});}catch(e){showError(e);throw e;}}};
 }
