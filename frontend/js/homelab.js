@@ -1071,6 +1071,16 @@
       const youtubeRoomPlayers=new WeakMap();
       let lastMonitorOcclusionCheck = -Infinity;
       function renderMonitorVideos() {
+        let visibleOccluders=null;
+        function getVisibleOccluders(){
+          if(visibleOccluders)return visibleOccluders;
+          const meshes=new Set();
+          for(const root of [...objects.map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root),restrictedDoor,firstPersonCeilings]){
+            if(!isSceneVisible(root))continue;
+            root.traverseVisible(node=>{if(node.isMesh)meshes.add(node);});
+          }
+          return visibleOccluders=[...meshes];
+        }
         camera.updateMatrixWorld();
         monitorProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
         monitorFrustum.setFromProjectionMatrix(monitorProjection);
@@ -1150,7 +1160,7 @@
                 const direction=camera.isPerspectiveCamera?towardEye.normalize():toCamera;
                 screenRay.set(origin,direction);
                 screenRay.far=Math.max(0,depth-.01);
-                const obstruction=screenRay.intersectObjects([...objects.map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root),restrictedDoor,firstPersonCeilings],true).find(h=>!belongsToMonitor(h.object) && isSceneVisible(h.object));
+                const obstruction=screenRay.intersectObjects(getVisibleOccluders().filter(mesh=>!belongsToMonitor(mesh)),false)[0];
                 return !obstruction || obstruction.distance>=depth;
               });
               screen.userData.occlusionVisible=visible;
@@ -3685,7 +3695,8 @@
       }
       function poseNpcTyping(npc,station,time) {
         const keyboard=station.userData.keyboard;if(!keyboard)return;
-        npc.root.updateWorldMatrix(true,true);keyboard.updateWorldMatrix(true,true);
+        // IK reads only these two world transforms, not every descendant mesh/bone.
+        npc.root.updateWorldMatrix(true,false);keyboard.updateWorldMatrix(true,false);
         const down=new THREE.Vector3(0,-1,0),upperLength=npc.upperLength||.22,lowerLength=npc.lowerLength||.27;
         npc.arms.forEach((arm,i)=>{
           const side=i===0?-1:1;
