@@ -36,3 +36,9 @@
 .roomSocialVisibility button[aria-pressed=false]{background:#111;color:#aaa}
 .roomSocialVisibility button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 @media(max-width:700px),(pointer:coarse){.roomSocialVisibility{top:auto;bottom:calc(136px + env(safe-area-inset-bottom));right:10px;flex-direction:column;gap:4px}.roomSocialVisibility button{min-height:44px;padding:8px 10px;font-size:11px}}
+.roomSocialVisibility{top:auto;bottom:max(14px,env(safe-area-inset-bottom));right:14px;padding:0;gap:6px;background:none;border:0;flex-direction:row}
+.roomSocialVisibility button{min-height:44px;padding:8px 12px;border-radius:24px;background:#161616d9;box-shadow:0 3px 10px #0003;font-size:11px}
+.roomSocialVisibility button[aria-pressed=false]{background:#161616c9;color:#c6c6c6}
+.roomOnlineDock{bottom:72px}
+.onlineRoom{background:#181818f5}
+@media(max-width:700px),(pointer:coarse){.roomSocialVisibility{top:max(12px,env(safe-area-inset-top));bottom:auto;right:10px;flex-direction:row;gap:4px}.roomSocialVisibility button{min-height:44px;padding:8px 10px}.roomOnlineDock{bottom:max(10px,env(safe-area-inset-bottom))}}

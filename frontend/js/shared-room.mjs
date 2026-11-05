@@ -66,16 +66,18 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   panel.id='roomChatPanel';onlineDock.id='roomOnlinePanel';
 
   for(const [key,label,target] of [['chat','Conversa',panel],['online','Online',onlineDock]]){
-    let visible=true;
-    try{visible=localStorage.getItem('homelab.panel.'+key)!=='hidden';}catch{}
+    let visible=false;
+    try{visible=localStorage.getItem('homelab.panel.compact.'+key)==='visible';}catch{}
     const button=document.createElement('button');button.type='button';
     button.setAttribute('aria-controls',target.id);
     const apply=()=>{
       target.classList.toggle('socialPanelHidden',!visible);
-      button.textContent=(visible?'Ocultar ':'Mostrar ')+label;
+      button.textContent=key==='chat'?'Chat':'Online';
+      button.title=(visible?'Ocultar ':'Mostrar ')+label;
+      button.setAttribute('aria-label',button.title);
       button.setAttribute('aria-pressed',String(visible));
     };
-    button.onclick=()=>{visible=!visible;apply();try{localStorage.setItem('homelab.panel.'+key,visible?'visible':'hidden');}catch{}};
+    button.onclick=()=>{visible=!visible;if(visible){target.open=true;if(key==='chat')selectOnlineTab('chat');}apply();try{localStorage.setItem('homelab.panel.compact.'+key,visible?'visible':'hidden');}catch{}};
     apply();visibilityControls.append(button);
   }
   document.body.append(visibilityControls);
