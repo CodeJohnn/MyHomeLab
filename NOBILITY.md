@@ -1,3 +1,7 @@
+## Atualização: XP diário
+
+O sistema de XP diário foi implementado em uma migração PostgreSQL. Consulte DAILY-REWARDS.md para ativar. Após a migração, a tabela player_progression substitui os metadados administrativos como fonte de progressão. O texto abaixo registra a arquitetura anterior.
+
 # Nobreza e integração de progressão
 
 Configuração única: `frontend/js/nobility.mjs`, importada no frontend e backend.

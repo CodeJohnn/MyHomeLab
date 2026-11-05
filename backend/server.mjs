@@ -1,5 +1,6 @@
 import {createAccountAuth} from './account-auth.mjs';
 import {accountProgression} from './progression.mjs';
+import {createDailyRewards} from './daily-rewards.mjs';
 import http from 'node:http';
 import { stat } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
@@ -15,7 +16,7 @@ catch(error) { if(error.code!=='ENOENT')throw error; }
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const types = {'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.mp3':'audio/mpeg','.glb':'model/gltf-binary','.woff2':'font/woff2'};
 function reply(res, code, data) { res.writeHead(code, {'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
-export function createServer({privateRooms=false,createRoomWorld=createWorld,serverRoomPassword=process.env.SERVER_ROOM_PASSWORD||'',allowedOrigins=(process.env.ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean),accountAuth=createAccountAuth({url:process.env.SUPABASE_URL,key:process.env.SUPABASE_PUBLISHABLE_KEY}),serveFrontend=process.env.SERVE_FRONTEND!=='false'}={}) {
+export function createServer({privateRooms=false,createRoomWorld=createWorld,serverRoomPassword=process.env.SERVER_ROOM_PASSWORD||'',allowedOrigins=(process.env.ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).filter(Boolean),accountAuth=createAccountAuth({url:process.env.SUPABASE_URL,key:process.env.SUPABASE_PUBLISHABLE_KEY}),dailyRewards=createDailyRewards({url:process.env.SUPABASE_URL,key:process.env.SUPABASE_PUBLISHABLE_KEY}),serveFrontend=process.env.SERVE_FRONTEND!=='false'}={}) {
   return http.createServer(async (req,res)=>{
     try {
       const url=new URL(req.url,'http://localhost');
@@ -32,10 +33,24 @@ export function createServer({privateRooms=false,createRoomWorld=createWorld,ser
       }
       if(url.pathname==='/health' && ['GET','HEAD'].includes(req.method))return reply(res,200,{ok:true});
       if(url.pathname==='/api/auth/config'&&req.method==='GET')return reply(res,200,accountAuth.publicConfig());
-      if(url.pathname==='/api/progression'&&req.method==='GET')return reply(res,200,accountProgression(await accountAuth.verify(req.headers['x-account-token'])));
-      let account=null;
+      if(url.pathname==='/api/daily-reward'&&req.method==='POST'){
+        const user=await accountAuth.verify(req.headers['x-account-token']);
+        if(!user)throw Object.assign(new Error('Entre em uma conta para receber XP.'),{status:401});
+        return reply(res,200,await dailyRewards.call('claim_daily_login',req.headers['x-account-token']));
+      }
+      if(url.pathname==='/api/progression'&&req.method==='GET'){
+        const user=await accountAuth.verify(req.headers['x-account-token']);
+        if(user&&dailyRewards.configured)return reply(res,200,await dailyRewards.call('get_player_progression',req.headers['x-account-token']));
+        return reply(res,200,accountProgression(user));
+      }
+      let account=null,dailyReward=null;
       if(accountAuth.configured&&req.method==='POST'&&(url.pathname==='/api/rooms'||url.pathname==='/api/lobby'||/^\/api\/rooms\/[a-f0-9]{36}\/(join|prestige)$/.test(url.pathname)))account=await accountAuth.verify(req.headers['x-account-token']);
-      if(url.pathname.startsWith('/api/'))return await handleApi(req,res,url,{createRoomWorld,serverRoomPassword,privateRooms,account});
+      if(account&&dailyRewards.configured&&/\/(join|prestige)$/.test(url.pathname)){
+        // XP service failure must not prevent access to the social world.
+        try{const result=await dailyRewards.call(url.pathname.endsWith('/join')?'claim_daily_login':'get_player_progression',req.headers['x-account-token']);account.serverProgression=result.progression||result;if(result.progression)dailyReward=result;}
+        catch{account.progressionUnavailable=true;}
+      }
+      if(url.pathname.startsWith('/api/'))return await handleApi(req,res,url,{createRoomWorld,serverRoomPassword,privateRooms,account,dailyReward});
       if(!serveFrontend)return reply(res,404,{error:'Não encontrado.'});
       if(!['GET','HEAD'].includes(req.method))return reply(res,405,{error:'Método não permitido.'});
       const relative=decodeURIComponent(url.pathname).replace(/^\/+/, '')||'index.html';

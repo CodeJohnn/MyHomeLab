@@ -5,6 +5,7 @@ import {showRoomLoading,hideRoomLoading} from './room-loading.mjs';
 import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
 import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs';
+import {claimDailyReward} from './daily-rewards.mjs';
 
 export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview,onSelfProgression}) {
   let selfProgression={level:1,xp:0},previousSelfLevel=null,selfProgressionSignature='';
@@ -261,6 +262,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       events=new EventSource(apiUrl(`/api/rooms/${room}/events?token=${token}`));
       events.addEventListener('peer-signal',event=>{try{peer.signal(JSON.parse(event.data));}catch(error){showError(error);}});
       events.onopen=()=>{clearTimeout(reconnectTimer);reconnectTimer=null;};
+      void claimDailyReward({showPanel:true,award:joined.dailyReward}).catch(error=>status(error.message));
       events.onmessage=e=>{
         const state=JSON.parse(e.data);
         const self=state.members.find(member=>member.id===selfId);

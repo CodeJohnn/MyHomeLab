@@ -18,3 +18,7 @@ services:
         sync: false
       - key: SERVER_ROOM_PASSWORD
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false

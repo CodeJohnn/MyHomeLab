@@ -1,6 +1,7 @@
 import {avatarModels} from './avatar-model-catalog.mjs?v=stable-6';
 import {wardrobe,wardrobeDefaults} from './avatar-wardrobe.mjs';
 import {renderNobility,fetchAccountProgression} from './nobility-ui.mjs';
+import {claimDailyReward,renderLevelProgress} from './daily-rewards.mjs';
 export function createUserHome({host,onPlay}){
   const page=document.createElement('section');page.className='userHome';page.hidden=true;
   page.innerHTML='<header class="userHomeHeader"><button type="button" data-back>&#8592; Inicio</button><span>HOMELAB / GUEDESSEC</span><small>Perfil deste navegador</small></header><div class="userWelcome"><span>AREA DO USUARIO</span><h1>Bom te ver, <b data-user-name></b>.</h1><p>Seu perfil, seu avatar e a proxima entrada no laboratorio.</p></div><div class="userHomeGrid"><aside class="userCard"><div class="userPortrait userPortrait3d" aria-label="Seu avatar 3D"><span>Carregando avatar...</span></div><div class="userAvatarAngles"><button type="button" data-front>Frente</button><button type="button" data-back-view>Costas</button></div><h2 data-profile-name></h2><span class="userLevel">Nivel 1 &middot; Iniciante</span><div class="userXp"><span>0 XP</span><span>Progresso inicial</span></div><div class="userXpBar" role="progressbar" aria-label="Experiencia inicial" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div><small>A progressao de nivel ainda sera implementada.</small></aside><div class="userHomeMain"><section class="userPlayCard"><span>LABORATORIO</span><h2>Vamos entrar?</h2><p>Explore o ambiente e encontre o pessoal.</p><button type="button" data-play class="landingPlay">Jogar agora &#8594;</button><p data-loading role="status" hidden></p></section><section class="userEditor"><header><h2>Meu avatar</h2><small>As alteracoes ficam salvas neste navegador. <a href="./frontend/assets/credits.html" target="_blank" rel="noopener">Creditos das imagens</a></small></header><form><label class="userNameField">Nome de exibicao<input name="name" required maxlength="30" autocomplete="nickname"></label><label>Modelo<select name="model"><option value="default">Personalizado</option><option value="punk">Punk</option></select></label><p class="userNameField" data-model-note hidden>Este personagem usa o visual original do modelo.</p><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="fade">Degrade</option><option value="quiff">Topete</option><option value="curly">Cacheado</option><option value="long">Longo</option><option value="bob">Chanel</option><option value="ponytail">Rabo de cavalo</option></select></label><div data-clothes class="userClothes"></div><div data-colors class="userColors"></div><label class="userCheck"><input type="checkbox" name="glasses"> Usar oculos</label><button type="submit" class="userSave">Salvar perfil</button><p data-feedback role="status"></p></form></section></div></div>';
@@ -8,12 +9,12 @@ export function createUserHome({host,onPlay}){
   renderNobility(page.querySelector('.userLevel'));
   async function refreshPrestige(){
     try{
-      const progression=await fetchAccountProgression();renderNobility(page.querySelector('.userLevel'),progression);
+      const reward=await claimDailyReward();
+      const progression=reward?.progression||await fetchAccountProgression();renderNobility(page.querySelector('.userLevel'),progression);
       page.querySelector('.userXp').firstChild.textContent=`${progression.xp} XP`;
       page.querySelector('.userXp').lastChild.textContent='Prestígio social';
-      page.querySelector('.userCard>small').textContent=progression.source==='account'?'Título calculado pelo nível da sua conta.':'Visitante • entre em uma conta para persistir o prestígio.';
-      page.querySelector('.userXpBar').removeAttribute('role');page.querySelector('.userXpBar').removeAttribute('aria-valuenow');
-      page.querySelector('.userXpBar').setAttribute('aria-label','Regras de ganho de XP aguardando integração');
+      page.querySelector('.userCard>small').textContent=progression.source==='database'?'XP e título salvos na sua conta.':'Visitante • entre em uma conta para receber XP.';
+      renderLevelProgress(page.querySelector('.userXpBar'),progression);
     }catch{page.querySelector('.userCard>small').textContent='Não foi possível consultar o prestígio da conta.';}
   }
   form.elements.model.replaceChildren(...avatarModels.map(model=>new Option(model.label,model.id)));

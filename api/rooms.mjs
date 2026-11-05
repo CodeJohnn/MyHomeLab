@@ -1,5 +1,5 @@
 import {defaultAvatar,validateAvatar} from '../backend/avatar.mjs';
-import {accountProgression} from '../backend/progression.mjs';
+import {accountProgression,publicProgression} from '../backend/progression.mjs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import {createWorld,tickWorld,actOnWorld,leaveBilliards} from '../backend/room-world.mjs';
 
@@ -14,7 +14,7 @@ async function body(req, max = 4096) {
   for await (const chunk of req) { size+=chunk.length; if(size>max) throw Object.assign(new Error('Arquivo ou mensagem grande demais.'),{status:413}); chunks.push(chunk); }
   return Buffer.concat(chunks);
 }
-function snapshot(room) { room.world||=createWorld();return {world:room.world,members:[...room.members.values()].map(m=>({id:m.id,name:m.name,pose:m.pose,progression:m.progression||accountProgression(null),avatar:m.avatar||defaultAvatar})),messages:room.messages||[],media:room.media,serverTime:Date.now()}; }
+function snapshot(room) { room.world||=createWorld();return {world:room.world,members:[...room.members.values()].map(m=>({id:m.id,name:m.name,pose:m.pose,progression:publicProgression(m.progression||accountProgression(null)),avatar:m.avatar||defaultAvatar})),messages:room.messages||[],media:room.media,serverTime:Date.now()}; }
 function broadcast(room) { const event=`data: ${JSON.stringify(snapshot(room))}\n\n`; for(const m of room.members.values()) m.stream?.write(event); }
 function removeMember(room,token){
   const member=room.members.get(token);if(!member)return;
@@ -24,7 +24,7 @@ function removeMember(room,token){
   room.messages||=[];room.messages.push({id:id(),kind:'system',event:'leave',name:member.name,text:`${member.name} saiu da sala.`,time:Date.now()});room.messages=room.messages.slice(-40);
   broadcast(room);
 }
-export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverRoomPassword='',privateRooms=false,account=null}={}) {
+export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverRoomPassword='',privateRooms=false,account=null,dailyReward=null}={}) {
       if(req.method==='POST' && url.pathname==='/api/lobby') {
         publicRoom(createRoomWorld);
         return reply(res,200,{room:lobbyKey});
@@ -45,11 +45,11 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
           const input=JSON.parse((await body(req)).toString());
           const avatar=input.avatar===undefined?{...defaultAvatar}:validateAvatar(input.avatar);
           if(!avatar)return reply(res,400,{error:'Avatar invalido.'});
-          if(input.token && room.members.has(input.token)) {const existing=room.members.get(input.token);if(existing.accountId!==(account?.id||null))return reply(res,403,{error:'Conta diferente da sessão da sala.'});existing.progression=accountProgression(account);existing.seen=Date.now();existing.avatar=input.avatar===undefined?(existing.avatar||{...defaultAvatar}):avatar;broadcast(room);return reply(res,200,{token:input.token,id:existing.id,pose:existing.pose,...snapshot(room)});}
+          if(input.token && room.members.has(input.token)) {const existing=room.members.get(input.token);if(existing.accountId!==(account?.id||null))return reply(res,403,{error:'Conta diferente da sessão da sala.'});existing.progression=accountProgression(account);existing.seen=Date.now();existing.avatar=input.avatar===undefined?(existing.avatar||{...defaultAvatar}):avatar;broadcast(room);return reply(res,200,{token:input.token,id:existing.id,pose:existing.pose,dailyReward,...snapshot(room)});}
           if(room.members.size>=(room.capacity||2)) return reply(res,409,{error:'Esta sala está cheia.'});
           const slot=Array.from({length:12},(_,i)=>i).find(i=>![...room.members.values()].some(m=>m.slot===i));
           const pose={x:-1.2+(slot%4)*.8,y:0,z:2.45-Math.floor(slot/4)*.8,r:0,joints:[]};
-          const token=id(),publicId=id(); room.members.set(token,{id:publicId,accountId:account?.id||null,progression:accountProgression(account),slot,avatar,name:String(input.name||'Visitante').slice(0,30),seen:Date.now(),stream:null,pose}); broadcast(room); return reply(res,200,{token,id:publicId,pose,...snapshot(room)});
+          const token=id(),publicId=id(); room.members.set(token,{id:publicId,accountId:account?.id||null,progression:accountProgression(account),slot,avatar,name:String(input.name||'Visitante').slice(0,30),seen:Date.now(),stream:null,pose}); broadcast(room); return reply(res,200,{token,id:publicId,pose,dailyReward,...snapshot(room)});
         }
         const token=req.headers.authorization?.replace(/^Bearer /,'') || url.searchParams.get('token');
         const member=room.members.get(token);

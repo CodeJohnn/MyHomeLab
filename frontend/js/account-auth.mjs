@@ -46,6 +46,7 @@ export function createAccountDialog(host,onAuthenticated){
       form.elements.password.value='';
       if(!result.data.session){feedback.textContent='Confira seu e-mail para confirmar o cadastro. Depois, entre com sua senha.';return;}
       const user=await verifiedAccount();if(!user)throw new Error('Confirme seu e-mail antes de entrar.');
+      try{const {claimDailyReward}=await import('./daily-rewards.mjs');await claimDailyReward();}catch{}
       dialog.close();await onAuthenticated(user);
     }catch(error){feedback.textContent=error.message||'Falha ao conectar. Tente novamente.';}
     finally{busy=false;submit.disabled=false;}
