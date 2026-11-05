@@ -7,15 +7,15 @@ let starting=false;
 let currentAccount=null;
 const login=createAccountDialog(host,async user=>{currentAccount=user;if(user.user_metadata?.display_name)localStorage.setItem('homelab.name',user.user_metadata.display_name);logout.hidden=!(await home.open());});
 const logout=document.createElement('button');logout.type='button';logout.className='accountLogout';logout.textContent='Sair da conta';logout.hidden=true;
-const home=createUserHome({host,onRequireLogin:()=>login.open(),onPlay:async()=>{
+const home=createUserHome({host,onRequireLogin:()=>login.open({signup:true}),onPlay:async()=>{
   if(starting)return;starting=true;
-  try{currentAccount=await verifiedAccount();if(!currentAccount){login.open();throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=daily-292');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');}
+  try{currentAccount=await verifiedAccount();if(!currentAccount){login.open({signup:true});throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=daily-292');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');}
   catch(error){starting=false;throw error;}
   finally{hideRoomLoading();}
 }});
 host.querySelector('.userHomeHeader').append(logout);
 logout.onclick=async()=>{logout.disabled=true;try{const client=await accountClient();const {error}=await client.auth.signOut();if(error)throw error;location.reload();}catch{logout.disabled=false;logout.textContent='Tentar sair novamente';}};
-async function enter(button,register=false){
+async function enter(button,register=true){
   if(button.disabled)return;button.disabled=true;
   const status=document.getElementById('landingLoading');status.hidden=false;status.textContent='Verificando sua conta...';
   try{
