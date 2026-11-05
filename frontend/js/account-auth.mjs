@@ -29,14 +29,15 @@ export function createAccountDialog(host,onAuthenticated){
   host.append(dialog);let signup=false,busy=false;
   const form=dialog.querySelector('form'),feedback=dialog.querySelector('[data-feedback]'),submit=form.querySelector('button');
   dialog.querySelector('.accountClose').onclick=()=>dialog.close();
-  dialog.querySelector('[data-mode]').onclick=()=>{
-    if(busy)return;signup=!signup;feedback.textContent='';form.elements.password.value='';
+  function setMode(value){
+    if(busy)return;signup=value;feedback.textContent='';form.elements.password.value='';
     dialog.querySelector('h2').textContent=signup?'Crie sua conta':'Entre na sua conta';
     dialog.querySelector('[data-intro]').textContent=signup?'Cadastre seu e-mail para participar do HomeLab.':'Use seu e-mail e senha para entrar no laboratorio.';
     dialog.querySelector('[data-name-label]').hidden=!signup;form.elements.name.required=signup;form.elements.password.minLength=signup?8:1;
     form.elements.password.autocomplete=signup?'new-password':'current-password';submit.textContent=signup?'Criar conta':'Entrar';
     dialog.querySelector('[data-mode]').textContent=signup?'Ja tenho uma conta':'Ainda nao tem conta? Criar conta';
-  };
+  }
+  dialog.querySelector('[data-mode]').onclick=()=>setMode(!signup);
   form.onsubmit=async event=>{
     event.preventDefault();if(busy)return;busy=true;submit.disabled=true;feedback.textContent='Verificando...';
     try{
@@ -52,5 +53,5 @@ export function createAccountDialog(host,onAuthenticated){
     finally{busy=false;submit.disabled=false;}
   };
   dialog.addEventListener('close',()=>{form.elements.password.value='';});
-  return {open(){feedback.textContent='';if(!dialog.open)dialog.showModal();form.elements.email.focus();}};
+  return {open({signup:register=false}={}){setMode(register);feedback.textContent='';if(!dialog.open)dialog.showModal();form.elements.email.focus();}};
 }

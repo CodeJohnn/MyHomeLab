@@ -1,5 +1,7 @@
 /* Touch layouts and safe areas; desktop layout stays in the component styles. */
 html{color-scheme:dark}
+.landingAccountActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}.landingAccountActions button{min-height:44px;padding:10px 16px;font-size:12px;border:1px solid #ffffff30;background:#202020;color:#eee}.landingAccountActions [data-register]{background:#e9e9e9;color:#141414}.accountLogout{margin-left:auto;font-size:12px}.accountLogout[hidden]{display:none}
+@media(max-width:540px){.landingNav{flex-wrap:wrap;padding-block:16px;gap:14px}.landingAccountActions{width:100%;justify-content:flex-start;gap:10px}.landingAccountActions .landingAboutLink{margin-right:auto}.accountDialog{padding:24px;max-height:calc(100dvh - 24px);overflow:auto}.accountDialog input{font-size:16px}.accountDialog button{min-height:44px}}
 .landing{padding-inline:clamp(24px,4vw,88px);min-height:100dvh;display:flex;flex-direction:column}
 .landingNav{flex-shrink:0}
 .landingHero{flex:1;min-height:calc(100dvh - 270px);gap:clamp(32px,6vw,120px);padding-block:clamp(40px,7vh,100px)}
