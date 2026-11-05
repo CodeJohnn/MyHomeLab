@@ -4726,8 +4726,12 @@
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
-        if (document.hidden || t - lastFrameTime < (isMobile ? 1000 / 30 : 1000 / 60)) return;
-        lastFrameTime = t;
+        if(document.hidden){prev=t;lastFrameTime=t;qualityStart=0;qualityFrames=0;return;}
+        const frameInterval=1000/(isMobile?30:60);
+        const frameElapsed=t-lastFrameTime;
+        // Absorb RAF timing jitter and retain the remainder instead of losing a frame.
+        if(frameElapsed<frameInterval-.5)return;
+        lastFrameTime=t-(Math.max(0,frameElapsed)%frameInterval);
         const dt = Math.min((t - prev) / 1000, .05);
         houseExterior.updateTraffic(dt);
         powerOutlets.update(t);
