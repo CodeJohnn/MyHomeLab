@@ -6,6 +6,23 @@ import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
 
 export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview}) {
+  const onlineDock=document.createElement('details');
+  onlineDock.className='roomOnlineDock';onlineDock.hidden=true;onlineDock.open=true;
+  onlineDock.innerHTML='<summary>Pessoas online <span data-total>0</span><span aria-hidden="true">⌄</span></summary><div class="roomOnlineMembers" aria-label="Pessoas na sala"></div>';
+  document.body.append(onlineDock);
+  let dockSignature='';
+  const initials=name=>(name||'Visitante').trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase('pt-BR');
+  function updateOnlineDock(members){
+    const signature=JSON.stringify(members.map(member=>[member.id,member.name]));
+    if(signature===dockSignature)return;dockSignature=signature;
+    onlineDock.querySelector('[data-total]').textContent=members.length;
+    onlineDock.querySelector('.roomOnlineMembers').replaceChildren(...members.map(member=>{
+      const tile=document.createElement('div');tile.className='roomOnlineMember';
+      const portrait=document.createElement('span');portrait.className='roomMemberPortrait';portrait.textContent=initials(member.name);portrait.setAttribute('aria-hidden','true');
+      const name=document.createElement('span');name.textContent=member.name+(member.id===selfId?' (você)':'');
+      tile.title=name.textContent;tile.append(portrait,name);return tile;
+    }));
+  }
   const presenceNotices=document.createElement('div');
   presenceNotices.className='roomPresenceNotices';
   presenceNotices.setAttribute('role','status');
@@ -133,6 +150,8 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   panel.addEventListener('keyup',e=>e.stopPropagation());
   const el=n=>panel.querySelector(`[data-${n}]`)||profileDialog.querySelector(`[data-${n}]`), video=el('video');
   function setOnlineConnected(value){
+    onlineDock.hidden=!value;
+    if(!value){updateOnlineDock([]);previousMembers=null;}
     panel.dataset.connected=String(value);
     for(const input of social.querySelectorAll('input,button'))input.disabled=!value;
     el('no-session').hidden=value;
@@ -212,6 +231,8 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       events.onopen=()=>{clearTimeout(reconnectTimer);reconnectTimer=null;};
       events.onmessage=e=>{
         const state=JSON.parse(e.data);
+        onlineDock.hidden=panel.hidden;
+        updateOnlineDock(state.members);
         updatePresence(state.members);
         el('count').textContent=state.members.length+' online';
         el('people').replaceChildren(...state.members.map(member=>{
@@ -228,7 +249,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
           }
           seenMessages.add(message.id);const line=document.createElement('div');line.className='onlineMessage'+(message.sender===selfId?' isOwn':'');
           const heading=document.createElement('div');heading.className='onlineMessageHeading';const name=document.createElement('strong');name.textContent=message.sender===selfId?'Você':message.name;const time=document.createElement('time');time.textContent=new Date(message.time).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});heading.append(name,time);
-          const text=document.createElement('p');text.textContent=message.text;line.append(heading,text);el('chat').append(line);while(el('chat').children.length>40)el('chat').firstChild.remove();el('chat').scrollTop=el('chat').scrollHeight;
+          line.dataset.initials=initials(message.name);const text=document.createElement('p');text.textContent=message.text;line.append(heading,text);el('chat').append(line);while(el('chat').children.length>40)el('chat').firstChild.remove();el('chat').scrollTop=el('chat').scrollHeight;
           if(Date.now()+offset-message.time<5000)onMessage?.({...message,self:message.sender===selfId});
         }
         const hadMedia=Boolean(media);
@@ -283,13 +304,14 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     }catch{}
     finally{checkingAvailability=false;}
     panel.hidden=!available;
+    onlineDock.hidden=!available||!token;
     if(!available&&navigator.onLine&&availabilityAttempts<3)setTimeout(()=>checkAvailability(true),5000);
     if(!available&&wasAvailable)onMembers([]);
     wasAvailable=available;
     if(available&&!token)el('count').textContent='Disponivel';
     if(available&&!autoJoinStarted){autoJoinStarted=true;el('join').click();}
   }
-  addEventListener('offline',()=>{panel.hidden=true;wasAvailable=false;onMembers([]);});
+  addEventListener('offline',()=>{panel.hidden=true;onlineDock.hidden=true;wasAvailable=false;onMembers([]);});
   addEventListener('online',()=>{checkAvailability(true);if(autoJoinStarted&&!token&&!closed)void el('join').onclick();});
   addEventListener('focus',()=>checkAvailability());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAvailability();});
