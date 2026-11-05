@@ -6,6 +6,31 @@ import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
 
 export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview}) {
+  const presenceNotices=document.createElement('div');
+  presenceNotices.className='roomPresenceNotices';
+  presenceNotices.setAttribute('role','status');
+  presenceNotices.setAttribute('aria-live','polite');
+  document.body.append(presenceNotices);
+  let previousMembers=null;
+  function notifyPresence(name,joined){
+    const notice=document.createElement('div');
+    notice.className='roomPresenceNotice';
+    const icon=document.createElement('span');icon.textContent=joined?'↳':'↗';icon.setAttribute('aria-hidden','true');
+    const text=document.createElement('span');
+    const username=document.createElement('strong');username.textContent=name||'Visitante';
+    text.append(username,document.createTextNode(joined?' entrou na sala':' saiu da sala'));
+    notice.append(icon,text);presenceNotices.append(notice);
+    while(presenceNotices.children.length>3)presenceNotices.firstChild.remove();
+    setTimeout(()=>notice.remove(),5000);
+  }
+  function updatePresence(members){
+    const current=new Map(members.map(member=>[member.id,member.name]));
+    if(previousMembers){
+      for(const [id,name] of current)if(!previousMembers.has(id))notifyPresence(name,true);
+      for(const [id,name] of previousMembers)if(!current.has(id))notifyPresence(name,false);
+    }
+    previousMembers=current;
+  }
   const panel=document.createElement('details');
   panel.hidden=true;
   panel.innerHTML=`<summary><span class="onlineHeading"><span class="onlineIndicator"></span>Conversa</span><span class="onlineCount" data-count>Conectando</span><button type="button" class="onlineOptions" aria-label="Opcoes da sala">&#8943;</button><span class="onlineChevron" aria-hidden="true">&#8964;</span></summary>
@@ -171,6 +196,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     el('join').disabled=true;
     try {
       if(!profileConfirmed&&!(await openOnlineProfile(true)))return;
+      previousMembers=null;
       await showRoomLoading('Conectando à sala pública...');
       el('count').textContent='Entrando';
       if(!room)room=(await api('lobby',{})).room;
@@ -186,6 +212,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       events.onopen=()=>{clearTimeout(reconnectTimer);reconnectTimer=null;};
       events.onmessage=e=>{
         const state=JSON.parse(e.data);
+        updatePresence(state.members);
         el('count').textContent=state.members.length+' online';
         el('people').replaceChildren(...state.members.map(member=>{
           const chip=document.createElement('span');chip.className='onlinePerson'+(member.id===selfId?' isSelf':'');

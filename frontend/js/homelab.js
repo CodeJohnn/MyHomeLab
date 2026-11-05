@@ -2473,13 +2473,17 @@
         if(!wallBoundsCache.has(mesh))wallBoundsCache.set(mesh,new THREE.Box3().setFromObject(mesh));
         return wallBoundsCache.get(mesh);
       }
-      let lastWallVisibilityUpdate=-Infinity,lastWallViewMode=null;
+      let lastWallVisibilityUpdate=-Infinity,lastWallViewMode=null,lastWallViewSignature='',lastWallFullUpdate=-Infinity;
       function updateActiveRoomWalls() {
         const time=performance.now();
         const outside=!insideHouse(avatar.position.x,avatar.position.z);
         const wallViewMode=`${viewMode}:${outside}`;
         if(lastWallViewMode===wallViewMode && time-lastWallVisibilityUpdate<(isMobile?150:80))return;
         lastWallVisibilityUpdate=time;lastWallViewMode=wallViewMode;
+        const signature=[wallViewMode,avatar.position.x,avatar.position.z,camera.position.x,camera.position.y,camera.position.z,viewYaw].join(':');
+        if(!edit&&signature===lastWallViewSignature&&time-lastWallFullUpdate<1000)return;
+        lastWallFullUpdate=time;
+        lastWallViewSignature=edit?'':signature;
         for (const [object, visible] of wallOcclusionState) object.visible = visible;
         wallOcclusionState.clear();
 
@@ -2519,15 +2523,20 @@
         }
         scene.traverse(object=>{if(object.userData.wallAttachment)attachmentSet.add(object);});
         const attachments=[...attachmentSet];
+        // Reuse attachment bounds across all wall checks in this update.
+        const attachmentData=new Map();
         function hideWall(mesh) {
           hide(mesh);
           const bounds=cachedWallBounds(mesh);
           const alongX=bounds.max.x-bounds.min.x>bounds.max.z-bounds.min.z;
           const wallPlane=alongX?(bounds.min.z+bounds.max.z)/2:(bounds.min.x+bounds.max.x)/2;
           for(const attachment of attachments) {
-            const position=attachment.getWorldPosition(new THREE.Vector3());
+            let data=attachmentData.get(attachment);
+            if(!data){data={position:attachment.getWorldPosition(new THREE.Vector3()),bounds:null};attachmentData.set(attachment,data);}
+            const position=data.position;
             const nearPlane=Math.abs((alongX?position.z:position.x)-wallPlane)<.28;
-            const attachmentBounds=new THREE.Box3().setFromObject(attachment);
+            if(!nearPlane)continue;
+            const attachmentBounds=data.bounds||(data.bounds=new THREE.Box3().setFromObject(attachment));
             const within=alongX?attachmentBounds.max.x>=bounds.min.x-.12&&attachmentBounds.min.x<=bounds.max.x+.12:attachmentBounds.max.z>=bounds.min.z-.12&&attachmentBounds.min.z<=bounds.max.z+.12;
             if(nearPlane&&within && !(edit && selected?.g===attachment))hide(attachment);
           }
@@ -4667,6 +4676,8 @@
       renderer.shadowMap.autoUpdate=false;
       let lastShadowUpdate=-Infinity;
       let prev = performance.now(), walk = 0, lastFrameTime = 0;
+      const audioPositions={speaker:new THREE.Vector3(),ac:new THREE.Vector3()};
+      const interactionStatus=document.getElementById('status');
       // Sombras de contato leves: acabamento no piso sem um mapa de sombras extra.
       let updateMobileContactShadows=()=>{};
       if(isMobile){
@@ -4833,7 +4844,7 @@
           const distance=Math.hypot(avatar.position.x-p.x,avatar.position.z-p.z);
           if(distance<best && isSceneVisible(seat.g)){best=distance;near=seat;}
         }
-        if (!edit && !interactionPose) document.getElementById('status').textContent = near ? 'E para interagir: ' + near.label : 'Explore o escritório.';
+        if (!edit && !interactionPose){const text=near?'E para interagir: '+near.label:'Explore o escritório.';if(interactionStatus.textContent!==text)interactionStatus.textContent=text;}
         animatedPcFans.forEach((fan, i) => { fan.rotation.z += dt * (i % 2 ? 5.2 : -5.2) });
         refreshRoomColliders();
         updateNpcs(dt, t);
@@ -4858,7 +4869,8 @@
         fridgeDoor.rotation.y=THREE.MathUtils.lerp(fridgeDoor.rotation.y,fridgeOpen?-1.35:0,1-Math.exp(-8*dt));
         updateDaylight(t);
         const mediaAudible=[...playableScreens.values()].some(m=>m.contentKind==='video'&&!m.video.paused&&!m.video.muted||m.contentKind==='website'&&m.audioEnabled);
-        roomAudio.update(avatar.position,mediaAudible||npcVoices.speaking,npcs.some(n=>n.seated),{speaker:ambientSpeaker.getWorldPosition(new THREE.Vector3()),ac:ac.getWorldPosition(new THREE.Vector3())});
+        ambientSpeaker.getWorldPosition(audioPositions.speaker);ac.getWorldPosition(audioPositions.ac);
+        roomAudio.update(avatar.position,mediaAudible||npcVoices.speaking,npcs.some(n=>n.seated),audioPositions);
         updateStationCables(t);
         updateServerIncident(dt,t);
         serverIndicators.forEach(({mesh,phase})=>{
@@ -4877,7 +4889,7 @@
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=stable-23');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=presence-24');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
