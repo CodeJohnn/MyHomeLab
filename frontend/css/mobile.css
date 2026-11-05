@@ -1,9 +1,41 @@
 /* Touch layouts and safe areas; desktop layout stays in the component styles. */
 html{color-scheme:dark}
+.landing{padding-inline:clamp(24px,4vw,88px);min-height:100dvh;display:flex;flex-direction:column}
+.landingNav{flex-shrink:0}
+.landingHero{flex:1;min-height:calc(100dvh - 270px);gap:clamp(32px,6vw,120px);padding-block:clamp(40px,7vh,100px)}
+.landingCopy{max-width:680px}
+.landing h1{font-size:clamp(64px,8vw,144px)}
+.landingIntro{font-size:clamp(24px,2.1vw,36px)}
+.landingDescription{max-width:520px;font-size:clamp(14px,1vw,17px)}
+.landingIdentity img{max-width:min(31vw,520px)}
+.landingBottom{gap:6vw}.landingAbout p,.landingHelp p{max-width:640px}
+.userHome{flex:1;padding-bottom:32px}
+.userHomeGrid{grid-template-columns:minmax(280px,30%) minmax(0,1fr);gap:clamp(20px,3vw,48px);align-items:start}
+.userCard{position:sticky;top:24px}
+.userPortrait3d{height:clamp(360px,49dvh,640px);width:100%;max-width:none}
+.userHomeMain{min-width:0}
+.userWelcome{padding-block:28px}
+.userEditor form{column-gap:24px}
 #mobile{display:none}
 @media(max-width:700px),(pointer:coarse){
   .landing{padding-inline:max(18px,env(safe-area-inset-left)) max(18px,env(safe-area-inset-right))}
   .userHomeGrid,.userHomeMain,.userEditor,.userPlayCard{min-width:0}
+  .landingHero{min-height:0;grid-template-columns:1fr;padding-block:42px;gap:24px}
+  .landingCopy{max-width:none}
+  .landing h1{font-size:clamp(58px,13vw,90px);letter-spacing:-3px;overflow-wrap:anywhere}
+  .landingIntro{font-size:26px}
+  .landingDescription{max-width:100%;font-size:14px}
+  .landingIdentity{position:static;opacity:1;width:auto;z-index:auto;padding:8px 0 20px}
+  .landingIdentity img{width:min(60vw,280px);max-width:100%}
+  .landingIdentity>span{display:block;margin-top:14px}
+  .landingBottom{grid-template-columns:1fr;gap:24px}
+  .landingFooter{flex-wrap:wrap}
+  .userHomeGrid{grid-template-columns:minmax(0,1fr);gap:18px}
+  .userCard{display:block;position:static;text-align:center;padding:18px}
+  .userPortrait3d{height:clamp(280px,48dvh,440px);width:100%;max-width:none}
+  .userPlayCard{padding:22px}
+  .userPlayCard>button{position:static;width:100%;justify-content:space-between;margin-top:18px}
+  .userWelcome h1{overflow-wrap:anywhere}
   .userHomeHeader{flex-wrap:wrap;padding-block:14px;gap:12px}
   .userHomeHeader small{width:100%;margin-left:0}
   .landing input:not([type=color]):not([type=checkbox]),.landing select{font-size:16px}
@@ -37,6 +69,9 @@ html{color-scheme:dark}
 }
 @media(max-width:380px){.userEditor form,.userClothes{grid-template-columns:1fr}.userColors{grid-template-columns:repeat(3,minmax(0,1fr))}.landing h1{font-size:60px}.landingPlay{width:100%;justify-content:space-between}.userWelcome h1{font-size:24px}}
 @media(orientation:landscape) and (max-height:500px) and (pointer:coarse){
+  .landingHero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding-block:24px}
+  .landingIdentity img{width:min(30vw,230px)}
+  .userPortrait3d{height:300px}
   #mobile{bottom:calc(12px + env(safe-area-inset-bottom))}
   .onlineRoom{width:290px}.onlineRoom .onlineTabPages{max-height:55dvh}
   .roomPresenceNotices{bottom:20px;width:min(360px,45vw)}
