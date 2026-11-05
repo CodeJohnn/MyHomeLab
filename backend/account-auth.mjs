@@ -1,4 +1,6 @@
+import {supabaseProjectUrl} from './supabase-project.mjs';
 export function createAccountAuth({url='',key='',fetchImpl=fetch}={}){
+  url=supabaseProjectUrl(url);
   const configured=Boolean(url&&key);
   return {configured,publicConfig:()=>({url:configured?url:'',key:configured?key:''}),async verify(token){
     if(!configured)return null;

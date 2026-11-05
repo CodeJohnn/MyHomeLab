@@ -1,5 +1,7 @@
 import {nobleTitle} from '../frontend/js/nobility.mjs';
+import {supabaseProjectUrl} from './supabase-project.mjs';
 export function createDailyRewards({url='',key='',fetchImpl=fetch}={}){
+  url=supabaseProjectUrl(url);
   return {configured:Boolean(url&&key),async call(method,token){
     if(!url||!key)throw Object.assign(new Error('Recompensas diárias aguardam configuração do Supabase.'),{status:503});
     if(!token)throw Object.assign(new Error('Entre na conta para receber XP.'),{status:401});
