@@ -1,6 +1,9 @@
     import {nobleLabel,nobleTitle} from './nobility.mjs';
-    const errorBox = document.getElementById('error');let sceneReady=false;
+    import {trackWorldAssets} from './world-loading.mjs';
+    import {updateRoomLoading} from './room-loading.mjs';
+    const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
+      if(rejectReadyFrame){rejectReadyFrame(e instanceof Error?e:new Error(String(e)));rejectReadyFrame=null;}
       errorBox.style.display='block';
       errorBox.textContent=(sceneReady?'Erro durante o uso do cenário 3D: ':'Falha ao iniciar o cenário 3D: ')+(e?.message||e)+(sceneReady?'':'\nAbra com Live Server e confira a conexão com a internet.');
       console.error(e);
@@ -21,6 +24,7 @@
       const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=1');
       const { replyToNpc } = await import('./npc-dialogue.mjs?v=5');
       const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
+      const worldAssets=trackWorldAssets(THREE.DefaultLoadingManager,(loaded,total)=>updateRoomLoading(10+Math.floor(loaded/Math.max(1,total)*75),'Carregando recursos do mundo...'));
       const { RoundedBoxGeometry } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/geometries/RoundedBoxGeometry.js');
       const { CSS3DRenderer, CSS3DObject } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/renderers/CSS3DRenderer.js');
       const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth <= 700;
@@ -4699,7 +4703,7 @@
       document.getElementById('dialog').onclick = e => { if (e.target.id === 'dialog') e.currentTarget.style.display = 'none' };
       renderer.shadowMap.autoUpdate=false;
       let lastShadowUpdate=-Infinity;
-      let prev = performance.now(), walk = 0, lastFrameTime = 0;
+      let prev = performance.now(), walk = 0, lastFrameTime = 0,resolveReadyFrame=null;
       const audioPositions={speaker:new THREE.Vector3(),ac:new THREE.Vector3()};
       const interactionStatus=document.getElementById('status');
       // Sombras de contato leves: acabamento no piso sem um mapa de sombras extra.
@@ -4909,11 +4913,11 @@
         updateGuests(dt,t);updateAvatarModel(avatar,dt);for(const guest of guests.values())updateAvatarModel(guest,dt);
         updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
-        if(!document.querySelector('.onlineProfileDialog[open]'))renderer.render(scene, camera);
+        if(!document.querySelector('.onlineProfileDialog[open]')){renderer.render(scene, camera);if(resolveReadyFrame){resolveReadyFrame();resolveReadyFrame=null;}}
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=daily-29');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=single-load-30');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -5081,4 +5085,12 @@
         }
       });
       requestAnimationFrame(loop);
+      try{
+        await worldAssets.wait();
+        const {waitForAvatarModel}=await import('./avatar-models.mjs?v=stable-6');await waitForAvatarModel(avatar);
+        await worldAssets.wait();
+        updateRoomLoading(95,'Preparando a primeira imagem do mundo...');
+        if(errorBox.textContent)throw new Error(errorBox.textContent);
+        await new Promise((resolve,reject)=>{resolveReadyFrame=resolve;rejectReadyFrame=reject;});rejectReadyFrame=null;
+      }finally{worldAssets.dispose();}
     } catch (e) { fail(e) }

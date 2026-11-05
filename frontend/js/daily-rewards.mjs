@@ -1,5 +1,6 @@
 import {apiUrl} from './config.mjs';
 import {progressionAccountHeaders,renderNobility,showNoblePromotion} from './nobility-ui.mjs';
+import {waitForWorldEntry} from './room-loading.mjs';
 let inFlight=null,pendingAward=null,welcomeKey='';
 export async function claimDailyReward({showPanel=false,award=null}={}){
   if(!inFlight)inFlight=(async()=>{
@@ -15,7 +16,7 @@ export async function claimDailyReward({showPanel=false,award=null}={}){
   const result=await inFlight;
   if(award?.awardedXp>0&&award.progression.userId===result?.progression.userId)pendingAward=award;
   const key=result?result.progression.userId+':'+result.progression.today:'';
-  if(showPanel&&result&&welcomeKey!==key){welcomeKey=key;showDailyWelcome(result,pendingAward);pendingAward=null;}
+  if(showPanel&&result&&welcomeKey!==key&&(await waitForWorldEntry())){welcomeKey=key;showDailyWelcome(result,pendingAward);pendingAward=null;}
   return result;
 }
 export function renderLevelProgress(element,progression){

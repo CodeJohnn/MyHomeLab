@@ -72,6 +72,11 @@ export function applyAvatarModel(root,config,THREE){
   return true;
 }
 export function avatarModelIsAnimated(root){const state=states.get(root),entry=state?.entries.get(state.current);return Boolean(entry?.wrapper.visible&&(entry.asset.rigidMotion||Object.keys(entry.actions).length));}
+export async function waitForAvatarModel(root){
+  const state=states.get(root);if(!state||state.desired==='default')return;
+  const pending=assets.get(state.desired);if(pending)await pending;
+  if(state.failed.has(state.desired)||!state.entries.has(state.desired))throw new Error('Não foi possível preparar seu avatar.');
+}
 export function disposeAvatarModel(root){const state=states.get(root);if(!state)return;state.disposed=true;for(const entry of state.entries.values())release(entry);state.entries.clear();states.delete(root);}
 export function updateAvatarModel(root,dt,{preview=false}={}){
   const state=states.get(root),entry=state?.entries.get(state.current);if(!entry?.wrapper.visible)return;

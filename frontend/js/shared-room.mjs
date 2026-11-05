@@ -1,7 +1,6 @@
 import {avatarModels} from './avatar-model-catalog.mjs?v=stable-6';
 import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
-import {showRoomLoading,hideRoomLoading} from './room-loading.mjs';
 import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
 import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs';
@@ -249,7 +248,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       if(!profileConfirmed&&!(await openOnlineProfile(true)))return;
       previousMembers=null;
       previousSelfLevel=null;selfProgressionSignature='';
-      await showRoomLoading('Conectando à sala pública...');
+      status('Conectando à sala pública...');
       el('count').textContent='Entrando';
       if(!room)room=(await api('lobby',{})).room;
       const joined=await api('join',{name:el('name').value,avatar:readAvatar(),token:sessionStorage.getItem(sessionKey(room))});token=joined.token;selfId=joined.id;closed=false;setOnlineConnected(true);
@@ -308,7 +307,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
           if(navigator.onLine)void el('join').onclick();
         },3000);
       };
-    }catch(e){if(e.status===404){if(room)sessionStorage.removeItem(sessionKey(room));room=null;token=null;el('join').hidden=false;el('join').textContent='Reconectar a sala publica';status('O servidor reiniciou. Entre novamente na sala publica.');}else showError(e);}finally{hideRoomLoading();el('join').disabled=false;if(!token)el('count').textContent='Disponivel';}
+    }catch(e){if(e.status===404){if(room)sessionStorage.removeItem(sessionKey(room));room=null;token=null;el('join').hidden=false;el('join').textContent='Reconectar a sala publica';status('O servidor reiniciou. Entre novamente na sala publica.');}else showError(e);}finally{el('join').disabled=false;if(!token)el('count').textContent='Disponivel';}
   };
   async function uploadVideo(file,screen='screen-0'){
     if(!token)throw new Error('Entre na sala antes de compartilhar o vídeo.');
