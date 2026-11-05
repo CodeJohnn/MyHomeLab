@@ -1066,9 +1066,14 @@
       }
       const screenPosition = new THREE.Vector3(), screenNormal = new THREE.Vector3();
       const screenRay = new THREE.Raycaster();
+      const monitorFrustum=new THREE.Frustum(),monitorProjection=new THREE.Matrix4();
+      const monitorTowardCamera=new THREE.Vector3();
       const youtubeRoomPlayers=new WeakMap();
       let lastMonitorOcclusionCheck = -Infinity;
       function renderMonitorVideos() {
+        camera.updateMatrixWorld();
+        monitorProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
+        monitorFrustum.setFromProjectionMatrix(monitorProjection);
         const checkOcclusion = performance.now() - lastMonitorOcclusionCheck >= (isMobile ? 180 : 100);
         if (checkOcclusion) lastMonitorOcclusionCheck = performance.now();
         for (const monitor of playableScreens.values()) {
@@ -1115,10 +1120,16 @@
           }
           for(const [screen,active] of [[monitor.htmlScreen,monitor.contentKind==='video' && !!monitor.url],[monitor.websiteScreen,monitor.contentKind==='website' && !!monitor.websiteUrl]]) {
             if(!screen)continue;
+            // Offscreen HTML monitors need no transforms or triangle raycasts.
+            if(!active||!isSceneVisible(monitor.mesh)||!monitorFrustum.intersectsObject(monitor.mesh)){
+              screen.visible=false;
+              screen.userData.occlusionVisible=undefined;
+              continue;
+            }
             monitor.mesh.getWorldPosition(screenPosition);monitor.mesh.getWorldQuaternion(screen.quaternion);
             screenNormal.set(0,0,1).applyQuaternion(screen.quaternion);
             screen.position.copy(screenPosition).addScaledVector(screenNormal,.006);
-            const towardCamera=camera.position.clone().sub(screen.position);
+            const towardCamera=monitorTowardCamera.copy(camera.position).sub(screen.position);
             let visible=active && isSceneVisible(monitor.mesh) && screenNormal.dot(towardCamera)>0;
             if (visible && (checkOcclusion || screen.userData.occlusionVisible === undefined)) {
               screenRay.far=Infinity;
@@ -4737,7 +4748,7 @@
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
-        if(document.hidden){prev=t;lastFrameTime=t;qualityStart=0;qualityFrames=0;return;}
+        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){prev=t;lastFrameTime=t;qualityStart=0;qualityFrames=0;return;}
         const frameInterval=1000/(isMobile?30:60);
         const frameElapsed=t-lastFrameTime;
         // Absorb RAF timing jitter and retain the remainder instead of losing a frame.
