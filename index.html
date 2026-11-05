@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>HomeLab - GuedesSEC</title>
   <meta name="description" content="Seu laboratorio virtual. Explore, personalize seu avatar e encontre amigos no HomeLab - GuedesSEC.">
   <meta name="theme-color" content="#090d12">
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="./frontend/css/online-room.css?v=14">
   <link rel="stylesheet" href="./frontend/css/billiards.css?v=realistic-4">
   <link rel="stylesheet" href="./frontend/css/homelab.css?v=dark-96">
+  <link rel="stylesheet" href="./frontend/css/mobile.css?v=1">
 </head>
 
 <body class="landingActive">
@@ -25,6 +26,11 @@
     <footer class="landingFooter"><span>Feito por GuedesSEC.</span><span>HomeLab / em desenvolvimento</span></footer>
   </main>
   <p id="status" hidden aria-live="polite"></p>
+  <nav id="mobile" aria-label="Controles de movimento">
+    <span class="empty"></span><button type="button" data-key="w" aria-label="Andar para frente">↑</button><span class="empty"></span>
+    <button type="button" data-key="a" aria-label="Andar para esquerda">←</button><button type="button" data-key="s" aria-label="Andar para trás">↓</button><button type="button" data-key="d" aria-label="Andar para direita">→</button>
+    <button type="button" class="mobileInteract" id="mobileInteract">Interagir</button>
+  </nav>
   <aside id="toolbar" hidden style="display:none" aria-label="Editor do ambiente">
     <div id="toolbarHeader"><div><span class="editorEyebrow">GUEDESSEC / HOME LAB</span><h2>Editor do ambiente</h2></div><button id="hideToolbar" aria-label="Recolher painel" title="Recolher painel">&#10005;</button></div>
     <div class="editorMode"><span class="editorModeDot"></span><span>Seu espa&ccedil;o, do seu jeito</span></div>
@@ -94,7 +100,7 @@
   <script
     type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
   <script src="./frontend/js/editor-panel.js?v=1" defer></script>
-  <script type="module" src="./frontend/js/landing.mjs?v=33"></script>
+  <script type="module" src="./frontend/js/landing.mjs?v=34"></script>
 </body>
 
 </html>

@@ -4681,6 +4681,7 @@
         b.addEventListener('pointerdown', e => { e.preventDefault(); if (!interactionPose) keys.add(k); b.setPointerCapture(e.pointerId) });
         ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => b.addEventListener(type, () => keys.delete(k)));
       });
+      document.getElementById('mobileInteract').onclick=()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'e'}));
       function show(o) { if(o.id==='vasoBanheiroNovo'){useToilet();return;} if(o.id==='bibliotecaNova'||o.id==='mesaLeitura'){keys.clear();walkTarget=null;bookLibrary.open();return;} if(o.id==='mesaSinuca'){keys.clear();walkTarget=null;openBilliards();return;} if(o.kind==='rug')return; if(writableBoards[o.id]){openBoardEditor(o.id);return;} if(isDecorativeFrame(o))return; if(o.id==='geladeiraEnergeticos'){toggleEnergyFridge();return;} if(o.id==='banquetaTI'){openAdminConsole();return;} document.getElementById('dt').textContent = o.label; document.getElementById('dd').textContent = o.desc; document.getElementById('dialog').style.display = 'flex'; keys.clear() }
       document.getElementById('close').onclick = () => document.getElementById('dialog').style.display = 'none';
       document.getElementById('dialog').onclick = e => { if (e.target.id === 'dialog') e.currentTarget.style.display = 'none' };
