@@ -60,6 +60,25 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   </div><p data-status role="status" class="onlineStatus"></p></div>`;
   document.body.append(panel);
   panel.className='onlineRoom';panel.dataset.menu='false';
+  const visibilityControls=document.createElement('nav');
+  visibilityControls.className='roomSocialVisibility';visibilityControls.hidden=true;
+  visibilityControls.setAttribute('aria-label','Visibilidade dos painéis');
+  panel.id='roomChatPanel';onlineDock.id='roomOnlinePanel';
+
+  for(const [key,label,target] of [['chat','Conversa',panel],['online','Online',onlineDock]]){
+    let visible=true;
+    try{visible=localStorage.getItem('homelab.panel.'+key)!=='hidden';}catch{}
+    const button=document.createElement('button');button.type='button';
+    button.setAttribute('aria-controls',target.id);
+    const apply=()=>{
+      target.classList.toggle('socialPanelHidden',!visible);
+      button.textContent=(visible?'Ocultar ':'Mostrar ')+label;
+      button.setAttribute('aria-pressed',String(visible));
+    };
+    button.onclick=()=>{visible=!visible;apply();try{localStorage.setItem('homelab.panel.'+key,visible?'visible':'hidden');}catch{}};
+    apply();visibilityControls.append(button);
+  }
+  document.body.append(visibilityControls);
   const profileDialog=document.createElement('dialog');profileDialog.className='onlineProfileDialog';
   profileDialog.innerHTML='<header><div><small>SEU LUGAR NO LABORATORIO</small><h2>Como voce quer aparecer?</h2><p>Escolha seu nome e personalize seu avatar antes de entrar.</p></div><button type="button" data-profile-close aria-label="Fechar">&#10005;</button></header><div class="onlineProfileLayout"><aside class="onlineAvatarPreview"><div class="onlineAvatarPreviewHeading"><span>SEU AVATAR</span><span class="onlineAvatarLive">AO VIVO</span></div><div class="onlineAvatarPreviewStage"></div><div class="onlineAvatarPreviewAngles"><button type="button" data-preview-front>Frente</button><button type="button" data-preview-back>Costas</button></div><small>Arraste o personagem para girar</small></aside><div class="onlineProfileContent"></div></div>';
   document.body.append(profileDialog);
@@ -304,6 +323,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     }catch{}
     finally{checkingAvailability=false;}
     panel.hidden=!available;
+    visibilityControls.hidden=!available;
     onlineDock.hidden=!available||!token;
     if(!available&&navigator.onLine&&availabilityAttempts<3)setTimeout(()=>checkAvailability(true),5000);
     if(!available&&wasAvailable)onMembers([]);
@@ -311,7 +331,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     if(available&&!token)el('count').textContent='Disponivel';
     if(available&&!autoJoinStarted){autoJoinStarted=true;el('join').click();}
   }
-  addEventListener('offline',()=>{panel.hidden=true;onlineDock.hidden=true;wasAvailable=false;onMembers([]);});
+  addEventListener('offline',()=>{panel.hidden=true;onlineDock.hidden=true;visibilityControls.hidden=true;wasAvailable=false;onMembers([]);});
   addEventListener('online',()=>{checkAvailability(true);if(autoJoinStarted&&!token&&!closed)void el('join').onclick();});
   addEventListener('focus',()=>checkAvailability());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAvailability();});

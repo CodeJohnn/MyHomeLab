@@ -29,3 +29,10 @@
   .roomOnlineDock summary{padding:8px 10px;font-size:11px;min-height:44px}.roomOnlineMembers{gap:6px;padding:0 8px 10px}.roomOnlineMember{flex-basis:58px}.roomOnlineMember>span:last-child{max-width:58px}.roomMemberPortrait{width:40px;height:40px;font-size:13px}
 }
 @media(orientation:landscape) and (max-height:500px) and (pointer:coarse){.onlineRoom{top:60px;width:280px}.onlineRoom [data-chat]{height:25dvh;min-height:60px}.onlineRoom .onlineTabPages{max-height:50dvh}.roomOnlineDock{max-width:340px}.roomOnlineMembers{max-height:68px}}
+.socialPanelHidden{display:none!important}
+.roomSocialVisibility{position:fixed;right:max(12px,env(safe-area-inset-right));top:64px;z-index:21;display:flex;gap:6px;padding:5px;border:1px solid #ffffff24;border-radius:12px;background:#181818ed}
+.roomSocialVisibility[hidden]{display:none}
+.roomSocialVisibility button{min-height:38px;padding:8px 12px;border-radius:8px;background:#292929;color:#eee;border:1px solid #ffffff20;font:12px system-ui}
+.roomSocialVisibility button[aria-pressed=false]{background:#111;color:#aaa}
+.roomSocialVisibility button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media(max-width:700px),(pointer:coarse){.roomSocialVisibility{top:auto;bottom:calc(136px + env(safe-area-inset-bottom));right:10px;flex-direction:column;gap:4px}.roomSocialVisibility button{min-height:44px;padding:8px 10px;font-size:11px}}
