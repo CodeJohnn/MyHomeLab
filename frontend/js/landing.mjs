@@ -1,13 +1,13 @@
 import {createLandingMatrix} from './landing-matrix.mjs?v=color-3';
 import {showRoomLoading,hideRoomLoading} from './room-loading.mjs';
-import {createUserHome} from './user-home.mjs?v=daily-22';
+import {createUserHome} from './user-home.mjs?v=auth-gate-23';
 import {createAccountDialog,verifiedAccount,accountClient} from './account-auth.mjs';
 const host=document.getElementById('landing'),matrix=createLandingMatrix(host);
 let starting=false;
 let currentAccount=null;
-const login=createAccountDialog(host,async user=>{currentAccount=user;if(user.user_metadata?.display_name)localStorage.setItem('homelab.name',user.user_metadata.display_name);home.open();logout.hidden=false;});
+const login=createAccountDialog(host,async user=>{currentAccount=user;if(user.user_metadata?.display_name)localStorage.setItem('homelab.name',user.user_metadata.display_name);logout.hidden=!(await home.open());});
 const logout=document.createElement('button');logout.type='button';logout.className='accountLogout';logout.textContent='Sair da conta';logout.hidden=true;
-const home=createUserHome({host,onPlay:async()=>{
+const home=createUserHome({host,onRequireLogin:()=>login.open(),onPlay:async()=>{
   if(starting)return;starting=true;
   try{currentAccount=await verifiedAccount();if(!currentAccount){login.open();throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=daily-292');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');}
   catch(error){starting=false;throw error;}
@@ -20,7 +20,7 @@ async function enter(button,register=false){
   const status=document.getElementById('landingLoading');status.hidden=false;status.textContent='Verificando sua conta...';
   try{
     currentAccount=await verifiedAccount();
-    if(currentAccount){home.open();logout.hidden=false;}else login.open({signup:register});
+    if(currentAccount){logout.hidden=!(await home.open());}else login.open({signup:register});
     status.hidden=true;
   }catch(error){status.textContent=error.message;}
   finally{button.disabled=false;}
