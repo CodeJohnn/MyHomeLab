@@ -1,6 +1,9 @@
     import {nobleLabel,nobleTitle} from './nobility.mjs';
     import {trackWorldAssets} from './world-loading.mjs';
     import {updateRoomLoading} from './room-loading.mjs';
+    import {createPerformanceMonitor} from './performance-monitor.mjs';
+    import {instanceMeshes} from './repeated-meshes.mjs';
+    performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
       if(rejectReadyFrame){rejectReadyFrame(e instanceof Error?e:new Error(String(e)));rejectReadyFrame=null;}
@@ -495,9 +498,13 @@
         for(const side of [-1,1])cyl(ups,.045,.06,black,side*.18,.045,.24,12);
       }
       function addServerKeycaps(keyboard,width,depth) {
+        const keys=[];
         for(let row=0;row<3;row++)for(let k=0;k<10;k++) {
-          box(keyboard,width*.067,.006,depth*.16,rackSteel,-width*.435+k*width*.096,.016,-depth*.32+row*depth*.24,.002);
+          const key=keys.length?new THREE.Mesh(keys[0].geometry,rackSteel):box(keyboard,width*.067,.006,depth*.16,rackSteel,0,0,0,.002);
+          key.position.set(-width*.435+k*width*.096,.016,-depth*.32+row*depth*.24);
+          key.castShadow=true;key.receiveShadow=true;keyboard.add(key);keys.push(key);
         }
+        instanceMeshes(THREE,keyboard,keys);
         box(keyboard,width*.4,.006,depth*.12,rackSteel,0,.016,depth*.38,.002);
       }
       const serverKeyboardMeshes=[];
@@ -2710,6 +2717,8 @@
       const {createPlayerAvatar}=await import('./player-avatar.mjs?v=underwear-5');
       const {avatar,skin,shirt,shirtLight,pants,hair,shoeMat,eyeMat,studs,naturalHair,legs,knees,arms,elbows,johnLimb,addBlackLabCoat,johnCartoonHead,johnTorso}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile,anisotropy:renderer.capabilities.getMaxAnisotropy()});
       scene.add(avatar);
+      const networkJoints=[...legs,...knees,...arms,...elbows];
+      networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       const avatarTemplate=avatar.clone(true);
       const {updateAvatarModel,disposeAvatarModel}=await import('./avatar-models.mjs?v=stable-6');
       const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=avatar-stable-22');
@@ -3611,8 +3620,10 @@
       const chatPoint = new THREE.Vector3();
       function updateNpcChats(dt) {
         // Conversas surgem apenas por interacao ou por eventos do ambiente.
+        if(!npcChatBubbles.some(bubble=>bubble.remaining>0))return;
         const bounds = renderer.domElement.getBoundingClientRect();
         for (const bubble of npcChatBubbles) {
+          if(bubble.remaining<=0){bubble.element.hidden=true;continue;}
           bubble.remaining -= dt;
           bubble.npc.root.getWorldPosition(chatPoint); chatPoint.y += 2.15; chatPoint.project(camera);
           bubble.element.hidden = bubble.npc===talkingNpc || bubble.remaining <= 0 || chatPoint.z < -1 || chatPoint.z > 1;
@@ -4704,6 +4715,8 @@
       renderer.shadowMap.autoUpdate=false;
       let lastShadowUpdate=-Infinity;
       let prev = performance.now(), walk = 0, lastFrameTime = 0,resolveReadyFrame=null;
+      const performanceMonitor=createPerformanceMonitor(renderer,{enabled:new URLSearchParams(location.search).get('perf')==='1'});
+      addEventListener('pagehide',()=>performanceMonitor.dispose(),{once:true});
       const audioPositions={speaker:new THREE.Vector3(),ac:new THREE.Vector3()};
       const interactionStatus=document.getElementById('status');
       // Sombras de contato leves: acabamento no piso sem um mapa de sombras extra.
@@ -4765,11 +4778,12 @@
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
-        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){prev=t;lastFrameTime=t;qualityStart=0;qualityFrames=0;return;}
+        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();prev=t;lastFrameTime=t;qualityStart=0;qualityFrames=0;return;}
         const frameInterval=1000/(isMobile?30:60);
         const frameElapsed=t-lastFrameTime;
         // Absorb RAF timing jitter and retain the remainder instead of losing a frame.
         if(frameElapsed<frameInterval-.5)return;
+        performanceMonitor.begin();
         lastFrameTime=t-(Math.max(0,frameElapsed)%frameInterval);
         const dt = Math.min((t - prev) / 1000, .05);
         houseExterior.updateTraffic(dt);
@@ -4913,9 +4927,10 @@
         updateGuests(dt,t);updateAvatarModel(avatar,dt);for(const guest of guests.values())updateAvatarModel(guest,dt);
         updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
-        if(!document.querySelector('.onlineProfileDialog[open]')){renderer.render(scene, camera);if(resolveReadyFrame){resolveReadyFrame();resolveReadyFrame=null;}}
+        if(!document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.renderStart();renderer.render(scene, camera);performanceMonitor.renderEnd();if(resolveReadyFrame){resolveReadyFrame();resolveReadyFrame=null;}}
         updateNpcChats(dt);
         renderMonitorVideos();
+        performanceMonitor.end(t);
       }
       const { createSharedRoom } = await import('./shared-room.mjs?v=performance-32');
       const networkScreens=[...playableScreens.values()];
@@ -4972,8 +4987,6 @@
         if(remaining<=0){clearCharacterReaction(character);return;}
         sprite.material.opacity=Math.min(1,remaining/450);
       }
-      const networkJoints=[...legs,...knees,...arms,...elbows];
-      networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       function nameTag(text,bubble=false,sender='',level=1) {
         const canvas=document.createElement('canvas');canvas.width=768;
         const ctx=canvas.getContext('2d');ctx.font='30px Arial';
@@ -5002,11 +5015,11 @@
         for(const guest of guests.values()){
           updateCharacterReaction(guest,t);
           const p=guest.userData.networkPose;if(!p)continue;
-          const blend=1-Math.exp(-18*dt);guest.position.lerp(new THREE.Vector3(p.x,p.y,p.z),blend);
+          const blend=1-Math.exp(-18*dt);guest.position.x+=(p.x-guest.position.x)*blend;guest.position.y+=(p.y-guest.position.y)*blend;guest.position.z+=(p.z-guest.position.z)*blend;
           guest.rotation.y+=Math.atan2(Math.sin(p.r-guest.rotation.y),Math.cos(p.r-guest.rotation.y))*blend;
-          (p.joints||[]).forEach((rotation,i)=>{const joint=guest.getObjectByName(`networkJoint${i}`);if(joint)rotation.forEach((angle,k)=>{const axis=['x','y','z'][k];joint.rotation[axis]=THREE.MathUtils.lerp(joint.rotation[axis],angle,blend);});});
+          (p.joints||[]).forEach((rotation,i)=>{const joint=guest.userData.networkJoints[i];if(joint){joint.rotation.x=THREE.MathUtils.lerp(joint.rotation.x,rotation[0],blend);joint.rotation.y=THREE.MathUtils.lerp(joint.rotation.y,rotation[1],blend);joint.rotation.z=THREE.MathUtils.lerp(joint.rotation.z,rotation[2],blend);}});
           if(guest.userData.bubble){guest.userData.bubble.material.opacity=Math.min(1,Math.max(0,(guest.userData.bubbleUntil-t)/500));if(t>guest.userData.bubbleUntil){disposeTag(guest.userData.bubble);guest.userData.bubble=null;}}
-          if(guest.userData.waveUntil>t){const arm=guest.getObjectByName('networkJoint5');if(arm){arm.rotation.z=-2.5;arm.rotation.x=Math.sin(t*.014)*.3;}}
+          if(guest.userData.waveUntil>t){const arm=guest.userData.networkJoints[5];if(arm){arm.rotation.z=-2.5;arm.rotation.x=Math.sin(t*.014)*.3;}}
         }
       }
       let ownNobleTag=null;
@@ -5023,6 +5036,7 @@
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
+            guest.userData.networkJoints||=networkJoints.map((_,i)=>guest.getObjectByName(`networkJoint${i}`));
             if(guest.userData.displayName!==member.name||guest.userData.nobleLevel!==(member.progression?.level||1)){disposeTag(guest.userData.tag);guest.userData.tag=nameTag(member.name,false,'',member.progression?.level||1);guest.add(guest.userData.tag);guest.userData.displayName=member.name;guest.userData.nobleLevel=member.progression?.level||1;}
             if(member.avatar)applyAvatarAppearance(guest,member.avatar,THREE);
             guest.userData.networkPose=member.pose;
@@ -5092,5 +5106,6 @@
         updateRoomLoading(95,'Preparando a primeira imagem do mundo...');
         if(errorBox.textContent)throw new Error(errorBox.textContent);
         await new Promise((resolve,reject)=>{resolveReadyFrame=resolve;rejectReadyFrame=reject;});rejectReadyFrame=null;
+        performance.measure('homelab-world-load','homelab-world-start');
       }finally{worldAssets.dispose();}
     } catch (e) { fail(e) }
