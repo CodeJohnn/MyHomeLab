@@ -1,6 +1,6 @@
 import {applyAvatarModel} from './avatar-models.mjs?v=stable-6';
 import {feminineBustOffset,applyBodyShape} from './avatar-body.mjs';
-import {createNaturalHair} from './avatar-hair.mjs';
+import {createNaturalHair} from './avatar-hair.mjs?v=surface-2';
 let guedesLogoTexture;
 function shirtLogo(THREE){
   if(!guedesLogoTexture){guedesLogoTexture=new THREE.TextureLoader().load(new URL('../assets/guedessec.png',import.meta.url).href,()=>globalThis.dispatchEvent(new Event('avatar-texture-ready')));guedesLogoTexture.colorSpace=THREE.SRGBColorSpace;}
@@ -107,7 +107,7 @@ export function applyAvatarAppearance(root,config,THREE){
 
   }
   const head=root.getObjectByName('onlineAvatarHead');if(!head)return;
-  const hairSignature=[config.hair,config.hairStyle,config.hat,config.shirt,config.skin].join(':');
+  const hairSignature=[config.hair,config.hairStyle,config.hat,config.hat==='cap'||config.hat==='beanie'?config.shirt:''].join(':');
   if(root.userData.avatarHairSignature===hairSignature)return;
   root.userData.avatarHairSignature=hairSignature;
   const old=head.getObjectByName('customAvatarHair');

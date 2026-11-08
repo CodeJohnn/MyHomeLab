@@ -6,6 +6,7 @@
     import {paintPlayerNameplate} from './player-nameplate.mjs';
     import {createScreenDepth} from './screen-depth.mjs';
     import {paintSpeechBubble} from './speech-bubble.mjs';
+    import {createFrameClock} from './frame-clock.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -1049,9 +1050,10 @@
         monitor2: textureMat(websiteTextures.monitor2)
       };
       const drops = Array.from({ length: 65 }, () => Math.random() * 576 / 16);
-      let frame = 0;
-      function paintScreens() {
-        frame++; if (frame % 3 !== 0) return;
+      let frame = 0,lastScreenPaint=-Infinity;
+      function paintScreens(time) {
+        if(time-lastScreenPaint<(isMobile?100:50))return;
+        lastScreenPaint=time;frame+=3;
         const { ctx: m, canvas: mc } = matrix; m.fillStyle = 'rgba(0,6,4,.14)'; m.fillRect(0, 0, mc.width, mc.height); m.font = '18px monospace'; for (let i = 0; i < drops.length; i++) { const ch = '01アイウエカキクケコサシスセソ'; m.fillStyle = Math.random() > .96 ? '#d8ffe9' : '#16c46b'; m.fillText(ch[Math.floor(Math.random() * ch.length)], i * 16, drops[i] * 16); if (drops[i] * 16 > mc.height && Math.random() > .975) drops[i] = 0; drops[i] += .65; } matrixTex.needsUpdate = true;
         const { ctx: t, canvas: tc } = terminal; t.fillStyle = '#07120f'; t.fillRect(0, 0, tc.width, tc.height); t.fillStyle = '#173f2d'; t.fillRect(0, 0, tc.width, 43); t.fillStyle = '#b9ffda'; t.font = 'bold 21px monospace'; t.fillText('●  ●  ●   ubuntu@bibliotecadealexandria: ~', 18, 29); t.font = '20px monospace'; const lines = ['// GuedesSEC - development', 'const lab = await connect();', 'async function deploy(service) {', '  const build = await compile(service);', '  if (build.ok) return lab.run(build);', '}', 'const status = await lab.health();', 'console.log(status);', '// watching changes...', '$ npm run dev', '$ git status', '// tests: passed', '$ _']; /* previous terminal: ['$ fastfetch', '  CodeJOHN • HOME LAB', '  OS: Ubuntu Server', '  Shell: bash', '  Services: Docker • Samba • Jellyfin', '  Network: LAN connected', '', '$ docker ps', '  casaos     running', '  jellyfin   running', '', '$ uptime', '  system online', '', '$ _']; */ lines.forEach((line, i) => { t.fillStyle = line.startsWith('$') ? '#70ffad' : '#b2c9c1'; t.fillText(line, 24, 83 + i * 30) }); t.fillStyle = '#42e29a'; t.fillRect(24, tc.height - 10, (frame * 2) % tc.width, 3); terminalTex.needsUpdate = true;
       }
@@ -2687,7 +2689,7 @@
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       const avatarTemplate=avatar.clone(true);
       const {updateAvatarModel,disposeAvatarModel}=await import('./avatar-models.mjs?v=stable-6');
-      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=avatar-stable-22');
+      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=hair-23');
       const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=stable-8');
       const npcs = [];
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
@@ -3107,14 +3109,19 @@
         cameraGoal.x=THREE.MathUtils.clamp(cameraGoal.x,-8,14);cameraGoal.z=THREE.MathUtils.clamp(cameraGoal.z,-8,14);
       }
       const followCameraRay=new THREE.Raycaster();
+      const followFocus=new THREE.Vector3(),followDirection=new THREE.Vector3(),followBlockers=[];
+      let eyeAspect=0,overviewAspect=0,overviewZoom=NaN,overviewSize=0;
       function cameraUpdate() {
+        const aspect=innerWidth/innerHeight;
+        if(viewMode!=='overview'&&aspect!==eyeAspect){eyeAspect=aspect;eyeCamera.aspect=aspect;eyeCamera.updateProjectionMatrix();}
         if(viewMode==='third'){
-          eyeCamera.aspect=innerWidth/innerHeight;eyeCamera.updateProjectionMatrix();
-          const focus=avatar.position.clone().add(new THREE.Vector3(0,1.45,0));
+          const focus=followFocus.copy(avatar.position);focus.y+=1.45;
           const angle=followOrbit;
-          const direction=new THREE.Vector3(Math.sin(angle)*Math.cos(followPitch),Math.sin(followPitch),Math.cos(angle)*Math.cos(followPitch));
+          const direction=followDirection.set(Math.sin(angle)*Math.cos(followPitch),Math.sin(followPitch),Math.cos(angle)*Math.cos(followPitch));
           followCameraRay.set(focus,direction);followCameraRay.far=followDistance;
-          const hit=followCameraRay.intersectObjects([...wallOccluders,...objects.filter(o=>o.kind==='floor').map(o=>o.g),restrictedDoor,entranceDoor,bathroom.door],true)[0];
+          followBlockers.length=0;followBlockers.push(...wallOccluders,restrictedDoor,entranceDoor,bathroom.door);
+          for(const object of objects)if(object.kind==='floor')followBlockers.push(object.g);
+          const hit=followCameraRay.intersectObjects(followBlockers,true)[0];
           const targetDistance=hit?Math.max(.12,Math.min(followDistance,hit.distance-.2)):followDistance;
           const now=performance.now(),elapsed=Math.min(.05,Math.max(0,(now-lastFollowUpdate)/1000));lastFollowUpdate=now;
           followBoom=targetDistance<followBoom?targetDistance:THREE.MathUtils.lerp(followBoom,targetDistance,1-Math.exp(-6*elapsed));
@@ -3123,11 +3130,12 @@
           return;
         }
         if(firstPerson) {
-          eyeCamera.aspect=innerWidth/innerHeight;eyeCamera.updateProjectionMatrix();
-          eyeCamera.position.copy(avatar.position).add(new THREE.Vector3(0,1.6,0));
+          eyeCamera.position.copy(avatar.position);eyeCamera.position.y+=1.6;
           eyeCamera.rotation.set(eyePitch,eyeYaw,0,'YXZ');return;
         }
-        const aspect = innerWidth / innerHeight, size = innerWidth < 700 ? 12 : 10; camera.left = -size * aspect / viewZoom; camera.right = size * aspect / viewZoom; camera.top = size / viewZoom; camera.bottom = -size / viewZoom; camera.position.set(cameraCenter.x+Math.sin(viewYaw)*16*Math.cos(viewPitch),cameraCenter.y+16*Math.sin(viewPitch),cameraCenter.z+Math.cos(viewYaw)*16*Math.cos(viewPitch));camera.lookAt(cameraCenter); camera.updateProjectionMatrix();
+        const size=innerWidth<700?12:10;
+        if(aspect!==overviewAspect||viewZoom!==overviewZoom||size!==overviewSize){overviewAspect=aspect;overviewZoom=viewZoom;overviewSize=size;camera.left=-size*aspect/viewZoom;camera.right=size*aspect/viewZoom;camera.top=size/viewZoom;camera.bottom=-size/viewZoom;camera.updateProjectionMatrix();}
+        camera.position.set(cameraCenter.x+Math.sin(viewYaw)*16*Math.cos(viewPitch),cameraCenter.y+16*Math.sin(viewPitch),cameraCenter.z+Math.cos(viewYaw)*16*Math.cos(viewPitch));camera.lookAt(cameraCenter);
         // A visibilidade fica em updateActiveRoomWalls, junto com as oclusoes.
         // Alterar aqui restaurava paredes ocultadas entre duas atualizacoes.
       } cameraUpdate(); addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); cameraUpdate() });
@@ -4261,10 +4269,10 @@
       ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => canvas.addEventListener(type, e => {
         touches.delete(e.pointerId); pinchDistance = 0; touchCenter=null;
       }));
-      renderer.domElement.addEventListener('pointerdown', e => { if(touches.size>1)return; if(e.button===1||e.button===2||e.shiftKey){e.preventDefault();panDrag=true;tapMoved=true;tapOrigin=null;oldX=e.clientX;oldY=e.clientY;canvas.setPointerCapture(e.pointerId);return;} if(e.button!==0)return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.getWorldPosition(new THREE.Vector3())).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if(touches.size>1)return; if(panDrag){panCamera(e.clientX-oldX,e.clientY-oldY);oldX=e.clientX;oldY=e.clientY;return;} if(!tapOrigin)return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (isDecorativeFrame(selected)) { dragFrameOnWall(selected); return; } if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { if(viewMode==='third'){followOrbit-=(e.clientX-oldX)*.006;followPitch=THREE.MathUtils.clamp(followPitch+(e.clientY-oldY)*.004,.08,.9);oldX=e.clientX;oldY=e.clientY;cameraUpdate();return;} if(firstPerson) {
+      renderer.domElement.addEventListener('pointerdown', e => { if(touches.size>1)return; if(e.button===1||e.button===2||e.shiftKey){e.preventDefault();panDrag=true;tapMoved=true;tapOrigin=null;oldX=e.clientX;oldY=e.clientY;canvas.setPointerCapture(e.pointerId);return;} if(e.button!==0)return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.getWorldPosition(new THREE.Vector3())).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if(touches.size>1)return; if(panDrag){panCamera(e.clientX-oldX,e.clientY-oldY);oldX=e.clientX;oldY=e.clientY;return;} if(!tapOrigin)return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (isDecorativeFrame(selected)) { dragFrameOnWall(selected); return; } if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { if(viewMode==='third'){followOrbit-=(e.clientX-oldX)*.006;followPitch=THREE.MathUtils.clamp(followPitch+(e.clientY-oldY)*.004,.08,.9);oldX=e.clientX;oldY=e.clientY;return;} if(firstPerson) {
           eyeYaw-=(e.clientX-oldX)*.004;eyePitch=THREE.MathUtils.clamp(eyePitch-(e.clientY-oldY)*.004,-1.35,1.35);
-          oldX=e.clientX;oldY=e.clientY;cameraUpdate();return;
-        } yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY; cameraUpdate() } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; panDrag=false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release);         renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); if(viewMode==='third'){followDistance=THREE.MathUtils.clamp(followDistance+e.deltaY*.003,1.3,5);return;} if(firstPerson)return; zoom=THREE.MathUtils.clamp(zoom*Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0015),.5,4) }, { passive: false });
+          oldX=e.clientX;oldY=e.clientY;return;
+        } yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY;  } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; panDrag=false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release);         renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); if(viewMode==='third'){followDistance=THREE.MathUtils.clamp(followDistance+e.deltaY*.003,1.3,5);return;} if(firstPerson)return; zoom=THREE.MathUtils.clamp(zoom*Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0015),.5,4) }, { passive: false });
       canvas.addEventListener('contextmenu',e=>e.preventDefault());
       // O clique nativo do mouse ocorre depois do pointerup e da liberação da captura.
       canvas.addEventListener('click', e => {
@@ -4680,7 +4688,8 @@
       document.getElementById('dialog').onclick = e => { if (e.target.id === 'dialog') e.currentTarget.style.display = 'none' };
       renderer.shadowMap.autoUpdate=false;
       let lastShadowUpdate=-Infinity;
-      let prev = performance.now(), walk = 0, lastFrameTime = 0,resolveReadyFrame=null;
+      let walk = 0,resolveReadyFrame=null;
+      const frameClock=createFrameClock({maxFps:isMobile?30:Infinity});
       const performanceMonitor=createPerformanceMonitor(renderer,{enabled:new URLSearchParams(location.search).get('perf')==='1'});
       addEventListener('pagehide',()=>performanceMonitor.dispose(),{once:true});
       const audioPositions={speaker:new THREE.Vector3(),ac:new THREE.Vector3()};
@@ -4744,21 +4753,16 @@
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
-        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();prev=t;lastFrameTime=t;qualityStart=0;qualityFrames=0;return;}
-        const frameInterval=1000/(isMobile?30:60);
-        const frameElapsed=t-lastFrameTime;
-        // Absorb RAF timing jitter and retain the remainder instead of losing a frame.
-        if(frameElapsed<frameInterval-.5)return;
+        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();frameClock.reset(t);qualityStart=0;qualityFrames=0;return;}
+        const dt=frameClock.next(t);
+        if(dt===null)return;
         performanceMonitor.begin();
-        lastFrameTime=t-(Math.max(0,frameElapsed)%frameInterval);
-        const dt = Math.min((t - prev) / 1000, .05);
         houseExterior.updateTraffic(dt);
         powerOutlets.update(t);
         const cameraBlend=1-Math.exp(-16*dt);
         if(Math.abs(viewYaw-yaw)+Math.abs(viewPitch-pitch)+Math.abs(viewZoom-zoom)+cameraCenter.distanceTo(cameraGoal)>.00001) {
-          viewYaw=THREE.MathUtils.lerp(viewYaw,yaw,cameraBlend);viewPitch=THREE.MathUtils.lerp(viewPitch,pitch,cameraBlend);viewZoom=THREE.MathUtils.lerp(viewZoom,zoom,cameraBlend);cameraCenter.lerp(cameraGoal,cameraBlend);cameraUpdate();
+          viewYaw=THREE.MathUtils.lerp(viewYaw,yaw,cameraBlend);viewPitch=THREE.MathUtils.lerp(viewPitch,pitch,cameraBlend);viewZoom=THREE.MathUtils.lerp(viewZoom,zoom,cameraBlend);cameraCenter.lerp(cameraGoal,cameraBlend);if(viewMode==='overview')cameraUpdate();
         }
-        prev = t;
         if (!edit && !bookLibrary.isOpen && !document.getElementById('logicIde')?.open && !boardEditor.open && document.getElementById('dialog').style.display !== 'flex' && !interactionPose) {
           let dx = 0, dz = 0;
           if (keys.has('w') || keys.has('arrowup')) dz--;
@@ -4771,9 +4775,9 @@
             dz=-localX*Math.sin(eyeYaw)+localZ*Math.cos(eyeYaw);
           }
           if(viewMode==='third'&&(dx||dz)){
-            const forward=eyeCamera.getWorldDirection(new THREE.Vector3());forward.y=0;forward.normalize();
-            const right=forward.clone().cross(new THREE.Vector3(0,1,0));
-            const movement=right.multiplyScalar(dx).addScaledVector(forward,-dz);dx=movement.x;dz=movement.z;
+            const localX=dx,localZ=dz;
+            dx=localX*Math.cos(followOrbit)+localZ*Math.sin(followOrbit);
+            dz=-localX*Math.sin(followOrbit)+localZ*Math.cos(followOrbit);
           }
           if (dx || dz) { pendingToilet=false;walkTarget = null; walkPath = []; }
           let step = dt * 2.3;
@@ -4859,7 +4863,7 @@
         updateXandyLuizaFlirts(t);
         updateSpouseInteraction(t);
         npcVoices.updateProximity();
-        paintScreens();
+        paintScreens(t);
         paintNativeScreens(t);
         updateMonitoring(t,dt);
         const typingSources=interactionPose==='typing'?[{id:'player',distance:0}]:[];

@@ -34,7 +34,7 @@ export function createUserHome({host,onPlay,onRequireLogin}){
     const stage=page.querySelector('.userPortrait');
     previewLoading=(async()=>{
       try{
-        const [THREE,{RoundedBoxGeometry},{createPlayerAvatar},{applyAvatarAppearance},{createAvatarEditorPreview}]=await Promise.all([import('three'),import('three/addons/geometries/RoundedBoxGeometry.js'),import('./player-avatar.mjs?v=underwear-5'),import('./avatar-appearance.mjs?v=avatar-stable-22'),import('./avatar-editor-preview.mjs?v=stable-8')]);
+        const [THREE,{RoundedBoxGeometry},{createPlayerAvatar},{applyAvatarAppearance},{createAvatarEditorPreview}]=await Promise.all([import('three'),import('three/addons/geometries/RoundedBoxGeometry.js'),import('./player-avatar.mjs?v=underwear-5'),import('./avatar-appearance.mjs?v=hair-23'),import('./avatar-editor-preview.mjs?v=stable-8')]);
         if(disposed)return;
         const {avatar}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile:matchMedia('(max-width:700px)').matches});
         stage.replaceChildren();avatarPreview=createAvatarEditorPreview({container:stage,THREE,template:avatar,applyAppearance:applyAvatarAppearance});
