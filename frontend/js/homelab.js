@@ -1,8 +1,9 @@
-    import {nobleLabel,nobleTitle} from './nobility.mjs';
+    import {nobleLabel} from './nobility.mjs';
     import {trackWorldAssets} from './world-loading.mjs';
     import {updateRoomLoading} from './room-loading.mjs';
     import {createPerformanceMonitor} from './performance-monitor.mjs';
     import {instanceMeshes} from './repeated-meshes.mjs';
+    import {paintPlayerNameplate} from './player-nameplate.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -5003,12 +5004,15 @@
           ctx.beginPath();ctx.moveTo(365,h-30);ctx.lineTo(384,h-7);ctx.lineTo(403,h-30);ctx.fill();
           ctx.fillStyle='#238567';ctx.font='bold 22px Arial';ctx.textAlign='left';ctx.fillText(sender,42,43,650);
           ctx.fillStyle='#173b35';ctx.font='30px Arial';lines.forEach((value,i)=>ctx.fillText(value,42,85+i*42));
-        }else{ctx.fillStyle='#f5f5f5';ctx.font='bold 32px Arial';ctx.textAlign='center';ctx.fillText(text,384,49,680);ctx.fillStyle=nobleTitle(level).color;ctx.font='27px Arial';ctx.fillText(nobleLabel(level),384,93,680);}
+        }
         const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
         const material=new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false});
-        const sprite=new THREE.Sprite(material);const width=bubble?2.4:1.65;sprite.position.y=bubble?2.3+(width*h/768)/2:2.1;sprite.scale.set(width,width*h/768,1);sprite.renderOrder=100;return sprite;
+        const sprite=new THREE.Sprite(material);
+        if(!bubble)paintPlayerNameplate(canvas,text,level,{onUpdate:()=>{texture.needsUpdate=true;},isDisposed:()=>sprite.userData.disposed});
+        const width=bubble?2.4:1.65*canvas.width/768;
+        sprite.position.y=bubble?2.3+(width*h/768)/2:2.1;sprite.scale.set(width,width*canvas.height/canvas.width,1);sprite.renderOrder=100;return sprite;
       }
-      function disposeTag(tag){tag.material.map.dispose();tag.material.dispose();tag.removeFromParent();}
+      function disposeTag(tag){tag.userData.disposed=true;tag.material.map.dispose();tag.material.dispose();tag.removeFromParent();}
       function updateGuests(dt,t) {
         updateCharacterReaction(avatar,t);
         if(ownBubble){ownBubble.position.copy(avatar.position);ownBubble.position.y+=ownBubble.userData.height;ownBubble.material.opacity=Math.min(1,Math.max(0,(ownBubbleUntil-t)/500));if(t>ownBubbleUntil){disposeTag(ownBubble);ownBubble=null;}}
