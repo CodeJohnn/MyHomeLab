@@ -2,8 +2,10 @@ import {defaultAvatar,validateAvatar} from '../backend/avatar.mjs';
 import {accountProgression,publicProgression} from '../backend/progression.mjs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import {createWorld,tickWorld,actOnWorld,leaveBilliards} from '../backend/room-world.mjs';
+import {createDisconnectGrace} from '../backend/disconnect-grace.mjs';
 
 const rooms = new Map();
+const disconnectGrace=createDisconnectGrace();
 const lobbyKey='000000000000000000000000000000000001';
 function publicRoom(createRoomWorld){if(!rooms.has(lobbyKey))rooms.set(lobbyKey,{members:new Map(),media:null,files:new Map(),messages:[],touched:Date.now(),capacity:12,world:createRoomWorld()});return lobbyKey;}
 const id = () => randomBytes(18).toString('hex');
@@ -18,6 +20,7 @@ function snapshot(room) { room.world||=createWorld();return {world:room.world,me
 function broadcast(room) { const event=`data: ${JSON.stringify(snapshot(room))}\n\n`; for(const m of room.members.values()) m.stream?.write(event); }
 function removeMember(room,token){
   const member=room.members.get(token);if(!member)return;
+  disconnectGrace.connected(member);
   if(room.world?.billiards&&leaveBilliards(room.world.billiards,member.id))room.world.revision++;
   room.members.delete(token);member.stream?.end();
   if(room.media?.kind==='peer'&&room.media.hostId===member.id)room.media=null;
@@ -96,9 +99,16 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
           return reply(res,200,{ok:true});
         }
         if(action==='events' && req.method==='GET') {
+          disconnectGrace.connected(member);
           member.stream?.end(); res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','X-Accel-Buffering':'no'}); member.stream=res; broadcast(room);
           const timer=setInterval(()=>{member.seen=Date.now();res.write(': heartbeat\n\n');},15000);
-          res.on('close',()=>{clearInterval(timer);if(member.stream===res)member.stream=null;}); return;
+          res.on('close',()=>{
+            clearInterval(timer);
+            if(member.stream!==res)return;
+            member.stream=null;
+            if(room.members.get(token)!==member)return;
+            disconnectGrace.disconnected(member,()=>{if(!member.stream&&room.members.get(token)===member)removeMember(room,token);});
+          }); return;
         }
         if(action==='leave' && req.method==='POST') {removeMember(room,token);return reply(res,200,{ok:true});}
         if(action==='upload' && req.method==='POST') {

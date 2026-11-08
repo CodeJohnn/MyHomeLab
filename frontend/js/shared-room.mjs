@@ -350,7 +350,18 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   },100);
   setInterval(()=>{if(token&&media)apply();},5000);
   setInterval(()=>{if(token&&!closed&&!document.hidden)void api('prestige',{}).catch(()=>{});},60000);
-  addEventListener('pagehide',()=>{typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();});
+  addEventListener('pagehide',()=>{
+    if(token&&!closed){
+      const leaveUrl=apiUrl(`/api/rooms/${room}/leave`),leavingToken=token;
+      closed=true;
+      // Keep the request alive after navigation; the server also handles a lost SSE connection.
+      void fetch(leaveUrl,{method:'POST',headers:{Authorization:`Bearer ${leavingToken}`,'Content-Type':'application/json'},body:'{}',keepalive:true}).catch(()=>{});
+      try{sessionStorage.removeItem(sessionKey(room));}catch{}
+    }
+    clearTimeout(reconnectTimer);reconnectTimer=null;
+    typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();
+  });
+  addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
   el('join').textContent='Entrar no mundo';
   let checkingAvailability=false,lastAvailabilityCheck=-Infinity,wasAvailable=false,autoJoinStarted=false,availabilityAttempts=0;
   async function checkAvailability(force=false){

@@ -4909,7 +4909,7 @@
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=typing-33');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=presence-34');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
