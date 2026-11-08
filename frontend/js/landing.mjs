@@ -9,7 +9,7 @@ const login=createAccountDialog(host,async user=>{currentAccount=user;if(user.us
 const logout=document.createElement('button');logout.type='button';logout.className='accountLogout';logout.textContent='Sair da conta';logout.hidden=true;
 const home=createUserHome({host,onRequireLogin:()=>login.open({signup:true}),onPlay:async()=>{
   if(starting)return;starting=true;
-  try{currentAccount=await verifiedAccount();if(!currentAccount){login.open({signup:true});throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=hair-301');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');await completeRoomLoading();}
+  try{currentAccount=await verifiedAccount();if(!currentAccount){login.open({signup:true});throw new Error('Entre na sua conta para continuar.');}await showRoomLoading();await import('./homelab.js?v=interaction-depth-302');if(document.getElementById('error').textContent)throw new Error('Falha ao iniciar o laboratorio.');matrix.dispose();host.remove();document.body.classList.remove('landingActive');await completeRoomLoading();}
   catch(error){hideRoomLoading();starting=false;throw error;}
 }});
 host.querySelector('.userHomeHeader').append(logout);

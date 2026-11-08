@@ -7,6 +7,7 @@
     import {createScreenDepth} from './screen-depth.mjs';
     import {paintSpeechBubble} from './speech-bubble.mjs';
     import {createFrameClock} from './frame-clock.mjs';
+    import {closestInteraction,isPhysicalInteractionHit,canActivateHit,interactionRoots,interactionHitsFor} from './interaction-picking.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -4114,34 +4115,46 @@
       function activateAt(e) {
         if(bookLibrary.isOpen)return;
         point(e);
-        if(!edit&&avatar.visible){
-          const selfHit=ray.intersectObject(avatar,true).find(h=>isSceneVisible(h.object));
-          const blocker=selfHit&&ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root)],true).find(h=>isSceneVisible(h.object));
-          if(selfHit&&(!blocker||selfHit.distance<=blocker.distance+.025)){openAvatarMenu(e.clientX,e.clientY);return;}
+        const characters=new Map([[avatar,{kind:'self'}],...npcs.map(npc=>[npc.root,{kind:'npc',npc}]),...[...guests.values()].map(guest=>[guest,{kind:'guest',guest}])]);
+        const pickRoots=[...characters.keys(),...objects.map(o=>o.g),...wallOccluders,...bookLibrary.meshes,ambientSpeaker,
+          ...interactiveKeyboards.map(k=>k.g),...interactiveChairs.map(c=>c.g),bathroom.door,entranceDoor,restrictedDoor,
+          ...wallSwitches,...playableScreens.keys(),firstPersonCeilings,houseExterior.roof];
+        const clickHits=ray.intersectObjects(interactionRoots(pickRoots),true);
+        const hitsFor=(roots,recursive=true)=>interactionHitsFor(clickHits,roots,recursive);
+        const selection=closestInteraction(clickHits,characters,isSceneVisible);
+        const frontHit=selection?.hit;
+        const acceptsHit=hit=>isPhysicalInteractionHit(hit,isSceneVisible)&&canActivateHit(hit,frontHit);
+        if(!edit&&selection?.character){
+          const character=selection.character;
+          if(character.kind==='self'){openAvatarMenu(e.clientX,e.clientY);return;}
+          closeAvatarMenu();keys.clear();walkTarget=null;walkPath=[];
+          if(character.kind==='npc')openNpcConversation(character.npc);
+          else document.getElementById('status').textContent=(character.guest.userData.displayName||'Visitante')+' está na sala.';
+          return;
         }
         closeAvatarMenu();
-        const bookHit=ray.intersectObjects(bookLibrary.meshes,true).find(h=>isSceneVisible(h.object));
+        const bookHit=hitsFor(bookLibrary.meshes,true).find(acceptsHit);
         if(bookHit&&!edit){
-          const blocker=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const blocker=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!blocker||bookHit.distance<=blocker.distance+.025){
             let node=bookHit.object;while(node&&!node.userData.bookId)node=node.parent;
             if(node){keys.clear();walkTarget=null;walkPath=[];bookLibrary.open(node.userData.bookId);return;}
           }
         }
         point(e);
-        const rugHit=ray.intersectObject(byId.tapeteJavaScript.g,true).find(h=>isSceneVisible(h.object));
+        const rugHit=hitsFor([byId.tapeteJavaScript.g]).find(acceptsHit);
         if(rugHit) {
-          const frontObject=ray.intersectObjects([...objects.filter(o=>o.id!=='tapeteJavaScript').map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root)],true).find(h=>isSceneVisible(h.object));
+          const frontObject=hitsFor([...objects.filter(o=>o.id!=='tapeteJavaScript').map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root)],true).find(acceptsHit);
           if(!frontObject||rugHit.distance<frontObject.distance)return;
         }
-        const speakerHit=ray.intersectObject(ambientSpeaker,true).find(h=>isSceneVisible(h.object));
+        const speakerHit=hitsFor([ambientSpeaker]).find(acceptsHit);
         if(speakerHit) {
-          const obstacle=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const obstacle=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!obstacle||speakerHit.distance<=obstacle.distance+.025){roomAudio.toggleRadio();keys.clear();return;}
         }
-        const keyboardHit=ray.intersectObjects(interactiveKeyboards.map(k=>k.g),true).find(h=>isSceneVisible(h.object));
+        const keyboardHit=hitsFor(interactiveKeyboards.map(k=>k.g),true).find(acceptsHit);
         if(keyboardHit) {
-          const obstacle=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const obstacle=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!obstacle||keyboardHit.distance<=obstacle.distance+.025) {
             const key=interactiveKeyboards.find(k=>{for(let n=keyboardHit.object;n;n=n.parent)if(n===k.g)return true;return false;});
             if(key?.seat) {
@@ -4151,32 +4164,32 @@
             }
           }
         }
-        const chairHit=ray.intersectObjects(interactiveChairs.map(c=>c.g),true).find(h=>isSceneVisible(h.object));
+        const chairHit=hitsFor(interactiveChairs.map(c=>c.g),true).find(acceptsHit);
         if(chairHit) {
-          const obstacle=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const obstacle=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!obstacle||chairHit.distance<=obstacle.distance+.025) {
             const seat=interactiveChairs.find(c=>{for(let n=chairHit.object;n;n=n.parent)if(n===c.g)return true;return false;});
             if(seat){sitOnChair(seat);return;}
           }
         }
-        const bathroomHit=ray.intersectObject(bathroom.door,true).find(h=>isSceneVisible(h.object));
+        const bathroomHit=hitsFor([bathroom.door]).find(acceptsHit);
         if(bathroomHit){
-          const blocker=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const blocker=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!blocker||bathroomHit.distance<=blocker.distance+.025){bathroomDoorOpen=!bathroomDoorOpen;keys.clear();return;}
         }
-        const entranceHit=ray.intersectObject(entranceDoor,true).find(h=>isSceneVisible(h.object));
+        const entranceHit=hitsFor([entranceDoor]).find(acceptsHit);
         if(entranceHit){
-          const blocker=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const blocker=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!blocker||entranceHit.distance<=blocker.distance+.025){entranceOpen=!entranceOpen;sendWorldAction({type:'door',id:'entrance',open:entranceOpen});keys.clear();return;}
         }
-        const restrictedHit=ray.intersectObject(restrictedDoor,true).find(h=>isSceneVisible(h.object));
+        const restrictedHit=hitsFor([restrictedDoor]).find(acceptsHit);
         if(restrictedHit) {
-          const blocker=ray.intersectObjects([...objects.map(o=>o.g),...wallOccluders],true).find(h=>isSceneVisible(h.object));
+          const blocker=hitsFor([...objects.map(o=>o.g),...wallOccluders],true).find(acceptsHit);
           if(!blocker||restrictedHit.distance<=blocker.distance+.025){useServerDoor();keys.clear();return;}
         }
-        const switchHit = ray.intersectObjects(wallSwitches, true).find(h => isSceneVisible(h.object));
+        const switchHit = hitsFor(wallSwitches, true).find(acceptsHit);
         if (switchHit) {
-          const blocker = ray.intersectObjects([...objects.map(o => o.g), ...wallOccluders, ...npcs.map(n => n.root)], true).find(h => isSceneVisible(h.object));
+          const blocker = hitsFor([...objects.map(o => o.g), ...wallOccluders, ...npcs.map(n => n.root)], true).find(acceptsHit);
           if (!blocker || switchHit.distance <= blocker.distance + .025) {
             let plate = switchHit.object;
             while (plate && !plate.userData.circuit) plate = plate.parent;
@@ -4192,19 +4205,12 @@
             keys.clear(); return;
           }
         }
-        const hitScreen=ray.intersectObjects([...playableScreens.keys()],false)[0];
-        const hitScene=ray.intersectObjects(objects.map(o=>o.g),true).find(h=>isSceneVisible(h.object));
+        const hitScreen=hitsFor([...playableScreens.keys()],false).find(acceptsHit);
+        const hitScene=hitsFor(objects.map(o=>o.g),true).find(acceptsHit);
         if(hitScreen && (!hitScene || hitScreen.distance<=hitScene.distance+.025)) {openAnyScreen(playableScreens.get(hitScreen.object));return;}
 
         point(e);
-        const npcHit = ray.intersectObjects(npcs.map(n => n.root), true)[0];
-        const objectHit = ray.intersectObjects(objects.map(o => o.g), true).find(h => isSceneVisible(h.object));
-        if (npcHit && (!objectHit || npcHit.distance < objectHit.distance)) {
-          let node = npcHit.object;
-          while (node && !npcs.some(n => n.root === node)) node = node.parent;
-          const npc = npcs.find(n => n.root === node);
-          if (npc) { openNpcConversation(npc); return; }
-        }
+        const objectHit = hitsFor(objects.map(o => o.g), true).find(acceptsHit);
         if(objectHit) {
           for(let node=objectHit.object;node;node=node.parent)if(node.userData.interaction==='coffee') {
             interactionAudio.play('coffee');node.userData.sipUntil=performance.now()+900;keys.clear();return;
@@ -4213,12 +4219,13 @@
         // Considera somente objetos que aparecem antes do piso no raio.
         point(e);
         const ground = ray.ray.intersectPlane(floorPlane, new THREE.Vector3());
-        const hits = ray.intersectObjects(objects.map(o => o.g), true);
-        const visibleHit = hits.find(h => !ground || h.distance < ray.ray.origin.distanceTo(ground) + .02);
+        const hits = hitsFor(objects.map(o => o.g), true);
+        const visibleHit = hits.find(h => acceptsHit(h)&&(!ground || h.distance < ray.ray.origin.distanceTo(ground) + .02));
         let node = visibleHit?.object;
         while (node && !node.userData.id) node = node.parent;
         const o = node ? byId[node.userData.id] : null;
         if (!o) {
+          if(frontHit)return;
           point(e);
           const destination = new THREE.Vector3();
           if (ray.ray.intersectPlane(floorPlane, destination)
