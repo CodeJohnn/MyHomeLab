@@ -1,0 +1,43 @@
+/* Six colored actions orbit the character; the center stays transparent. */
+.characterMenu{width:380px;height:342px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);font:12px "Segoe UI",system-ui,sans-serif;filter:drop-shadow(0 3px 3px #183c3a35)}
+.characterMenu[data-expanded=true]{height:560px}
+.characterMenu .characterIdentity{left:50%;top:123px;width:166px;padding:0;display:flex;flex-direction:column-reverse;gap:2px;border:0;border-radius:0;background:none;box-shadow:none;color:#fff;pointer-events:none;text-shadow:0 1px 2px #fff,1px 0 2px #fff,-1px 0 2px #fff}
+.characterMenu .characterIdentity strong{font:700 14px/1.25 "Segoe UI",system-ui,sans-serif;color:#fff;overflow-wrap:anywhere;white-space:normal;text-shadow:0 2px 3px #234844,1px 0 2px #234844,-1px 0 2px #234844}
+.characterMenu .characterIdentity>span{font:800 13px/1.25 "Segoe UI",system-ui,sans-serif;color:#3985a9;margin:0;text-shadow:0 1px 2px #fff,1px 0 2px #fff,-1px 0 2px #fff}
+.characterMenu .characterOrbitButton{width:102px;gap:0;padding:0;border:0;background:none;color:#fff;font:800 12px/1.05 "Segoe UI",system-ui,sans-serif!important;text-transform:uppercase;text-shadow:0 2px 1px #164e4a,1px 0 1px #164e4a,-1px 0 1px #164e4a,0 -1px 1px #164e4a;isolation:isolate}
+.characterMenu .characterOrbitButton>span:last-child{max-width:110px;margin-top:-2px;z-index:1;letter-spacing:-.35px}
+.characterMenu .characterOrbitIcon{width:67px;height:67px;box-sizing:border-box;border:3px solid #164e5a;border-radius:50%;background:radial-gradient(circle at 37% 27%,#66c2d5 0,#2798b3 54%,#14738f 100%);box-shadow:inset 0 0 0 2px #a7e0e8,0 2px 0 #e9f9faaa,0 3px 3px #244b4b60;color:#fff}
+.characterMenu .characterOrbitIcon svg{width:44px;height:44px;filter:drop-shadow(0 1px 1px #17474480)}
+.characterMenu .characterOrbitButton:hover{transform:translateY(-3px)}
+.characterMenu .characterOrbitButton:hover .characterOrbitIcon,.characterMenu .characterOrbitButton[aria-expanded=true] .characterOrbitIcon{border-color:#ffe48d;box-shadow:inset 0 0 0 2px #eefcff,0 0 10px #91d8e466}
+.characterMenu .characterOrbitButton.appearance{left:60px;right:auto;top:0}
+.characterMenu .characterOrbitButton.dance{left:auto;right:60px;top:0}
+.characterMenu .characterOrbitButton.rank{left:0;right:auto;top:108px}
+.characterMenu .characterOrbitButton.outfit{left:auto;right:0;top:108px}
+.characterMenu .characterOrbitButton.reactions{left:25px;right:auto;top:239px}
+.characterMenu .characterOrbitButton.about{left:auto;right:25px;top:239px}
+.characterMenu .characterMenuClose{right:0;top:0;width:25px;height:25px;border:1px solid #b1dce2;background:#276577c9;color:#fff;box-shadow:0 1px 3px #184c4a44}
+.characterMenu .characterSubmenu{top:337px;left:8px;right:8px;max-height:calc(100% - 345px);padding:12px;border:2px solid #9dcfd8;border-radius:18px;background:linear-gradient(145deg,#377e92f5,#276779f5);box-shadow:inset 0 1px 1px #e0f5fa55,0 6px 18px #173d3c40;scrollbar-width:thin;scrollbar-color:#a9d4df transparent}
+.characterMenu .characterSubmenu>strong{color:#f6fbfd;font-size:11px;letter-spacing:.9px}
+.characterMenu .characterSubmenu button{border:1px solid #8fc6d388;background:#20586c80;border-radius:11px;color:#fff;min-height:38px;font-family:inherit}
+.characterMenu .characterSubmenu button:hover{background:#4b9db1;border-color:#d8f4f8}
+.characterMenu .characterReactions{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.characterMenu .characterReactions .characterEmoteButton{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;padding:7px 3px;min-height:66px;text-align:center;font-size:10px}
+.characterMenu .characterReactions .characterEmoteButton img{width:42px;height:42px;object-fit:contain}
+.characterMenu .characterReactions .characterEmoteButton>span:first-child:not(:last-child){font-size:30px;line-height:42px}
+.characterMenu .characterAbout p{font-family:inherit;color:#fff}.characterMenu .characterAbout small{color:#d0e8ed}.characterMenu .characterAbout>button{width:100%;margin-top:12px}
+.characterMenu .characterRank{text-align:center}.characterMenu .characterRank>img{display:block;width:75px;height:75px;margin:8px auto}.characterMenu .characterRank p{margin:6px;font-weight:700}.characterMenu .characterRank small{color:#d5edf3}
+@media(max-width:390px){
+  .characterMenu{width:340px}.characterMenu .characterOrbitButton{width:90px;font-size:11px!important}.characterMenu .characterOrbitIcon{width:60px;height:60px}.characterMenu .characterOrbitIcon svg{width:39px;height:39px}
+  .characterMenu .characterOrbitButton.appearance{left:50px}.characterMenu .characterOrbitButton.dance{right:50px}.characterMenu .characterIdentity{width:150px}.characterMenu .characterOrbitButton.reactions{left:15px}.characterMenu .characterOrbitButton.about{right:15px}
+}
+@media(max-height:510px) and (min-width:520px){
+  .characterMenu,.characterMenu[data-expanded=true]{width:560px;height:min(330px,calc(100dvh - 16px))}
+  .characterMenu .characterIdentity{left:155px;top:110px;width:130px}.characterMenu .characterIdentity strong{font-size:12px}.characterMenu .characterIdentity>span{font-size:11px}
+  .characterMenu .characterOrbitButton{width:90px;font-size:10px!important}.characterMenu .characterOrbitIcon{width:56px;height:56px}.characterMenu .characterOrbitIcon svg{width:37px;height:37px}
+  .characterMenu .characterOrbitButton.appearance{left:45px;right:auto;top:0}.characterMenu .characterOrbitButton.dance{left:175px;right:auto;top:0}
+  .characterMenu .characterOrbitButton.rank{left:0;right:auto;top:97px}.characterMenu .characterOrbitButton.outfit{left:220px;right:auto;top:97px}
+  .characterMenu .characterOrbitButton.reactions{left:45px;right:auto;top:190px}.characterMenu .characterOrbitButton.about{left:175px;right:auto;top:190px}
+  .characterMenu .characterSubmenu{left:325px;right:0;top:30px;max-height:calc(100% - 38px)}.characterMenu .characterReactions{grid-template-columns:repeat(3,minmax(0,1fr))}.characterMenu .characterMenuClose{right:0;top:0}
+}
+@media(prefers-reduced-motion:reduce){.characterMenu .characterOrbitButton{transition:none}.characterMenu .characterOrbitButton:hover{transform:none}}

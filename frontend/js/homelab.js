@@ -1,4 +1,4 @@
-    import {nobleLabel} from './nobility.mjs';
+    import {nobleLabel,nobleTitle} from './nobility.mjs';
     import {trackWorldAssets} from './world-loading.mjs';
     import {updateRoomLoading} from './room-loading.mjs';
     import {createPerformanceMonitor} from './performance-monitor.mjs';
@@ -2941,11 +2941,12 @@
         document.getElementById('status').textContent = 'Você levantou da cadeira.';
       }
       const {avatarActions,poseAvatarAction}=await import('./avatar-actions.mjs');
+      let ownNobleTag=null;
       const actionMenu=document.createElement('section');actionMenu.className='characterMenu';actionMenu.hidden=true;actionMenu.setAttribute('aria-label','Menu do personagem');
       const actionTitle=document.createElement('header');actionTitle.className='characterIdentity';actionTitle.innerHTML='<strong></strong><span>Camponês • Nível 1</span>';actionMenu.append(actionTitle);
       const actionButtons=document.createElement('div');actionButtons.className='characterSubmenu characterActions';actionButtons.hidden=true;actionMenu.append(actionButtons);document.body.append(actionMenu);
       const reactionSection=document.createElement('section');reactionSection.className='characterSubmenu characterReactions';reactionSection.hidden=true;
-      const reactionHeading=document.createElement('strong');reactionHeading.textContent='Reagir';reactionSection.append(reactionHeading);actionTitle.after(reactionSection);
+      const reactionHeading=document.createElement('strong');reactionHeading.textContent='Emotes';reactionSection.append(reactionHeading);actionTitle.after(reactionSection);
       for(const [kind,label] of [...Object.entries(characterReactions).map(([kind,reaction])=>[kind,reaction.label]),['wave','Acenar'],['heart','Curtir']]){
         const button=document.createElement('button');button.type='button';button.className='characterEmoteButton';
         const reaction=characterReactions[kind];
@@ -2961,30 +2962,47 @@
       }
       const actionsHeading=document.createElement('strong');actionsHeading.textContent='Acoes';actionButtons.append(actionsHeading);
       const icons={
-        appearance:'<path d="m8 4 4 2 4-2 5 4-3 5-2-1v9H8v-9l-2 1-3-5Z"/>',
-        dance:'<circle cx="14" cy="4" r="2"/><path d="m6 6 5 4 4-1 4-5M11 10l-2 5 4 3-3 4m-1-7-5 3M15 9l2 6 4 1"/>',
-        reactions:'<circle cx="12" cy="12" r="9"/><path d="M8 14q4 6 8 0M8 8v2m8-2v2"/>',
-        actions:'<path d="M9 12V5a2 2 0 0 1 4 0v7m0-4a2 2 0 0 1 4 0v4m0-2a2 2 0 0 1 4 0v5q0 7-7 7h-2q-3 0-5-4l-3-5q-1-3 2-3l3 4"/>',
-        about:'<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-11v1"/>'
+        appearance:'<path d="M12 3V1m0 2L3 9h18Z" stroke="#ffe091"/><path d="m8 7 4 2 4-2 6 5-4 4-2-2v9H8v-9l-2 2-4-4Z" fill="#f39a42"/><path d="M8 15v8h8v-8" fill="#49a4b7"/>',
+        dance:'<path d="M3 5h7v8l3 2v5H2v-7Z" fill="#b17b49"/><path d="M15 4h6v10l2 2v4H12v-6Z" fill="#d2a66b"/><path d="M2 20h11m-1 0h11" stroke="#ffdc8f"/>',
+        rank:'<path d="m12 1 3.2 6.5 7.2 1-5.2 5 1.2 7.2-6.4-3.4-6.4 3.4 1.2-7.2-5.2-5 7.2-1Z" fill="#ffdb52"/><path d="m12 5 1.8 4 4.4.6" stroke="#fff2a5"/>',
+        outfit:'<circle cx="15" cy="9" r="7" fill="#a3dfeb"/><path d="m10 14-8 8" stroke="#c29a57" stroke-width="5"/><path d="M12 6q4-3 6 1" stroke="#fff"/>',
+        reactions:'<circle cx="12" cy="12" r="10" fill="#ffdf58"/><path d="M7 13q5 9 10 0Z" fill="#fff"/><path d="M7 7v3m10-3v3" stroke="#184e60" stroke-width="2"/>',
+        about:'<circle cx="12" cy="12" r="10" fill="#456ba8"/><path d="m12 10-2 8h4m-1-12v1" stroke="#e4f6fc" stroke-width="3"/>'
       };
       const about=document.createElement('section');about.className='characterSubmenu characterAbout';about.hidden=true;about.innerHTML='<strong>Meu perfil</strong><p data-about-name></p><p>Camponês &middot; Nível 1</p><small>A progressao de XP ainda nao esta ativa.</small>';actionMenu.append(about);
+      about.querySelector('small').textContent='Seu perfil no espaço.';
+      const showActions=document.createElement('button');showActions.type='button';showActions.textContent='Ações do personagem';showActions.onclick=()=>selectCharacterCategory('actions');about.append(showActions);
+      const rankPanel=document.createElement('section');rankPanel.className='characterSubmenu characterRank';rankPanel.hidden=true;actionMenu.append(rankPanel);
+      function updateRankPanel(){
+        const profile=sharedRoom?.getProfile(),level=profile?.level||1,title=nobleTitle(level);
+        const heading=document.createElement('strong');heading.textContent='Seu posto';
+        const crest=document.createElement('img');crest.src=new URL(`../assets/nobility/${title.id}.svg`,import.meta.url).href;crest.alt='Insígnia de '+title.name;
+        const label=document.createElement('p');label.textContent=nobleLabel(level);
+        const xp=document.createElement('small');xp.textContent=(profile?.progression?.xp||0)+' XP';rankPanel.replaceChildren(heading,crest,label,xp);
+      }
       const categories=[];
       function selectCharacterCategory(name){
-        reactionSection.hidden=name!=='reactions';actionButtons.hidden=name!=='actions';about.hidden=name!=='about';
+        reactionSection.hidden=name!=='reactions';actionButtons.hidden=name!=='actions';about.hidden=name!=='about';rankPanel.hidden=name!=='rank';
+        actionMenu.dataset.expanded=String(Boolean(name));if(name==='rank')updateRankPanel();
         categories.forEach(button=>button.setAttribute('aria-expanded',String(button.dataset.category===name)));
+        if(!actionMenu.hidden){const bounds=actionMenu.getBoundingClientRect();actionMenu.style.top=Math.max(8,Math.min(bounds.top,innerHeight-bounds.height-8))+'px';}
       }
-      for(const [kind,label] of [['appearance','Aparencia'],['dance','Dancas'],['reactions','Reacoes'],['actions','Acoes'],['about','Sobre mim']]){
+      for(const [kind,label] of [['appearance','Aparência'],['dance','Danças'],['rank','Posto'],['outfit','Encontrar outfit'],['reactions','Emotes'],['about','Sobre mim']]){
         const button=document.createElement('button');button.type='button';button.className='characterOrbitButton '+kind;button.dataset.category=kind;button.setAttribute('aria-label',label);button.setAttribute('aria-expanded','false');
-        button.innerHTML='<span class="characterOrbitIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[kind]+'</svg></span><span>'+label+'</span>';
-        button.onclick=()=>{if(kind==='appearance'){closeAvatarMenu();sharedRoom?.editProfile();return;}if(kind==='dance'){actionButtons.querySelector('[data-action="dance"]')?.click();return;}selectCharacterCategory(button.getAttribute('aria-expanded')==='true'?null:kind);};
+        button.innerHTML='<span class="characterOrbitIcon"><svg viewBox="0 0 24 24" fill="none" stroke="#234c51" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[kind]+'</svg></span><span>'+label+'</span>';
+        button.onclick=()=>{if(kind==='appearance'||kind==='outfit'){closeAvatarMenu();sharedRoom?.editProfile();if(kind==='outfit')requestAnimationFrame(()=>{const outfit=document.querySelector('.onlineProfileDialog select[name=outfit]');if(outfit&&!outfit.disabled)outfit.focus();});return;}if(kind==='dance'){actionButtons.querySelector('[data-action="dance"]')?.click();return;}selectCharacterCategory(button.getAttribute('aria-expanded')==='true'?null:kind);};
         categories.push(button);actionMenu.append(button);
       }
       const closeCharacterMenu=document.createElement('button');closeCharacterMenu.type='button';closeCharacterMenu.className='characterMenuClose';closeCharacterMenu.setAttribute('aria-label','Fechar menu do personagem');closeCharacterMenu.innerHTML='&#10005;';closeCharacterMenu.onclick=()=>closeAvatarMenu();actionMenu.append(closeCharacterMenu);
-      function closeAvatarMenu(){actionMenu.hidden=true;actionMenu.open=false;}
+      function closeAvatarMenu(){actionMenu.hidden=true;actionMenu.open=false;if(ownNobleTag)ownNobleTag.visible=true;}
       function openAvatarMenu(x=innerWidth/2,y=innerHeight/2){
         const name=sharedRoom?.getProfile()?.name||localStorage.getItem('homelab.name')||'Visitante';actionTitle.querySelector('strong').textContent=name;about.querySelector('[data-about-name]').textContent=name;selectCharacterCategory(null);
         actionMenu.hidden=false;keys.clear();walkTarget=null;walkPath=[];
-        const bounds=actionMenu.getBoundingClientRect();actionMenu.style.left=Math.max(8,Math.min(x-bounds.width/2,innerWidth-bounds.width-8))+'px';actionMenu.style.top=Math.max(8,Math.min(y-150,innerHeight-bounds.height-8))+'px';
+        if(ownNobleTag)ownNobleTag.visible=false;
+        const center=avatar.position.clone().add(new THREE.Vector3(0,2.05,0)).project(camera),rect=renderer.domElement.getBoundingClientRect();
+        const anchorX=Number.isFinite(center.x)?rect.left+(center.x+1)*rect.width/2:x;
+        const anchorY=Number.isFinite(center.y)?rect.top+(1-center.y)*rect.height/2:y;
+        const bounds=actionMenu.getBoundingClientRect();actionMenu.style.left=Math.max(8,Math.min(anchorX-bounds.width/2,innerWidth-bounds.width-8))+'px';actionMenu.style.top=Math.max(8,Math.min(anchorY-165,innerHeight-bounds.height-8))+'px';
       }
       document.addEventListener('pointerdown',event=>{if(!actionMenu.contains(event.target)&&event.target!==renderer.domElement)closeAvatarMenu();});
       document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAvatarMenu();});
@@ -5027,7 +5045,6 @@
           if(guest.userData.waveUntil>t){const arm=guest.userData.networkJoints[5];if(arm){arm.rotation.z=-2.5;arm.rotation.x=Math.sin(t*.014)*.3;}}
         }
       }
-      let ownNobleTag=null;
       sharedRoom=createSharedRoom({
         getPortrait:member=>portraitCapture.get(member),
         onTyping:active=>{avatar.userData.typingUntil=active?Infinity:0;},
