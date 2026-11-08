@@ -4754,7 +4754,7 @@
         const focus=firstPerson?avatar.position:cameraGoal;
         const position=new THREE.Vector3();
         for(const [type,pool] of Object.entries(localLightPools)) {
-          const limit=type==='spot'?(isMobile?8:pool.length):(isMobile?2:4);
+          const limit=type==='spot'?8:(isMobile?2:4);
           const ranked=pool.map(light=>{
             light.getWorldPosition(position);
             return {light,score:light.intensity/(1+position.distanceToSquared(focus))};
@@ -4917,7 +4917,7 @@
         updateNpcChats(dt);
         renderMonitorVideos();
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=auth-errors-31');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=performance-32');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';

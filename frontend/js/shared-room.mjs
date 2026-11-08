@@ -12,10 +12,10 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   onlineDock.className='roomOnlineDock';onlineDock.hidden=true;onlineDock.open=true;
   onlineDock.innerHTML='<summary>Pessoas online <span data-total>0</span><span aria-hidden="true">⌄</span></summary><div class="roomOnlineMembers" aria-label="Pessoas na sala"></div>';
   document.body.append(onlineDock);
-  let dockSignature='';
+  let dockSignature='',peopleSignature='',worldSignature='';
   const initials=name=>(name||'Visitante').trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase('pt-BR');
   function updateOnlineDock(members){
-    const signature=JSON.stringify(members.map(member=>[member.id,member.name,member.progression?.level]));
+    const signature=JSON.stringify(members.map(member=>[member.id,member.name,member.progression?.level,member.progression?.xp,member.id===selfId]));
     if(signature===dockSignature)return;dockSignature=signature;
     onlineDock.querySelector('[data-total]').textContent=members.length;
     onlineDock.querySelector('.roomOnlineMembers').replaceChildren(...members.map(member=>{
@@ -247,6 +247,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     try {
       if(!profileConfirmed&&!(await openOnlineProfile(true)))return;
       previousMembers=null;
+      peopleSignature='';worldSignature='';
       previousSelfLevel=null;selfProgressionSignature='';
       status('Conectando à sala pública...');
       el('count').textContent='Entrando';
@@ -275,13 +276,18 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
         onlineDock.hidden=panel.hidden;
         updateOnlineDock(state.members);
         updatePresence(state.members);
-        el('count').textContent=state.members.length+' online';
-        el('people').replaceChildren(...state.members.map(member=>{
+        const nextPeopleSignature=JSON.stringify(state.members.map(member=>[member.id,member.name,member.id===selfId]));
+        if(nextPeopleSignature!==peopleSignature){
+          peopleSignature=nextPeopleSignature;
+          el('count').textContent=state.members.length+' online';
+          el('people').replaceChildren(...state.members.map(member=>{
           const chip=document.createElement('span');chip.className='onlinePerson'+(member.id===selfId?' isSelf':'');
           chip.textContent=member.name+(member.id===selfId?' (voc\u00ea)':'');return chip;
-        }));
+          }));
+        }
         offset=state.serverTime-Date.now();onMembers(state.members.filter(m=>m.id!==selfId));
-        onWorld?.(state.world);
+        const nextWorldSignature=JSON.stringify(state.world);
+        if(nextWorldSignature!==worldSignature){worldSignature=nextWorldSignature;onWorld?.(state.world);}
         if(!state.media)status('Conectado a sala');
         for(const message of state.messages||[])if(!seenMessages.has(message.id)){
           if(message.kind==='system'){
@@ -327,8 +333,15 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     el('count').textContent='Dispon\u00edvel';el('people').replaceChildren();
     room=null;el('join').hidden=false;el('join').textContent='Entrar no mundo';const address=new URL(location.href);address.searchParams.delete('sala');history.replaceState(null,'',address);status('Você saiu da sala.');
   };
-  let sending=false;
-  setInterval(async()=>{if(!token||closed||sending)return;sending=true;try{await api('state',{pose:getPose()});}catch(e){showError(e);}finally{sending=false;}},100);
+  let sending=false,lastPoseSignature='',lastPoseSent=0;
+  setInterval(async()=>{
+    if(!token||closed||sending||document.hidden)return;
+    const pose=getPose(),signature=JSON.stringify([token,pose]),now=Date.now();
+    // Keep the session alive while idle without broadcasting identical poses ten times a second.
+    if(signature===lastPoseSignature&&now-lastPoseSent<10000)return;
+    sending=true;
+    try{await api('state',{pose});lastPoseSignature=signature;lastPoseSent=now;}catch(e){showError(e);}finally{sending=false;}
+  },100);
   setInterval(()=>{if(token&&media)apply();},5000);
   setInterval(()=>{if(token&&!closed&&!document.hidden)void api('prestige',{}).catch(()=>{});},60000);
   addEventListener('pagehide',()=>{events?.close();peer.close();avatarPreview?.dispose();});
