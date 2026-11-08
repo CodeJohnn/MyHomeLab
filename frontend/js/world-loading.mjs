@@ -1,4 +1,4 @@
-// Track actual Three.js resource batches, including requests started by GLTFLoader.
+// Track actual Three.js resource batches, including textures and other scene resources.
 export function trackWorldAssets(manager,onProgress=()=>{}){
   let busy=false,errors=[],waiters=[];
   const previous={onStart:manager.onStart,onProgress:manager.onProgress,onLoad:manager.onLoad,onError:manager.onError};

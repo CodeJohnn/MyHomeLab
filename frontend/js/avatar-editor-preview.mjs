@@ -1,5 +1,4 @@
-import {updateAvatarModel,avatarModelIsAnimated,disposeAvatarModel} from './avatar-models.mjs?v=equipment-7';
-import {updateEquipment,hasEquippedHands} from './avatar-equipment.mjs';
+import {updateEquipment,hasEquippedHands,disposeEquipment} from './avatar-equipment.mjs';
 export function createAvatarEditorPreview({container,THREE,template,applyAppearance}){
   const scene=new THREE.Scene(),model=template.clone(true);
   model.position.set(0,0,0);model.rotation.set(0,-.2,0);model.visible=true;scene.add(model);
@@ -14,13 +13,13 @@ export function createAvatarEditorPreview({container,THREE,template,applyAppeara
     const width=Math.round(rect.width),height=Math.round(rect.height);
     if(width!==lastWidth||height!==lastHeight){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();lastWidth=width;lastHeight=height;needsFit=true;}
     const now=performance.now();if(lastTime&&now-lastTime<33&&!drag){requestRender();return;}
-    updateAvatarModel(model,lastTime?Math.min((now-lastTime)/1000,.1):.016,{preview:true});updateEquipment(model,now);lastTime=now;
+    updateEquipment(model,now);lastTime=now;
     if(needsFit){
       model.updateWorldMatrix(true,true);const bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
       const tangent=Math.tan(camera.fov*Math.PI/360),distance=Math.max(2.8,size.y*1.16/(2*tangent),Math.max(size.x,size.z)*1.16/(2*tangent*camera.aspect));
       camera.position.set(center.x,center.y+.08,center.z+distance);camera.lookAt(center);needsFit=false;
     }
-    renderer.render(scene,camera);if(avatarModelIsAnimated(model)||hasEquippedHands(model))requestRender();
+    renderer.render(scene,camera);if(hasEquippedHands(model))requestRender();
   }
   function requestRender(){if(frame!==null||disposed||!visible||document.hidden)return;frame=requestAnimationFrame(()=>{frame=null;render();});}
   function initialize(){
@@ -46,6 +45,6 @@ export function createAvatarEditorPreview({container,THREE,template,applyAppeara
     update(config){lastConfig=config;applyAppearance(model,config,THREE);needsFit=true;requestRender();},
     setVisible(value){visible=value;lastTime=0;if(!value&&frame!==null){cancelAnimationFrame(frame);frame=null;}if(value){initialize();if(lastConfig)applyAppearance(model,lastConfig,THREE);requestRender();}},
     turn(angle){model.rotation.y=angle;requestRender();},
-    dispose(){disposed=true;disposeAvatarModel(model);document.removeEventListener('visibilitychange',requestRender);globalThis.removeEventListener('avatar-texture-ready',assetReady);visible=false;observer.disconnect();if(frame!==null)cancelAnimationFrame(frame);model.traverse(node=>{if(node.userData.avatarOwnMaterial)node.material?.dispose();});renderer?.dispose();}
+    dispose(){disposed=true;disposeEquipment(model);document.removeEventListener('visibilitychange',requestRender);globalThis.removeEventListener('avatar-texture-ready',assetReady);visible=false;observer.disconnect();if(frame!==null)cancelAnimationFrame(frame);model.traverse(node=>{if(node.userData.avatarOwnMaterial)node.material?.dispose();});renderer?.dispose();}
   };
 }

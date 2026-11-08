@@ -9,12 +9,12 @@ test('avatar individual e atualizado, validado e preservado ao reconectar',async
   const post=(route,data,token)=>fetch(base+route,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(data)});
   try{
     const {room}=await(await post('/api/rooms',{})).json(),route=`/api/rooms/${room}`;
-    const feminine={...defaultAvatar,gender:'feminine',model:'punk',hairStyle:'long',shirt:'#335599',glasses:false,outfit:'hoodie',bottom:'cargo',footwear:'boots',hat:'cap',shoes:'#654321'};
+    const feminine={...defaultAvatar,gender:'feminine',model:'default',hairStyle:'long',shirt:'#335599',glasses:false,outfit:'hoodie',bottom:'cargo',footwear:'boots',hat:'cap',shoes:'#654321'};
     const a=await(await post(route+'/join',{name:'Ana',avatar:feminine})).json();
     const b=await(await post(route+'/join',{name:'Bruno'})).json();
     assert.deepEqual(b.members.find(m=>m.id===a.id).avatar,feminine);
     assert.deepEqual(b.members.find(m=>m.id===b.id).avatar,defaultAvatar);
-    const changed={...feminine,model:'female_punk',hairStyle:'curly',hair:'#663311'};
+    const changed={...feminine,model:'default',hairStyle:'curly',hair:'#663311'};
     assert.equal((await post(route+'/state',{avatar:changed},a.token)).status,200);
     assert.equal((await post(route+'/state',{avatar:{...changed,shirt:'<script>'}},a.token)).status,400);
     const resumed=await(await post(route+'/join',{token:a.token})).json();
@@ -35,4 +35,9 @@ test('novos cabelos e roupas sao validados e avatares antigos continuam compativ
   const oldModel={...defaultAvatar};delete oldModel.model;assert.equal(validateAvatar(oldModel).model,'default');
   for(const key of ['bottom','footwear','hat'])assert.equal(validateAvatar({...defaultAvatar,[key]:'unknown'}),null);
   assert.equal(validateAvatar({...defaultAvatar,shoes:'invalid'}),null);
+});
+
+test('somente o avatar procedural e aceito apos retirar modelos importados',()=>{
+  for(const model of ['punk','female_punk','android','caveirata','perseu','female_bikini'])assert.equal(validateAvatar({...defaultAvatar,model}),null);
+  assert.equal(validateAvatar(defaultAvatar).model,'default');
 });

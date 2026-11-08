@@ -2692,7 +2692,7 @@
       const networkJoints=[...legs,...knees,...arms,...elbows];
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       const avatarTemplate=avatar.clone(true);
-      const {updateAvatarModel,disposeAvatarModel}=await import('./avatar-models.mjs?v=equipment-7');
+      const {disposeEquipment}=await import('./avatar-equipment.mjs');
       const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=equipment-24');
       const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=equipment-9');
       const npcs = [];
@@ -4926,7 +4926,7 @@
         updateMobileContactShadows(t);
         updateMobileQuality(t);
         updateLightBudget(t);
-        updateGuests(dt,t);updateAvatarModel(avatar,dt);for(const guest of guests.values())updateAvatarModel(guest,dt);
+        updateGuests(dt,t);
         updateEquipment(avatar,t,{suspended:!!interactionPose});
         for(const guest of guests.values())updateEquipment(guest,t,{pose:false,suspended:guest.userData.networkPose?.equipmentActive===false});
         updateBilliardsScene(dt);
@@ -5059,7 +5059,7 @@
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
         getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z]),equipmentActive:!interactionPose}),
         onMembers: members => {
-          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeAvatarModel(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
+          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeEquipment(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
@@ -5129,7 +5129,6 @@
       requestAnimationFrame(loop);
       try{
         await worldAssets.wait();
-        const {waitForAvatarModel}=await import('./avatar-models.mjs?v=equipment-7');await waitForAvatarModel(avatar);
         await worldAssets.wait();
         updateRoomLoading(95,'Preparando a primeira imagem do mundo...');
         if(errorBox.textContent)throw new Error(errorBox.textContent);

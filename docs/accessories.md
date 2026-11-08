@@ -14,7 +14,7 @@ O inventário fica em **Meu avatar → Acessórios**, tanto na página de perfil
 
 ## Como testar
 
-1. Entre no perfil, escolha **Personalizado**, abra **Acessórios** e clique em **Experimentar**.
+1. Entre no perfil, abra **Acessórios** e clique em **Experimentar**.
 2. Gire a prévia para ver o encaixe. Ajuste a cor do último item escolhido e experimente combinações, como boné + headset + óculos + mochila + celular.
 3. Escolha o notebook aberto, tablet ou livro: as duas mãos devem se posicionar nas bordas. Café, celular e câmera têm poses de sustentação; maleta e notebook fechado usam uma pose de transporte.
 4. Selecione uma bolsa depois da mochila: a mochila é removida para evitar sobreposição. Chapéus largos também substituem os fones. A máscara pode coexistir com óculos.
@@ -36,7 +36,7 @@ Os objetos de mão são habilitados no Personalizado, Punk, Punk feminino, Cavei
 - `accessory-models.mjs`: modelagem procedural com bordas arredondadas, perfis moldados, alças curvas, bolsos, zíperes, costuras, microfone, teclas e outros detalhes. Geometrias são agrupadas por acabamento para reduzir chamadas de desenho. Cópias iguais compartilham recursos com contagem de referências e descarte ao remover a última cópia.
 - `avatar-equipment.mjs`: fixação no avatar padrão e nos ossos dos GLBs, compensação de escala, enquadramento da cabeça, IK de dois segmentos, alinhamento das mãos, suspensão durante outras ações e descarte.
 - `accessory-inventory.mjs` e `accessories.css`: interface reutilizada nos dois editores.
-- Integrações em `avatar-appearance.mjs`, `avatar-models.mjs`, `player-avatar.mjs`, `avatar-editor-preview.mjs`, `shared-room.mjs`, `user-home.mjs`, `homelab.js`, `backend/avatar.mjs` e `api/rooms.mjs`.
+- Integrações em `avatar-appearance.mjs`, `player-avatar.mjs`, `avatar-editor-preview.mjs`, `shared-room.mjs`, `user-home.mjs`, `homelab.js`, `backend/avatar.mjs` e `api/rooms.mjs`.
 
 Não há cálculos de equipamento por quadro quando nenhum objeto de mão está equipado. As malhas têm entre 76 e 2.992 triângulos por item e entre 1 e 7 grupos de acabamento; não usam texturas de alta resolução nem novos contextos WebGL durante o jogo. Os objetos de mão têm poses leves; os demais seguem a hierarquia do personagem. A frequência de sincronização da sala foi preservada. Esses números são contagens de geometria, não medições de FPS.
 

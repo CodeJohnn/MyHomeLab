@@ -1,4 +1,3 @@
-import {clone} from 'three/addons/utils/SkeletonUtils.js';
 
 // One-off thumbnails reuse the game's renderer. No extra WebGL contexts or animation loop.
 export function createAvatarPortraits({THREE,renderer,getCharacter}){
@@ -7,18 +6,14 @@ export function createAvatarPortraits({THREE,renderer,getCharacter}){
   let disposed=false;
   function capture(member){
     const source=getCharacter(member);if(!source)return null;
-    const imported=member.avatar?.model&&member.avatar.model!=='default';
-    const importedVisual=imported?source.children.find(node=>node.userData.importedAvatar&&node.visible):null;
-    if(imported&&!importedVisual)return null;
-    const visual=clone(imported?importedVisual:source.getObjectByName('onlineAvatarHead')||source);
+    const visual=(source.getObjectByName('onlineAvatarHead')||source).clone(true);
     visual.position.set(0,0,0);visual.rotation.set(0,0,0);visual.visible=true;
     const sprites=[];visual.traverse(node=>{if(node.isSprite)sprites.push(node);});sprites.forEach(node=>node.removeFromParent());
     const scene=new THREE.Scene();scene.add(visual);
     scene.add(new THREE.HemisphereLight('#f0f9ff','#65878a',2.5));
     const light=new THREE.DirectionalLight('#fff2e5',2.8);light.position.set(-2,3,4);scene.add(light);
     const bounds=new THREE.Box3().setFromObject(visual),size=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
-    const frame=imported?size.y*.32:Math.max(size.y,size.x)*1.12;
-    if(imported)center.y=bounds.max.y-size.y*.15;
+    const frame=Math.max(size.y,size.x)*1.12;
     const camera=new THREE.PerspectiveCamera(30,1,.01,30);
     camera.position.set(center.x,center.y,center.z+frame/(2*Math.tan(Math.PI/12)));camera.lookAt(center);
     const oldTarget=renderer.getRenderTarget(),oldClear=renderer.getClearColor(new THREE.Color()),oldAlpha=renderer.getClearAlpha();
@@ -34,7 +29,6 @@ export function createAvatarPortraits({THREE,renderer,getCharacter}){
     }finally{
       renderer.setRenderTarget(oldTarget);renderer.setClearColor(oldClear,oldAlpha);
       renderer.shadowMap.enabled=oldShadow;renderer.toneMappingExposure=oldExposure;renderer.autoClear=oldAutoClear;
-      const skeletons=new Set();visual.traverse(node=>{if(node.skeleton)skeletons.add(node.skeleton);});skeletons.forEach(skeleton=>skeleton.dispose());
     }
   }
   return {

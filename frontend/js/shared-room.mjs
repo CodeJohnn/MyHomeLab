@@ -1,4 +1,3 @@
-import {avatarModels} from './avatar-model-catalog.mjs?v=stable-6';
 import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
@@ -172,7 +171,7 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
   const saveName=document.createElement('button');saveName.type='submit';saveName.textContent='Salvar';nameForm.append(saveName);
   const nameFeedback=document.createElement('small');nameFeedback.setAttribute('role','status');nameForm.append(nameFeedback);
   const avatarEditor=document.createElement('form');avatarEditor.className='onlineAvatarEditor';
-  avatarEditor.innerHTML='<strong>Seu avatar</strong><label>Modelo<select name="model"><option value="default">Personalizado</option><option value="punk">Punk</option></select></label><small data-model-note hidden>Este personagem usa suas roupas e cabelo originais.</small><a href="./frontend/assets/credits.html" target="_blank" rel="noopener" style="font-size:10px;color:#9bc790">Creditos das imagens</a><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="long">Longo</option><option value="curly">Cacheado</option></select></label><div class="onlineWardrobe"><label>Parte de cima<select name="outfit"></select></label><label>Parte de baixo<select name="bottom"></select></label><label>Calcados<select name="footwear"></select></label><label style="display:none">Acessorio<select name="hat"></select></label></div><div class="onlineAvatarColors"><label>Pele<input name="skin" type="color" value="#bd896c"></label><label>Cabelo<input name="hair" type="color" value="#292725"></label><label>Camisa<input name="shirt" type="color" value="#080808"></label><label>Calcado<input name="shoes" type="color" value="#20242b"></label><label>Calca<input name="pants" type="color" value="#17191e"></label></div><label><input name="glasses" type="checkbox" checked> Usar oculos</label><button class="onlinePrimary">Salvar avatar</button><small role="status" data-avatar-feedback></small>';
+  avatarEditor.innerHTML='<strong>Seu avatar</strong><input type="hidden" name="model" value="default"><a href="./frontend/assets/credits.html" target="_blank" rel="noopener" style="font-size:10px;color:#9bc790">Creditos das imagens</a><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="long">Longo</option><option value="curly">Cacheado</option></select></label><div class="onlineWardrobe"><label>Parte de cima<select name="outfit"></select></label><label>Parte de baixo<select name="bottom"></select></label><label>Calcados<select name="footwear"></select></label><label style="display:none">Acessorio<select name="hat"></select></label></div><div class="onlineAvatarColors"><label>Pele<input name="skin" type="color" value="#bd896c"></label><label>Cabelo<input name="hair" type="color" value="#292725"></label><label>Camisa<input name="shirt" type="color" value="#080808"></label><label>Calcado<input name="shoes" type="color" value="#20242b"></label><label>Calca<input name="pants" type="color" value="#17191e"></label></div><label><input name="glasses" type="checkbox" checked> Usar oculos</label><button class="onlinePrimary">Salvar avatar</button><small role="status" data-avatar-feedback></small>';
   panel.querySelector('.onlineProfile').append(avatarEditor);
   profileDialog.querySelector('.onlineProfileContent').append(panel.querySelector('.onlineProfile'));
   const avatarInput=name=>avatarEditor.elements.namedItem(name);
@@ -186,7 +185,6 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
     }
   }
   updateStyleOptions();
-  avatarInput('model').replaceChildren(...avatarModels.map(model=>new Option(model.label,model.id)));
   const accessoryInventory=createAccessoryInventory({onChange:equipment=>{if(equipment.Head)avatarInput('hat').value='none';previewAvatar();}});
   avatarEditor.insertBefore(accessoryInventory.element,avatarEditor.querySelector('button.onlinePrimary'));
   avatarInput('hat').addEventListener('input',()=>{if(avatarInput('hat').value!=='none')accessoryInventory.remove('Head');});
@@ -195,15 +193,14 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
     return {...Object.fromEntries(['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses'].map(key=>[key,key==='glasses'?avatarInput(key).checked:avatarInput(key).value])),accessories,...(accessories.Head?{hat:'none'}:{}),...(accessories.Face?{glasses:false}:{})};
   };
   try{accessoryInventory.set(JSON.parse(localStorage.getItem('homelab.avatar')||'null')?.accessories);}catch{}
-  try{const saved=JSON.parse(localStorage.getItem('homelab.avatar')||'null');if(saved){avatarInput('gender').value=saved.gender||'masculine';updateStyleOptions(true);}if(saved)for(const key of ['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses']){if(key==='glasses')avatarInput(key).checked=saved[key]!==false;else if(typeof saved[key]==='string'){avatarInput(key).value=saved[key];if(!avatarInput(key).value&&avatarInput(key).options)avatarInput(key).selectedIndex=0;}}}catch{}
+  try{const saved=JSON.parse(localStorage.getItem('homelab.avatar')||'null');if(saved){avatarInput('gender').value=saved.gender||'masculine';updateStyleOptions(true);}if(saved)for(const key of ['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses']){if(key==='glasses')avatarInput(key).checked=saved[key]!==false;else if(typeof saved[key]==='string'){avatarInput(key).value=key==='model'?'default':saved[key];if(!avatarInput(key).value&&avatarInput(key).options)avatarInput(key).selectedIndex=0;}}}catch{}
   const avatarPresets=document.createElement('div');avatarPresets.className='onlineAvatarPresets';
   for(const [label,shirt,pants,hair]of [['Neutro','#c9c6ba','#343b43','#302923'],['Azul','#416580','#29333f','#382b25'],['Verde','#597969','#38413a','#242323']]){
     const button=document.createElement('button');button.type='button';button.textContent=label;button.style.setProperty('--preset-color',shirt);
     button.onclick=()=>{avatarInput('shirt').value=shirt;avatarInput('pants').value=pants;avatarInput('hair').value=hair;previewAvatar();};avatarPresets.append(button);
   }
   avatarEditor.querySelector('strong').after(avatarPresets);
-  function syncModelControls(){const punk=avatarInput('model').value!=='default';const definition=avatarModels.find(model=>model.id===avatarInput('model').value);const note=avatarEditor.querySelector('[data-model-note]');note.hidden=!punk;note.textContent=definition?.motion==='rigid'?'Visual original. Este modelo nao tem animacoes de membros; usamos apenas movimento suave do corpo.':'Este personagem usa suas roupas e cabelo originais.';for(const name of ['gender','hairStyle','outfit','bottom','footwear','hat','skin','hair','shirt','pants','shoes','glasses'])avatarInput(name).disabled=punk;}
-  function previewAvatar(){const appearance=readAvatar();syncModelControls();onAvatar?.(appearance);avatarPreview?.update(appearance);avatarEditor.querySelector('[data-avatar-feedback]').textContent='Previa no personagem. Salve para atualizar na sala.';}
+  function previewAvatar(){const appearance=readAvatar();onAvatar?.(appearance);avatarPreview?.update(appearance);avatarEditor.querySelector('[data-avatar-feedback]').textContent='Previa no personagem. Salve para atualizar na sala.';}
   avatarEditor.addEventListener('input',previewAvatar);
   avatarInput('gender').onchange=()=>{updateStyleOptions(false);previewAvatar();};
   avatarEditor.onsubmit=async event=>{
@@ -218,7 +215,7 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
       panel.dataset.menu='false';selectOnlineTab('chat');panel.open=true;
     }catch(error){avatarEditor.querySelector('[data-avatar-feedback]').textContent=error.message;}finally{button.disabled=false;}
   };
-  syncModelControls();
+
   profileConfirmed=Boolean(localStorage.getItem('homelab.name')?.trim()&&localStorage.getItem('homelab.avatar'));
   onAvatar?.(readAvatar());
   const social=document.createElement('div');social.className='onlineSocial';

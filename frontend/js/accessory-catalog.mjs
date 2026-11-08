@@ -31,7 +31,7 @@ const rows=[
 ];
 export const accessoryCatalog=Object.freeze(rows.map(([id,name,category,slots,description,shape,color,pose=null])=>Object.freeze({id,name,category,slots:Object.freeze([...slots]),description,shape,color,pose})));
 export const accessoryById=new Map(accessoryCatalog.map(item=>[item.id,item]));
-export const articulatedAccessoryModels=new Set(['default','punk','female_punk','caveirata']);
+export const articulatedAccessoryModels=new Set(['default']);
 const colorPattern=/^#[0-9a-f]{6}$/i;
 export function validateEquipment(value){
   if(value===undefined)return {};

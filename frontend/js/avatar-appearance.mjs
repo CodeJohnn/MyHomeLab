@@ -1,4 +1,3 @@
-import {applyAvatarModel} from './avatar-models.mjs?v=equipment-7';
 import {feminineBustOffset,applyBodyShape} from './avatar-body.mjs';
 import {createNaturalHair} from './avatar-hair.mjs?v=equipment-3';
 import {applyEquipment} from './avatar-equipment.mjs';
@@ -37,7 +36,7 @@ function ptLulaPrint(THREE){
   return ptLulaTexture;
 }
 export function applyAvatarAppearance(root,config,THREE){
-  const imported=applyAvatarModel(root,config,THREE);applyEquipment(root,config,THREE);if(imported)return;
+  applyEquipment(root,config,THREE);
   const signature=JSON.stringify(config);if(root.userData.avatarSignature===signature)return;
   root.userData.avatarSignature=signature;
   root.traverse(node=>{

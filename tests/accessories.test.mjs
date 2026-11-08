@@ -6,9 +6,6 @@ import {createAccessoryVisual,accessoryPoolSize} from '../frontend/js/accessory-
 import {applyEquipment,disposeEquipment,updateEquipment,solveElbow} from '../frontend/js/avatar-equipment.mjs';
 import {defaultAvatar,validateAvatar} from '../backend/avatar.mjs';
 import {createServer} from '../backend/server.mjs';
-import {readFile} from 'node:fs/promises';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {avatarModels} from '../frontend/js/avatar-model-catalog.mjs';
 
 function avatarRig(){
   const root=new THREE.Group(),head=new THREE.Group();head.name='onlineAvatarHead';head.position.y=1.6;head.scale.setScalar(1.48);root.add(head);
@@ -71,57 +68,6 @@ test('acessórios acompanham cabeça e mãos sem alterar o movimento do avatar',
   updateEquipment(root,1200);assert.equal(handMount.visible,true);
   applyEquipment(root,{...defaultAvatar,accessories:{}},THREE);assert.equal(root.getObjectByName('equipment:RightHand'),undefined);
   disposeEquipment(root);assert.equal(accessoryPoolSize(),0);
-});
-
-test('equipamento aguarda o carregamento do modelo importado sem criar acessórios no avatar anterior',()=>{
-  const root=avatarRig(),accessories=equipAccessory({},'cap');
-  assert.doesNotThrow(()=>applyEquipment(root,{...defaultAvatar,model:'punk',accessories},THREE));
-  assert.equal(root.getObjectByName('equipment:Head'),undefined);
-  applyEquipment(root,{...defaultAvatar,accessories},THREE);assert.ok(root.getObjectByName('equipment:Head'));
-  disposeEquipment(root);assert.equal(accessoryPoolSize(),0);
-});
-
-test('ossos importados compensam escala do GLB e os objetos seguem a mão animada',()=>{
-  const root=new THREE.Group(),visual=new THREE.Group();visual.userData.importedAvatar=true;visual.scale.setScalar(.01);root.add(visual);
-  const body=new THREE.Mesh(new THREE.BoxGeometry(50,200,30),new THREE.MeshBasicMaterial());body.position.y=100;visual.add(body);
-  const head=new THREE.Bone();head.name='Head';head.position.y=170;visual.add(head);
-  for(const [side,x] of [['L',-27.5],['R',27.5]]){
-    const upper=new THREE.Bone();upper.name='UpperArm.'+side;upper.position.set(x,122,0);visual.add(upper);
-    const lower=new THREE.Bone();lower.name='LowerArm.'+side;lower.position.y=-28;upper.add(lower);
-    const wrist=new THREE.Bone();wrist.name='Wrist.'+side;wrist.position.y=-26.5;lower.add(wrist);
-  }
-  applyEquipment(root,{...defaultAvatar,model:'punk',accessories:equipAccessory(equipAccessory({},'headset'),'phone')},THREE);
-  updateEquipment(root,500);root.updateMatrixWorld(true);
-  const hand=root.getObjectByName('equipment:RightHand'),gear=root.getObjectByName('equipment:Ears');
-  assert.equal(hand.parent.name,'Wrist.R');assert.equal(gear.parent,head);
-  assert.ok(Math.abs(hand.getWorldScale(new THREE.Vector3()).x-2/1.85)<1e-5);
-  const before=hand.getWorldPosition(new THREE.Vector3());root.position.x+=3;root.updateMatrixWorld(true);
-  assert.ok(Math.abs(hand.getWorldPosition(new THREE.Vector3()).x-before.x-3)<1e-5);
-  disposeEquipment(root);assert.equal(accessoryPoolSize(),0);
-});
-
-test('GLBs articulados reais têm fixação de cabeça e mão sem escalas inválidas',async()=>{
-  for(const id of ['punk','female_punk','caveirata']){
-    const definition=avatarModels.find(model=>model.id===id),bytes=await readFile(new URL('../frontend/assets/personagens/'+definition.file,import.meta.url));
-    // Geometry and skeleton validation only: decoding image pixels requires a browser.
-    const loader=new GLTFLoader();for(const name of ['TEST_TEXTURES','EXT_texture_webp','EXT_texture_avif','KHR_texture_basisu'])loader.register(()=>({name,loadTexture:()=>Promise.resolve(new THREE.Texture())}));
-    const gltf=await new Promise((resolve,reject)=>loader.parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'',resolve,reject));
-    const root=new THREE.Group(),visual=new THREE.Group(),model=gltf.scene;visual.userData.importedAvatar=true;visual.add(model);root.add(visual);
-    model.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(model),scale=definition.height/(bounds.max.y-bounds.min.y);
-    model.scale.multiplyScalar(scale);model.position.set(-(bounds.min.x+bounds.max.x)*.5*scale,-bounds.min.y*scale,-(bounds.min.z+bounds.max.z)*.5*scale);
-    const accessories=equipAccessory(equipAccessory({},'cap'),'phone');
-    applyEquipment(root,{...defaultAvatar,model:id,accessories},THREE);updateEquipment(root,1000);root.updateMatrixWorld(true);
-    assert.ok(root.getObjectByName('equipment:Head'),id+' head');assert.ok(root.getObjectByName('equipment:RightHand'),id+' hand');
-    for(const slot of ['Head','RightHand']){
-      const mount=root.getObjectByName('equipment:'+slot),position=mount.getWorldPosition(new THREE.Vector3()),size=mount.getWorldScale(new THREE.Vector3());
-      assert.ok([...position.toArray(),...size.toArray()].every(Number.isFinite),id+' transforms');
-      assert.ok(size.x>0&&size.x<3,id+' scale');
-      assert.ok(position.y>-.1&&position.y<definition.height*1.3,id+' height');
-    }
-    disposeEquipment(root);
-    const geometries=new Set(),materials=new Set();model.traverse(node=>{if(node.geometry)geometries.add(node.geometry);for(const material of [].concat(node.material||[]))materials.add(material);});geometries.forEach(geometry=>geometry.dispose());materials.forEach(material=>material.dispose());
-  }
-  assert.equal(accessoryPoolSize(),0);
 });
 
 test('IK mantém comprimentos dos braços e limita alvos fora de alcance',()=>{
