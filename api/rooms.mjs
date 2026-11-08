@@ -3,6 +3,8 @@ import {accountProgression,publicProgression} from '../backend/progression.mjs';
 import { randomBytes, createHash, timingSafeEqual } from 'node:crypto';
 import {createWorld,tickWorld,actOnWorld,leaveBilliards} from '../backend/room-world.mjs';
 import {createDisconnectGrace} from '../backend/disconnect-grace.mjs';
+import {socialSnapshot,socialAction} from '../backend/social-actions.mjs';
+import {validActionPose} from '../frontend/js/social-action-catalog.mjs';
 
 const rooms = new Map();
 const disconnectGrace=createDisconnectGrace();
@@ -16,7 +18,7 @@ async function body(req, max = 4096) {
   for await (const chunk of req) { size+=chunk.length; if(size>max) throw Object.assign(new Error('Arquivo ou mensagem grande demais.'),{status:413}); chunks.push(chunk); }
   return Buffer.concat(chunks);
 }
-function snapshot(room) { room.world||=createWorld();return {world:room.world,members:[...room.members.values()].map(m=>({id:m.id,name:m.name,pose:m.pose,typingFor:Math.max(0,(m.typingUntil||0)-Date.now()),progression:publicProgression(m.progression||accountProgression(null)),avatar:m.avatar||defaultAvatar})),messages:room.messages||[],media:room.media,serverTime:Date.now()}; }
+function snapshot(room) { room.world||=createWorld();const social=socialSnapshot(room);return {social,socialVersion:room.socialVersion||0,world:room.world,members:[...room.members.values()].map(m=>({id:m.id,name:m.name,pose:m.pose,typingFor:Math.max(0,(m.typingUntil||0)-Date.now()),progression:publicProgression(m.progression||accountProgression(null)),avatar:m.avatar||defaultAvatar})),messages:room.messages||[],media:room.media,serverTime:Date.now()}; }
 function broadcast(room) { const event=`data: ${JSON.stringify(snapshot(room))}\n\n`; for(const m of room.members.values()) m.stream?.write(event); }
 function removeMember(room,token){
   const member=room.members.get(token);if(!member)return;
@@ -39,7 +41,7 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
         const capacity=input.capacity===12?12:2;
         const key=id(); rooms.set(key,{members:new Map(),media:null,files:new Map(),touched:Date.now(),capacity,world:createRoomWorld()}); return reply(res,201,{room:key});
       }
-      const match=url.pathname.match(/^\/api\/rooms\/([a-f0-9]{36})(?:\/(join|events|state|upload|leave|media|share|signal|rtc|prestige))?$/);
+      const match=url.pathname.match(/^\/api\/rooms\/([a-f0-9]{36})(?:\/(join|events|state|upload|leave|media|share|signal|rtc|prestige|social))?$/);
       if(match) {
         const [,key,action]=match, room=rooms.get(key);
         if(!room) return reply(res,404,{error:'Sala não encontrada. Crie uma nova sala.'});
@@ -62,6 +64,10 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
           member.progression=accountProgression(account);broadcast(room);return reply(res,200,member.progression);
         }
         member.seen=Date.now();
+        if(action==='social'&&req.method==='POST'){
+          const input=JSON.parse((await body(req)).toString());
+          const result=socialAction(room,member,input,Date.now(),id);broadcast(room);return reply(res,200,{result,...snapshot(room)});
+        }
         if(action==='rtc'&&req.method==='POST'){
           let iceServers=[{urls:'stun:stun.l.google.com:19302'}];
           if(process.env.WEBRTC_ICE_SERVERS){
@@ -147,9 +153,10 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
             member.name=input.name.trim();
           }
           if(input.pose) {const p=input.pose;if(![p.x,p.y,p.z,p.r].every(n=>Number.isFinite(n)&&Math.abs(n)<1000))return reply(res,400,{error:'Posição inválida.'});
+            if(!validActionPose(p))return reply(res,400,{error:'Animação inválida.'});
             if(p.equipmentActive!==undefined&&typeof p.equipmentActive!=='boolean')return reply(res,400,{error:'Estado do equipamento inválido.'});
             if(p.joints!==undefined&&(!Array.isArray(p.joints)||p.joints.length>8||!p.joints.every(j=>Array.isArray(j)&&j.length===3&&j.every(n=>Number.isFinite(n)&&Math.abs(n)<=7))))return reply(res,400,{error:'Pose inválida.'});
-            member.pose={x:p.x,y:p.y,z:p.z,r:p.r,joints:p.joints||[],...(p.equipmentActive!==undefined?{equipmentActive:p.equipmentActive}:{})};}
+            member.pose={x:p.x,y:p.y,z:p.z,r:p.r,joints:p.joints||[],...(p.equipmentActive!==undefined?{equipmentActive:p.equipmentActive}:{}),action:p.action||null,actionTime:p.actionTime||0,actionBaseY:p.actionBaseY??p.y,actionStamp:Date.now(),pitch:p.pitch||0,roll:p.roll||0};}
           if(input.message!==undefined){
             if(typeof input.message!=='string'||!input.message.trim()||input.message.length>280)return reply(res,400,{error:'Mensagem inválida (máximo 280 caracteres).'});
             if(Date.now()-(member.lastMessage||0)<700)return reply(res,429,{error:'Aguarde um instante para enviar outra mensagem.'});

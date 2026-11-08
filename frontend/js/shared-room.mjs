@@ -7,7 +7,7 @@ import {claimDailyReward} from './daily-rewards.mjs?v=auth-2';
 import {createTypingPresence} from './typing-presence.mjs';
 import {createAccessoryInventory} from './accessory-inventory.mjs';
 
-export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,onTyping,mountAvatarPreview,onSelfProgression}) {
+export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,onTyping,mountAvatarPreview,onSelfProgression,onSocial}) {
   let typingPresence=null;
   let selfProgression={level:1,xp:0},previousSelfLevel=null,selfProgressionSignature='';
   const onlineDock=document.createElement('section');
@@ -359,6 +359,7 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
           }));
         }
         offset=state.serverTime-Date.now();onMembers(state.members.filter(m=>m.id!==selfId));
+        onSocial?.(state.social||[],state.members,state.socialVersion);
         const nextWorldSignature=JSON.stringify(state.world);
         if(nextWorldSignature!==worldSignature){worldSignature=nextWorldSignature;onWorld?.(state.world);}
         if(!state.media)status('Conectado a sala');
@@ -461,5 +462,5 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAvailability();});
   // Sem ping continuo: permite que o Render gratuito repouse sem jogadores.
   checkAvailability(true);
-  return {editProfile:()=>openOnlineProfile(),getProfile:()=>({name:nameInput.value,avatar:readAvatar(),level:selfProgression.level,progression:selfProgression}),react:sendReaction,sendSocialReaction:type=>{if(token)void sendMessage(type==='wave'?'\u{1f44b}':'\u2764\ufe0f');},isOnline:()=>Boolean(token&&!closed&&!panel.hidden&&navigator.onLine),getSelfId:()=>selfId,uploadVideo,notify:status,sendWorldAction:async action=>{if(!token)throw new Error('Entre na sala para interagir.');try{return await api('state',{worldAction:action});}catch(e){showError(e);throw e;}}};
+  return {getServerTime:()=>Date.now()+offset,sendSocialAction:async action=>{if(!token||closed)throw new Error('Entre na sala para interagir.');return api('social',action);},editProfile:()=>openOnlineProfile(),getProfile:()=>({name:nameInput.value,avatar:readAvatar(),level:selfProgression.level,progression:selfProgression}),react:sendReaction,sendSocialReaction:type=>{if(token)void sendMessage(type==='wave'?'\u{1f44b}':'\u2764\ufe0f');},isOnline:()=>Boolean(token&&!closed&&!panel.hidden&&navigator.onLine),getSelfId:()=>selfId,uploadVideo,notify:status,sendWorldAction:async action=>{if(!token)throw new Error('Entre na sala para interagir.');try{return await api('state',{worldAction:action});}catch(e){showError(e);throw e;}}};
 }

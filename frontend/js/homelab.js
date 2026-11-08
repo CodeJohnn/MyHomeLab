@@ -13,6 +13,8 @@
     import {updateEquipment} from './avatar-equipment.mjs';
     import {mergeNpcHair} from './npc-visuals.mjs';
     import {createNpcMind} from './npc-mind.mjs';
+    import {pairActions,actionDuration,smoothAction} from './social-action-catalog.mjs';
+    import {createSocialActions,poseSocialSession} from './social-actions-ui.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -2897,7 +2899,7 @@
       let edit = false, selected = null, dragging = false, camDrag = false, oldX = 0, oldY = 0, pitch = .74, yaw = Math.PI / 4, zoom = 1, near = null; const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), plane = new THREE.Plane(), hit = new THREE.Vector3(), offset = new THREE.Vector3(); const keys = new Set();       const list = document.getElementById('list'), selText = document.getElementById('selected'), addPicture = document.getElementById('addPicture'), pictureFile = document.getElementById('pictureFile'), pictureStatus = document.getElementById('pictureStatus'); for (const o of objects) { const b = document.createElement('button'); b.textContent = o.label; b.onclick = () => select(o); list.append(b); o.button = b }
       const {chairPoseProfile,seatedLegAngles}=await import('./seating.mjs');
       const interactiveChairs = [
-        ...objects.filter(o=>/^cadeira/i.test(o.id)).map(o=>({id:o.id,label:o.label,g:o.g,offset:new THREE.Vector3(0,-.1,o.id==='cadeira'?.34:0)})),
+        ...objects.filter(o=>/^(cadeira|sofa)/i.test(o.id)).map(o=>({id:o.id,label:o.label,g:o.g,offset:new THREE.Vector3(0,-.1,o.id==='cadeira'?.34:0)})),
         ...objects.filter(o=>o.g.userData.chair).map(o=>({id:o.id+'-chair',label:'Cadeira de '+o.label,g:o.g.userData.chair,offset:new THREE.Vector3(0,-.1,.34)})),
         {id:'cadeiraSolda',label:'Cadeira da bancada de solda',g:solderChair,offset:new THREE.Vector3(0,-.05,0)}
       ];
@@ -2920,6 +2922,7 @@
         startInteraction('sit',chair);
       }
       let interactionPose = null, interactionTime = 0, savedAvatarPosition = null, savedAvatarRotation = 0;
+      let socialActionsUI=null,socialActiveSession=null,actionRecovery=null;
       let pendingToilet=false;
       function useToilet(){
         if(interactionPose==='toilet'){stopInteraction();return;}
@@ -2939,21 +2942,29 @@
       }
       function stopInteraction() {
         if (!interactionPose) return;
+        const wasSocial=interactionPose==='social';
+        const wasAction=interactionPose.startsWith('emote:')||wasSocial;
+        if(interactionPose.startsWith('emote:')||wasSocial){
+          actionRecovery={time:0,y:avatar.position.y,pitch:avatar.rotation.x,roll:avatar.rotation.z,joints:networkJoints.map(joint=>[joint.rotation.x,joint.rotation.y,joint.rotation.z])};
+          resetAvatarAction(avatar);
+        }
+        if(wasSocial){savedAvatarPosition=avatar.position.clone();savedAvatarPosition.y=socialActiveSession?.anchors?.[0]?.y??0;savedAvatarRotation=avatar.rotation.y;socialActiveSession=null;socialActionsUI?.cancel();}
         const wasToilet=interactionPose==='toilet';
         if(interactionPose.startsWith('emote:')){gestureFinger.visible=false;avatar.rotation.z=0;}
         interactionPose = null;
         activePlayerChair=null;activeTypingKeyboard=null;
         if (savedAvatarPosition) avatar.position.copy(savedAvatarPosition);
         avatar.rotation.y = savedAvatarRotation;
+        avatar.rotation.x=0;avatar.rotation.z=0;
         savedAvatarPosition = null;
         legs.forEach(leg => { leg.rotation.set(0, 0, 0) });
         knees.forEach(knee => { knee.rotation.set(0, 0, 0) });
         arms.forEach(arm => { arm.rotation.set(0, 0, 0) });
         elbows.forEach(elbow => { elbow.rotation.set(0, 0, 0) });
         if(wasToilet){document.getElementById('status').textContent='Banheiro utilizado. Tudo pronto!';return;}
-        document.getElementById('status').textContent = 'Você levantou da cadeira.';
+        document.getElementById('status').textContent = wasAction?'Animação encerrada.':'Você levantou da cadeira.';
       }
-      const {avatarActions,poseAvatarAction}=await import('./avatar-actions.mjs');
+      const {avatarActions,poseAvatarAction,resetAvatarAction}=await import('./avatar-actions.mjs');
       let ownNobleTag=null;
       const actionMenu=document.createElement('section');actionMenu.className='characterMenu';actionMenu.hidden=true;actionMenu.setAttribute('aria-label','Menu do personagem');
       const actionTitle=document.createElement('header');actionTitle.className='characterIdentity';actionTitle.innerHTML='<strong></strong><span>Camponês • Nível 1</span>';actionMenu.append(actionTitle);
@@ -3003,7 +3014,7 @@
       for(const [kind,label] of [['appearance','Aparência'],['dance','Danças'],['rank','Posto'],['outfit','Encontrar outfit'],['reactions','Emotes'],['about','Sobre mim']]){
         const button=document.createElement('button');button.type='button';button.className='characterOrbitButton '+kind;button.dataset.category=kind;button.setAttribute('aria-label',label);button.setAttribute('aria-expanded','false');
         button.innerHTML='<span class="characterOrbitIcon"><svg viewBox="0 0 24 24" fill="none" stroke="#234c51" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+icons[kind]+'</svg></span><span>'+label+'</span>';
-        button.onclick=()=>{if(kind==='appearance'||kind==='outfit'){closeAvatarMenu();sharedRoom?.editProfile();if(kind==='outfit')requestAnimationFrame(()=>{const outfit=document.querySelector('.onlineProfileDialog select[name=outfit]');if(outfit&&!outfit.disabled)outfit.focus();});return;}if(kind==='dance'){actionButtons.querySelector('[data-action="dance"]')?.click();return;}selectCharacterCategory(button.getAttribute('aria-expanded')==='true'?null:kind);};
+        button.onclick=()=>{if(kind==='appearance'||kind==='outfit'){closeAvatarMenu();sharedRoom?.editProfile();if(kind==='outfit')requestAnimationFrame(()=>{const outfit=document.querySelector('.onlineProfileDialog select[name=outfit]');if(outfit&&!outfit.disabled)outfit.focus();});return;}if(kind==='dance'){selectCharacterCategory('actions');return;}selectCharacterCategory(button.getAttribute('aria-expanded')==='true'?null:kind);};
         categories.push(button);actionMenu.append(button);
       }
       const closeCharacterMenu=document.createElement('button');closeCharacterMenu.type='button';closeCharacterMenu.className='characterMenuClose';closeCharacterMenu.setAttribute('aria-label','Fechar menu do personagem');closeCharacterMenu.innerHTML='&#10005;';closeCharacterMenu.onclick=()=>closeAvatarMenu();actionMenu.append(closeCharacterMenu);
@@ -3020,18 +3031,27 @@
       document.addEventListener('pointerdown',event=>{if(!actionMenu.contains(event.target)&&event.target!==renderer.domElement)closeAvatarMenu();});
       document.addEventListener('keydown',event=>{if(event.key==='Escape')closeAvatarMenu();});
       let avatarActionBaseY=0;
+      let avatarActionStartedAt=0;
+      const soloElapsed=()=>Math.min(3600,Math.max(0,(performance.now()-avatarActionStartedAt)/1000));
+      const locomotionPrevious=new Float32Array(24);
       const gestureFinger=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.065,4,8),skin.clone());gestureFinger.position.set(0,-.335,.02);gestureFinger.visible=false;elbows[1].add(gestureFinger);
-      for(const [kind,label] of [...avatarActions,['wave','Acenar']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.action=kind;if(kind==='wave')button.dataset.actionWave='true';actionButtons.append(button);
+      for(const [kind,label] of avatarActions){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.action=kind;if(kind==='wave')button.dataset.actionWave='true';actionButtons.append(button);
         button.onclick=()=>{
           if(edit)return;
+          if(kind==='sleep'&&!npcSegmentClear(avatar.position.x,avatar.position.z,avatar.position.x-Math.sin(avatar.rotation.y)*2.1,avatar.position.z-Math.cos(avatar.rotation.y)*2.1)){document.getElementById('status').textContent='Escolha um espaço livre para deitar.';return;}
           if(spouseKiss){releaseKissNpc(spouseKiss.npc);spouseKiss=null;}
           stopInteraction();keys.clear();walkTarget=null;walkPath=[];
           savedAvatarPosition=avatar.position.clone();savedAvatarRotation=avatar.rotation.y;avatarActionBaseY=avatar.position.y;
+          if(actionRecovery){avatar.position.y=actionRecovery.y;avatar.rotation.x=actionRecovery.pitch;avatar.rotation.z=actionRecovery.roll;networkJoints.forEach((joint,i)=>joint.rotation.set(...actionRecovery.joints[i]));}
           interactionPose='emote:'+kind;interactionTime=0;gestureFinger.visible=kind==='finger'||kind==='point';gestureFinger.material.color.set(skin.color);
+          avatarActionStartedAt=performance.now();
+          actionRecovery=null;resetAvatarAction(avatar);
           if(kind==='fart')interactionAudio.play('fart');
           closeAvatarMenu();document.getElementById('status').textContent=label+' - E para parar.';
         };
       }
+      for(const [kind,label] of pairActions){const button=document.createElement('button');button.type='button';button.textContent=label+' (convite)';actionButtons.append(button);button.onclick=()=>{closeAvatarMenu();if(!sharedRoom?.isOnline())document.getElementById('status').textContent='Entre na sala online e aproxime-se de outro jogador.';else socialActionsUI?.open(kind);};}
+      const sitAction=document.createElement('button');sitAction.type='button';sitAction.textContent='Sentar em cadeira / sofá';sitAction.onclick=()=>{const chair=interactiveChairs.filter(chair=>chair.g.getWorldPosition(new THREE.Vector3()).distanceTo(avatar.position)<2).sort((a,b)=>a.g.position.distanceTo(avatar.position)-b.g.position.distanceTo(avatar.position))[0];if(chair){closeAvatarMenu();sitOnChair(chair);}else document.getElementById('status').textContent='Aproxime-se de uma cadeira ou sofá.';};actionButtons.append(sitAction);
       const stopAction=document.createElement('button');stopAction.type='button';stopAction.textContent='Parar animacao';stopAction.onclick=()=>{stopInteraction();closeAvatarMenu();};actionButtons.append(stopAction);
       for(const type of ['keydown','keyup','pointerdown','pointerup'])actionMenu.addEventListener(type,e=>e.stopPropagation());
       function startInteraction(action, seat = null) {
@@ -4741,8 +4761,10 @@
         save();
       }
       addEventListener('keydown', e => {
-        if (e.target.matches('input, textarea, select')) return;
+        if (e.target?.matches?.('input, textarea, select')) return;
+        if(document.querySelector('.socialActionDialog[open]'))return;
         const k = e.key.toLowerCase();
+        if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','escape'].includes(k)&&(interactionPose==='social'||interactionPose?.startsWith('emote:')))stopInteraction();
         if (e.repeat) return;
         if(k==='r'&&!edit){openAvatarMenu();return;}
         if(k==='v'){toggleFirstPerson();return;}
@@ -4772,7 +4794,7 @@
       addEventListener('blur', () => keys.clear());
       document.querySelectorAll('[data-key]').forEach(b => {
         const k = b.dataset.key;
-        b.addEventListener('pointerdown', e => { e.preventDefault(); if (!interactionPose) keys.add(k); b.setPointerCapture(e.pointerId) });
+        b.addEventListener('pointerdown', e => { e.preventDefault();if(interactionPose==='social'||interactionPose?.startsWith('emote:'))stopInteraction();if (!interactionPose) keys.add(k); b.setPointerCapture(e.pointerId) });
         ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => b.addEventListener(type, () => keys.delete(k)));
       });
       document.getElementById('mobileInteract').onclick=()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'e'}));
@@ -4856,6 +4878,7 @@
         if(Math.abs(viewYaw-yaw)+Math.abs(viewPitch-pitch)+Math.abs(viewZoom-zoom)+cameraCenter.distanceTo(cameraGoal)>.00001) {
           viewYaw=THREE.MathUtils.lerp(viewYaw,yaw,cameraBlend);viewPitch=THREE.MathUtils.lerp(viewPitch,pitch,cameraBlend);viewZoom=THREE.MathUtils.lerp(viewZoom,zoom,cameraBlend);cameraCenter.lerp(cameraGoal,cameraBlend);if(viewMode==='overview')cameraUpdate();
         }
+        if(!interactionPose)networkJoints.forEach((joint,i)=>{locomotionPrevious[i*3]=joint.rotation.x;locomotionPrevious[i*3+1]=joint.rotation.y;locomotionPrevious[i*3+2]=joint.rotation.z;});
         if (!edit && !bookLibrary.isOpen && !document.getElementById('logicIde')?.open && !boardEditor.open && document.getElementById('dialog').style.display !== 'flex' && !interactionPose) {
           let dx = 0, dz = 0;
           if (keys.has('w') || keys.has('arrowup')) dz--;
@@ -4873,7 +4896,8 @@
             dz=-localX*Math.sin(followOrbit)+localZ*Math.cos(followOrbit);
           }
           if (dx || dz) { pendingToilet=false;walkTarget = null; walkPath = []; }
-          let step = dt * 2.3;
+          const running=keys.has('shift');
+          let step = dt * (running?3.7:2.3);
           if (walkTarget) {
             dx = walkTarget.x - avatar.position.x;
             dz = walkTarget.z - avatar.position.z;
@@ -4901,7 +4925,7 @@
             }
             avatar.rotation.y = Math.atan2(dx, dz);
             if(avatar.position.x!==previousX||avatar.position.z!==previousZ)interactionAudio.play('step');
-            walk += dt * 11;
+            walk += dt * (running?15:11);
             legs.forEach((leg, i) => leg.rotation.x = Math.sin(walk + i * Math.PI) * .5);
             knees.forEach((knee, i) => knee.rotation.x = Math.max(0, Math.sin(walk + i * Math.PI)) * .45);
             arms.forEach((arm, i) => arm.rotation.x = -Math.sin(walk + i * Math.PI) * .35);
@@ -4914,6 +4938,8 @@
           }
         }
         if(!interactionPose){
+          const blend=1-Math.exp(-16*dt);
+          networkJoints.forEach((joint,i)=>{joint.rotation.x=THREE.MathUtils.lerp(locomotionPrevious[i*3],joint.rotation.x,blend);joint.rotation.y=THREE.MathUtils.lerp(locomotionPrevious[i*3+1],joint.rotation.y,blend);joint.rotation.z=THREE.MathUtils.lerp(locomotionPrevious[i*3+2],joint.rotation.z,blend);});
           const x=avatar.position.x,z=avatar.position.z;
           const distanceToRect=(minX,maxX,minZ,maxZ)=>Math.hypot(Math.max(minX-x,x-maxX,0),Math.max(minZ-z,z-maxZ,0));
           const outsideDistance=Math.min(distanceToRect(-4.42,12.42,-3.42,10.42),distanceToRect(-4.42,4.42,-8.42,-3.42));
@@ -4926,7 +4952,8 @@
         }
         if (interactionPose) {
           interactionTime += dt;
-          if(interactionPose?.startsWith('emote:')){const kind=interactionPose.slice(6);poseAvatarAction(kind,interactionTime,{avatar,legs,knees,arms,elbows,baseY:avatarActionBaseY});if(['fart','finger','point'].includes(kind)&&interactionTime>3)stopInteraction();}
+          if(interactionPose?.startsWith('emote:')){const kind=interactionPose.slice(6);interactionTime=soloElapsed();poseAvatarAction(kind,interactionTime,{avatar,legs,knees,arms,elbows,baseY:avatarActionBaseY});if(actionDuration(kind)&&interactionTime>actionDuration(kind))stopInteraction();}
+          if(interactionPose==='social'&&socialActiveSession){if(sharedRoom.getServerTime()>=socialActiveSession.expires)stopInteraction();else poseSocialSession(socialActiveSession,sharedRoom.getSelfId(),sharedRoom.getServerTime(),{avatar,legs,knees,arms,elbows},poseAvatarAction);}
           if(interactionPose==='toilet'&&interactionTime>=8){stopInteraction();}
 
           if (interactionPose === 'typing') {
@@ -4948,6 +4975,11 @@
           const p=seat.g.getWorldPosition(new THREE.Vector3());
           const distance=Math.hypot(avatar.position.x-p.x,avatar.position.z-p.z);
           if(distance<best && isSceneVisible(seat.g)){best=distance;near=seat;}
+        }
+        if(actionRecovery&&!interactionPose){
+          actionRecovery.time+=dt;const blend=smoothAction(actionRecovery.time/.35),old=actionRecovery;
+          networkJoints.forEach((joint,i)=>{joint.rotation.x=old.joints[i][0]+(joint.rotation.x-old.joints[i][0])*blend;joint.rotation.y=old.joints[i][1]+(joint.rotation.y-old.joints[i][1])*blend;joint.rotation.z=old.joints[i][2]+(joint.rotation.z-old.joints[i][2])*blend;});
+          avatar.position.y=old.y+(avatar.position.y-old.y)*blend;avatar.rotation.x=old.pitch*(1-blend);avatar.rotation.z=old.roll*(1-blend);if(blend===1)actionRecovery=null;
         }
         if (!edit && !interactionPose){const text=near?'E para interagir: '+near.label:'Explore o escritório.';if(interactionStatus.textContent!==text)interactionStatus.textContent=text;}
         animatedPcFans.forEach((fan, i) => { fan.rotation.z += dt * (i % 2 ? 5.2 : -5.2) });
@@ -5003,6 +5035,7 @@
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
       let sharedVideoMonitor=null;
       const guests = new Map();
+      const guestActionRigs=new WeakMap();
       const portraitCapture=createAvatarPortraits({THREE,renderer,getCharacter:member=>member.id===sharedRoom?.getSelfId()?avatar:guests.get(member.id)});
       addEventListener('pagehide',()=>portraitCapture.dispose(),{once:true});
       const {createCharacterHover}=await import('./character-hover.mjs');
@@ -5105,11 +5138,27 @@
           const blend=1-Math.exp(-18*dt);guest.position.x+=(p.x-guest.position.x)*blend;guest.position.y+=(p.y-guest.position.y)*blend;guest.position.z+=(p.z-guest.position.z)*blend;
           guest.rotation.y+=Math.atan2(Math.sin(p.r-guest.rotation.y),Math.cos(p.r-guest.rotation.y))*blend;
           (p.joints||[]).forEach((rotation,i)=>{const joint=guest.userData.networkJoints[i];if(joint){joint.rotation.x=THREE.MathUtils.lerp(joint.rotation.x,rotation[0],blend);joint.rotation.y=THREE.MathUtils.lerp(joint.rotation.y,rotation[1],blend);joint.rotation.z=THREE.MathUtils.lerp(joint.rotation.z,rotation[2],blend);}});
+          guest.rotation.x=THREE.MathUtils.lerp(guest.rotation.x,p.pitch||0,blend);guest.rotation.z=THREE.MathUtils.lerp(guest.rotation.z,p.roll||0,blend);
+          const joints=guest.userData.networkJoints;
+          if(!guestActionRigs.has(guest))guestActionRigs.set(guest,{avatar:guest,legs:joints.slice(0,2),knees:joints.slice(2,4),arms:joints.slice(4,6),elbows:joints.slice(6,8)});
+          const rig=guestActionRigs.get(guest);
+          const session=socialActionsUI?.get(guest.userData.memberId);
+          if(session)poseSocialSession(session,guest.userData.memberId,sharedRoom.getServerTime(),rig,poseAvatarAction);
+          else if(p.action){const elapsed=Math.min(3600,(p.actionTime||0)+Math.max(0,sharedRoom.getServerTime()-p.actionStamp)/1000),duration=actionDuration(p.action);poseAvatarAction(duration&&elapsed>duration?'neutral':p.action,duration&&elapsed>duration?elapsed-duration:elapsed,{...rig,baseY:p.actionBaseY??0});}
+          else resetAvatarAction(guest);
           if(guest.userData.bubble){guest.userData.bubble.visible=!(guest.userData.typingUntil>t);guest.userData.bubble.material.opacity=Math.min(1,Math.max(0,(guest.userData.bubbleUntil-t)/500));if(t>guest.userData.bubbleUntil){disposeTag(guest.userData.bubble);guest.userData.bubble=null;}}
           if(guest.userData.waveUntil>t){const arm=guest.userData.networkJoints[5];if(arm){arm.rotation.z=-2.5;arm.rotation.x=Math.sin(t*.014)*.3;}}
         }
       }
+      socialActionsUI=createSocialActions({
+        send:input=>sharedRoom.sendSocialAction(input),getSelfId:()=>sharedRoom?.getSelfId(),getTime:()=>sharedRoom?.getServerTime()||Date.now(),getPose:()=>({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y}),
+        canJoin:()=>!edit&&!interactionPose&&!actionRecovery&&!bookLibrary.isOpen&&!spouseKiss,
+        clearPath:(from,to,participants=[])=>npcSegmentClear(from.x,from.z,to.x,to.z)&&![...npcs.map(npc=>npc.root.position),...[...guests.entries()].filter(([id])=>!participants.includes(id)).map(([,guest])=>guest.position)].some(pos=>{const dx=to.x-from.x,dz=to.z-from.z,t=THREE.MathUtils.clamp(((pos.x-from.x)*dx+(pos.z-from.z)*dz)/(dx*dx+dz*dz||1),0,1);return Math.hypot(pos.x-from.x-dx*t,pos.z-from.z-dz*t)<.6;}),
+        onStart:session=>{actionRecovery=null;socialActiveSession=session;savedAvatarPosition=avatar.position.clone();savedAvatarRotation=avatar.rotation.y;interactionPose='social';interactionTime=0;keys.clear();walkTarget=null;walkPath=[];resetAvatarAction(avatar);document.getElementById('status').textContent='Interação em dupla — E, Esc ou movimento para parar.';},
+        onEnd:()=>{if(interactionPose==='social')stopInteraction();},notify:text=>document.getElementById('status').textContent=text
+      });
       sharedRoom=createSharedRoom({
+        onSocial:(sessions,members,version)=>socialActionsUI.update(sessions,members,version),
         getPortrait:member=>portraitCapture.get(member),
         onTyping:active=>{avatar.userData.typingUntil=active?Infinity:0;},
         onSelfProgression:member=>{if(ownNobleTag)disposeTag(ownNobleTag);ownNobleTag=nameTag(member.name,false,'',member.progression.level);avatar.add(ownNobleTag);avatar.userData.nobleLevel=member.progression.level;actionTitle.querySelector('span').textContent=nobleLabel(member.progression.level);about.querySelectorAll('p')[1].textContent=nobleLabel(member.progression.level);},
@@ -5118,13 +5167,15 @@
         mountAvatarPreview: container=>createAvatarEditorPreview({container,THREE,template:avatarTemplate,applyAppearance:applyAvatarAppearance}),
         onAvatar: appearance=>applyAvatarAppearance(avatar,appearance,THREE),
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
-        getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z]),equipmentActive:!interactionPose}),
+        getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z]),equipmentActive:!interactionPose,pitch:avatar.rotation.x,roll:avatar.rotation.z,action:interactionPose?.startsWith('emote:')?interactionPose.slice(6):null,actionTime:interactionPose?.startsWith('emote:')?soloElapsed():Math.min(3600,interactionTime),actionBaseY:avatarActionBaseY}),
         onMembers: members => {
+          if(!members.length)socialActionsUI.update([],[]);
           for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeEquipment(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
             guest.userData.networkJoints||=networkJoints.map((_,i)=>guest.getObjectByName(`networkJoint${i}`));
+            guest.userData.memberId=member.id;
             guest.userData.typingUntil=member.typingFor>0?performance.now()+Math.min(5000,member.typingFor):0;
             if(guest.userData.displayName!==member.name||guest.userData.nobleLevel!==(member.progression?.level||1)){disposeTag(guest.userData.tag);guest.userData.tag=nameTag(member.name,false,'',member.progression?.level||1);guest.add(guest.userData.tag);guest.userData.displayName=member.name;guest.userData.nobleLevel=member.progression?.level||1;}
             if(member.avatar)applyAvatarAppearance(guest,member.avatar,THREE);

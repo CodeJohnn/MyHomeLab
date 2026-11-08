@@ -1,7 +1,7 @@
 // Altura do topo do assento; o quadril do personagem fica em y=.68.
 export function chairPoseProfile(id) {
   const reading=id==='cadeiraLeitura';
-  const top=reading?.555:id==='cadeiraSolda'?.64:/^cadeira(?:Admin|Manutencao)/.test(id)?.575:.84;
+  const top=reading?.555:/^sofa/i.test(id)?.48:id==='cadeiraSolda'?.64:/^cadeira(?:Admin|Manutencao)/.test(id)?.575:.84;
   return {offset:{x:0,y:top+.085-.68,z:reading?-.025:.025},facing:reading?Math.PI:0};
 }
 
