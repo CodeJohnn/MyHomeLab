@@ -3,7 +3,7 @@ const geometryData=new Map();
 
 // Attachment contract: head-local origin, +Z toward the face, Y up.
 // Future GLB visuals can use this named group without changing the avatar rig.
-export function createNaturalHair({THREE,color,style,hat,hatColor}){
+export function createNaturalHair({THREE,color,style,hat,hatColor,hideHat=false}){
   const root=new THREE.Group();root.name='customAvatarHair';
   root.userData.hairStyle=style;root.userData.hairVisualSource='procedural';
   const covered=hat==='cap'||hat==='beanie';
@@ -28,7 +28,7 @@ export function createNaturalHair({THREE,color,style,hat,hatColor}){
     const tie=new THREE.Mesh(new THREE.TorusGeometry(.047,.008,6,18),new THREE.MeshStandardMaterial({color:'#302a2b',roughness:.9}));
     tie.position.set(0,.035,-.22);root.add(tie);
   }
-  if(covered){
+  if(covered&&!hideHat){
     const material=new THREE.MeshStandardMaterial({color:hatColor,roughness:.9});
     const mesh=new THREE.Mesh(new THREE.SphereGeometry(.205,24,14,0,Math.PI*2,0,Math.PI/2),material);mesh.position.y=.015;root.add(mesh);
     if(hat==='cap'){

@@ -171,5 +171,6 @@ export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anis
         else if(node.material===pants)node.userData.avatarPart='pants';
         else if(node.material===hair||node.material===naturalHair){node.userData.avatarPart='hair';if(node.material===naturalHair)node.userData.avatarHide=true;}
       });
+  [...legs,...knees,...arms,...elbows].forEach((joint,index)=>joint.name='networkJoint'+index);
   return {avatar,skin,shirt,shirtLight,pants,hair,shoeMat,eyeMat,studs,naturalHair,legs,knees,arms,elbows,johnLimb,addBlackLabCoat,johnCartoonHead,johnTorso};
 }

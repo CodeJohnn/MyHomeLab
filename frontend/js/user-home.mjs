@@ -3,6 +3,7 @@ import {wardrobe,wardrobeDefaults} from './avatar-wardrobe.mjs';
 import {renderNobility,fetchAccountProgression} from './nobility-ui.mjs?v=auth-2';
 import {claimDailyReward,renderLevelProgress} from './daily-rewards.mjs?v=auth-2';
 import {verifiedAccount} from './account-auth.mjs?v=errors-3';
+import {createAccessoryInventory} from './accessory-inventory.mjs';
 export function createUserHome({host,onPlay,onRequireLogin}){
   const page=document.createElement('section');page.className='userHome';page.hidden=true;
   page.innerHTML='<header class="userHomeHeader"><button type="button" data-back>&#8592; Inicio</button><span>HOMELAB / GUEDESSEC</span><small>Perfil deste navegador</small></header><div class="userWelcome"><span>AREA DO USUARIO</span><h1>Bom te ver, <b data-user-name></b>.</h1><p>Seu perfil, seu avatar e a proxima entrada no laboratorio.</p></div><div class="userHomeGrid"><aside class="userCard"><div class="userPortrait userPortrait3d" aria-label="Seu avatar 3D"><span>Carregando avatar...</span></div><div class="userAvatarAngles"><button type="button" data-front>Frente</button><button type="button" data-back-view>Costas</button></div><h2 data-profile-name></h2><span class="userLevel">Nivel 1 &middot; Iniciante</span><div class="userXp"><span>0 XP</span><span>Progresso inicial</span></div><div class="userXpBar" role="progressbar" aria-label="Experiencia inicial" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div><small>A progressao de nivel ainda sera implementada.</small></aside><div class="userHomeMain"><section class="userPlayCard"><span>LABORATORIO</span><h2>Vamos entrar?</h2><p>Explore o ambiente e encontre o pessoal.</p><button type="button" data-play class="landingPlay">Jogar agora &#8594;</button><p data-loading role="status" hidden></p></section><section class="userEditor"><header><h2>Meu avatar</h2><small>As alteracoes ficam salvas neste navegador. <a href="./frontend/assets/credits.html" target="_blank" rel="noopener">Creditos das imagens</a></small></header><form><label class="userNameField">Nome de exibicao<input name="name" required maxlength="30" autocomplete="nickname"></label><label>Modelo<select name="model"><option value="default">Personalizado</option><option value="punk">Punk</option></select></label><p class="userNameField" data-model-note hidden>Este personagem usa o visual original do modelo.</p><label>Personagem<select name="gender"><option value="masculine">Masculino</option><option value="feminine">Feminino</option></select></label><label>Cabelo<select name="hairStyle"><option value="short">Curto</option><option value="fade">Degrade</option><option value="quiff">Topete</option><option value="curly">Cacheado</option><option value="long">Longo</option><option value="bob">Chanel</option><option value="ponytail">Rabo de cavalo</option></select></label><div data-clothes class="userClothes"></div><div data-colors class="userColors"></div><label class="userCheck"><input type="checkbox" name="glasses"> Usar oculos</label><button type="submit" class="userSave">Salvar perfil</button><p data-feedback role="status"></p></form></section></div></div>';
@@ -26,7 +27,13 @@ export function createUserHome({host,onPlay,onRequireLogin}){
   for(const [key,title,value] of [['skin','Pele','#bd896c'],['hair','Cabelo','#292725'],['shirt','Camisa','#080808'],['pants','Calca','#17191e'],['shoes','Calcado','#20242b']]){
     const label=document.createElement('label');label.textContent=title;const input=document.createElement('input');input.type='color';input.name=key;input.value=value;label.append(input);page.querySelector('[data-colors]').append(label);
   }
-  function read(){return Object.fromEntries(fields.map(key=>[key,key==='glasses'?form.elements[key].checked:form.elements[key].value]));}
+  const accessoryInventory=createAccessoryInventory({onChange:equipment=>{if(equipment.Head)form.elements.hat.value='none';preview();}});
+  form.insertBefore(accessoryInventory.element,form.querySelector('.userSave'));
+  form.elements.hat.addEventListener('input',()=>{if(form.elements.hat.value!=='none')accessoryInventory.remove('Head');});
+  function read(){
+    accessoryInventory.setModel(form.elements.model.value);const accessories=accessoryInventory.read();
+    return {...Object.fromEntries(fields.map(key=>[key,key==='glasses'?form.elements[key].checked:form.elements[key].value])),accessories,...(accessories.Head?{hat:'none'}:{}),...(accessories.Face?{glasses:false}:{})};
+  }
   let avatarPreview=null,previewLoading=null,disposed=false;
   async function mountPreview(){
     if(avatarPreview){avatarPreview.update(read());avatarPreview.setVisible(true);return;}
@@ -34,7 +41,7 @@ export function createUserHome({host,onPlay,onRequireLogin}){
     const stage=page.querySelector('.userPortrait');
     previewLoading=(async()=>{
       try{
-        const [THREE,{RoundedBoxGeometry},{createPlayerAvatar},{applyAvatarAppearance},{createAvatarEditorPreview}]=await Promise.all([import('three'),import('three/addons/geometries/RoundedBoxGeometry.js'),import('./player-avatar.mjs?v=underwear-5'),import('./avatar-appearance.mjs?v=hair-23'),import('./avatar-editor-preview.mjs?v=stable-8')]);
+        const [THREE,{RoundedBoxGeometry},{createPlayerAvatar},{applyAvatarAppearance},{createAvatarEditorPreview}]=await Promise.all([import('three'),import('three/addons/geometries/RoundedBoxGeometry.js'),import('./player-avatar.mjs?v=equipment-6'),import('./avatar-appearance.mjs?v=equipment-24'),import('./avatar-editor-preview.mjs?v=equipment-9')]);
         if(disposed)return;
         const {avatar}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile:matchMedia('(max-width:700px)').matches});
         stage.replaceChildren();avatarPreview=createAvatarEditorPreview({container:stage,THREE,template:avatar,applyAppearance:applyAvatarAppearance});
@@ -57,6 +64,7 @@ export function createUserHome({host,onPlay,onRequireLogin}){
     if(!account){page.hidden=true;avatarPreview?.setVisible(false);host.classList.remove('showUserHome');onRequireLogin?.();return false;}
     void refreshPrestige();let avatar={...wardrobeDefaults,model:'default',gender:'masculine',hairStyle:'short',glasses:true};try{avatar={...avatar,...JSON.parse(localStorage.getItem('homelab.avatar')||'{}')};}catch{}
     for(const key of fields){const input=form.elements[key];if(key==='glasses')input.checked=avatar[key];else if(avatar[key]){input.value=avatar[key];if(input.options&&input.selectedIndex<0)input.selectedIndex=0;}}
+    accessoryInventory.set(avatar.accessories);accessoryInventory.setModel(avatar.model);
     const name=localStorage.getItem('homelab.name')||'Visitante';form.elements.name.value=name;page.querySelectorAll('[data-user-name],[data-profile-name]').forEach(n=>n.textContent=name);preview();page.hidden=false;host.classList.add('showUserHome');void mountPreview();window.scrollTo(0,0);return true;
   }};
 }

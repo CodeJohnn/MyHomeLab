@@ -147,8 +147,9 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
             member.name=input.name.trim();
           }
           if(input.pose) {const p=input.pose;if(![p.x,p.y,p.z,p.r].every(n=>Number.isFinite(n)&&Math.abs(n)<1000))return reply(res,400,{error:'Posição inválida.'});
+            if(p.equipmentActive!==undefined&&typeof p.equipmentActive!=='boolean')return reply(res,400,{error:'Estado do equipamento inválido.'});
             if(p.joints!==undefined&&(!Array.isArray(p.joints)||p.joints.length>8||!p.joints.every(j=>Array.isArray(j)&&j.length===3&&j.every(n=>Number.isFinite(n)&&Math.abs(n)<=7))))return reply(res,400,{error:'Pose inválida.'});
-            member.pose={x:p.x,y:p.y,z:p.z,r:p.r,joints:p.joints||[]};}
+            member.pose={x:p.x,y:p.y,z:p.z,r:p.r,joints:p.joints||[],...(p.equipmentActive!==undefined?{equipmentActive:p.equipmentActive}:{})};}
           if(input.message!==undefined){
             if(typeof input.message!=='string'||!input.message.trim()||input.message.length>280)return reply(res,400,{error:'Mensagem inválida (máximo 280 caracteres).'});
             if(Date.now()-(member.lastMessage||0)<700)return reply(res,429,{error:'Aguarde um instante para enviar outra mensagem.'});

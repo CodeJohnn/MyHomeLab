@@ -2,6 +2,7 @@ import {rigidAvatarMotion} from './avatar-rigid-motion.mjs';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {clone} from 'three/addons/utils/SkeletonUtils.js';
 import {findAvatarModel,findModelAnimation} from './avatar-model-catalog.mjs?v=stable-6';
+import {applyEquipment,disposeEquipment} from './avatar-equipment.mjs';
 const states=new WeakMap(),assets=new Map(),ready=new Map();
 function pruneCache(){
   if(ready.size<=3)return;
@@ -52,6 +53,7 @@ function show(root,state,id){
 }
 export function applyAvatarModel(root,config,THREE){
   let state=states.get(root);if(!state){state={desired:'default',base:new Map(),entries:new Map(),pending:new Set(),failed:new Set(),current:null,previous:new THREE.Vector3()};states.set(root,state);}
+  state.config=config;
   const definition=findAvatarModel(config.model);state.desired=definition?.file?definition.id:'default';
   if(state.desired==='default'){
     for(const entry of state.entries.values())release(entry);state.entries.clear();
@@ -66,7 +68,7 @@ export function applyAvatarModel(root,config,THREE){
       const wrapper=clone(asset.scene);wrapper.name='importedAvatar_'+id;wrapper.userData.importedAvatar=true;wrapper.visible=false;asset.refs++;asset.used=performance.now();root.add(wrapper);
       const mixer=new THREE.AnimationMixer(wrapper),actions={};for(const key of ['Idle','Walk','Wave']){const clip=findModelAnimation(asset.animations,key);if(clip)actions[key]=mixer.clipAction(clip);}
       actions.Idle?.play();
-      state.entries.set(id,{wrapper,mixer,actions,asset,current:'Idle',accumulated:0,motionTime:0});show(root,state,id);pruneCache();globalThis.dispatchEvent(new Event('avatar-texture-ready'));
+      state.entries.set(id,{wrapper,mixer,actions,asset,current:'Idle',accumulated:0,motionTime:0});show(root,state,id);applyEquipment(root,state.config,THREE);pruneCache();globalThis.dispatchEvent(new Event('avatar-texture-ready'));
     }).catch(error=>{state.pending.delete(id);state.failed.add(id);root.userData.avatarModelError='Nao foi possivel carregar '+definition.label+'.';console.error(error);globalThis.dispatchEvent(new Event('avatar-texture-ready'));});
   }
   return true;
@@ -77,7 +79,7 @@ export async function waitForAvatarModel(root){
   const pending=assets.get(state.desired);if(pending)await pending;
   if(state.failed.has(state.desired)||!state.entries.has(state.desired))throw new Error('Não foi possível preparar seu avatar.');
 }
-export function disposeAvatarModel(root){const state=states.get(root);if(!state)return;state.disposed=true;for(const entry of state.entries.values())release(entry);state.entries.clear();states.delete(root);}
+export function disposeAvatarModel(root){disposeEquipment(root);const state=states.get(root);if(!state)return;state.disposed=true;for(const entry of state.entries.values())release(entry);state.entries.clear();states.delete(root);}
 export function updateAvatarModel(root,dt,{preview=false}={}){
   const state=states.get(root),entry=state?.entries.get(state.current);if(!entry?.wrapper.visible)return;
   if(!root.visible){state.previous.copy(root.position);return;}

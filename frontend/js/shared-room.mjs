@@ -2,10 +2,11 @@ import {avatarModels} from './avatar-model-catalog.mjs?v=stable-6';
 import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
-import {characterReactions,reactionFromMessage} from './emotion-reactions.mjs?v=assets-2';
+import {characterReactions,reactionFromMessage} from './emotion-reactions.mjs?v=audio-3';
 import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs?v=auth-2';
 import {claimDailyReward} from './daily-rewards.mjs?v=auth-2';
 import {createTypingPresence} from './typing-presence.mjs';
+import {createAccessoryInventory} from './accessory-inventory.mjs';
 
 export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,onTyping,mountAvatarPreview,onSelfProgression}) {
   let typingPresence=null;
@@ -186,7 +187,14 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
   }
   updateStyleOptions();
   avatarInput('model').replaceChildren(...avatarModels.map(model=>new Option(model.label,model.id)));
-  const readAvatar=()=>Object.fromEntries(['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses'].map(key=>[key,key==='glasses'?avatarInput(key).checked:avatarInput(key).value]));
+  const accessoryInventory=createAccessoryInventory({onChange:equipment=>{if(equipment.Head)avatarInput('hat').value='none';previewAvatar();}});
+  avatarEditor.insertBefore(accessoryInventory.element,avatarEditor.querySelector('button.onlinePrimary'));
+  avatarInput('hat').addEventListener('input',()=>{if(avatarInput('hat').value!=='none')accessoryInventory.remove('Head');});
+  const readAvatar=()=>{
+    accessoryInventory.setModel(avatarInput('model').value);const accessories=accessoryInventory.read();
+    return {...Object.fromEntries(['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses'].map(key=>[key,key==='glasses'?avatarInput(key).checked:avatarInput(key).value])),accessories,...(accessories.Head?{hat:'none'}:{}),...(accessories.Face?{glasses:false}:{})};
+  };
+  try{accessoryInventory.set(JSON.parse(localStorage.getItem('homelab.avatar')||'null')?.accessories);}catch{}
   try{const saved=JSON.parse(localStorage.getItem('homelab.avatar')||'null');if(saved){avatarInput('gender').value=saved.gender||'masculine';updateStyleOptions(true);}if(saved)for(const key of ['model','gender','hairStyle','outfit','bottom','footwear','hat','shoes','skin','hair','shirt','pants','glasses']){if(key==='glasses')avatarInput(key).checked=saved[key]!==false;else if(typeof saved[key]==='string'){avatarInput(key).value=saved[key];if(!avatarInput(key).value&&avatarInput(key).options)avatarInput(key).selectedIndex=0;}}}catch{}
   const avatarPresets=document.createElement('div');avatarPresets.className='onlineAvatarPresets';
   for(const [label,shirt,pants,hair]of [['Neutro','#c9c6ba','#343b43','#302923'],['Azul','#416580','#29333f','#382b25'],['Verde','#597969','#38413a','#242323']]){

@@ -1,6 +1,7 @@
-import {applyAvatarModel} from './avatar-models.mjs?v=stable-6';
+import {applyAvatarModel} from './avatar-models.mjs?v=equipment-7';
 import {feminineBustOffset,applyBodyShape} from './avatar-body.mjs';
-import {createNaturalHair} from './avatar-hair.mjs?v=surface-2';
+import {createNaturalHair} from './avatar-hair.mjs?v=equipment-3';
+import {applyEquipment} from './avatar-equipment.mjs';
 let guedesLogoTexture;
 function shirtLogo(THREE){
   if(!guedesLogoTexture){guedesLogoTexture=new THREE.TextureLoader().load(new URL('../assets/guedessec.png',import.meta.url).href,()=>globalThis.dispatchEvent(new Event('avatar-texture-ready')));guedesLogoTexture.colorSpace=THREE.SRGBColorSpace;}
@@ -35,13 +36,13 @@ function ptLulaPrint(THREE){
   return ptLulaTexture;
 }
 export function applyAvatarAppearance(root,config,THREE){
-  if(applyAvatarModel(root,config,THREE))return;
+  const imported=applyAvatarModel(root,config,THREE);applyEquipment(root,config,THREE);if(imported)return;
   const signature=JSON.stringify(config);if(root.userData.avatarSignature===signature)return;
   root.userData.avatarSignature=signature;
   root.traverse(node=>{
     if(node.userData.avatarHide)node.visible=false;
     if(node.userData.avatarCollar)node.visible=!['underwear','sport'].includes(config.outfit);
-    if(node.userData.avatarGlasses)node.visible=config.glasses;
+    if(node.userData.avatarGlasses)node.visible=config.glasses&&!config.accessories?.Face;
     const part=node.userData.avatarPart;
     const intimateTop=['underwear','sport'].includes(config.outfit),intimateBottom=['briefs','boxer'].includes(config.bottom);
     if(part&&node.material){
@@ -107,10 +108,11 @@ export function applyAvatarAppearance(root,config,THREE){
 
   }
   const head=root.getObjectByName('onlineAvatarHead');if(!head)return;
-  const hairSignature=[config.hair,config.hairStyle,config.hat,config.hat==='cap'||config.hat==='beanie'?config.shirt:''].join(':');
+  const equipmentHat=config.accessories?.Head?.id;
+  const hairSignature=[config.hair,config.hairStyle,config.hat,equipmentHat,config.hat==='cap'||config.hat==='beanie'?config.shirt:''].join(':');
   if(root.userData.avatarHairSignature===hairSignature)return;
   root.userData.avatarHairSignature=hairSignature;
   const old=head.getObjectByName('customAvatarHair');
   if(old){const materials=new Set(),textures=new Set();old.traverse(n=>{n.geometry?.dispose();if(n.material){materials.add(n.material);if(n.material.map)textures.add(n.material.map);}});textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());old.removeFromParent();}
-  head.add(createNaturalHair({THREE,color:config.hair,style:config.hairStyle,hat:config.hat,hatColor:config.shirt,skinColor:config.skin}));
+  head.add(createNaturalHair({THREE,color:config.hair,style:config.hairStyle,hat:equipmentHat?'cap':config.hat,hideHat:!!equipmentHat,hatColor:config.shirt,skinColor:config.skin}));
 }

@@ -10,6 +10,7 @@
     import {closestInteraction,isPhysicalInteractionHit,canActivateHit,interactionRoots,interactionHitsFor} from './interaction-picking.mjs';
     import {createAvatarPortraits} from './avatar-portraits.mjs';
     import {loadReactionImage} from './reaction-assets.mjs';
+    import {updateEquipment} from './avatar-equipment.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -31,7 +32,7 @@
       const { createRoomAudio } = await import('./room-audio.mjs?v=8');
       const { createAdminTerminal } = await import('./admin-terminal.mjs?v=3');
       const { normalizeMonitorUrl, embeddedMonitorUrl } = await import('./monitor-urls.mjs?v=3');
-      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=assets-2');
+      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=audio-3');
       const { replyToNpc } = await import('./npc-dialogue.mjs?v=5');
       const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
       const worldAssets=trackWorldAssets(THREE.DefaultLoadingManager,(loaded,total)=>updateRoomLoading(10+Math.floor(loaded/Math.max(1,total)*75),'Carregando recursos do mundo...'));
@@ -2685,15 +2686,15 @@
         if(time>3.7){energyDrinkTime=-1;drinkingCan.visible=false;fridgeOpen=false;document.getElementById('status').textContent='Energetico tomado!';}
       }
       // Avatar.
-      const {createPlayerAvatar}=await import('./player-avatar.mjs?v=underwear-5');
+      const {createPlayerAvatar}=await import('./player-avatar.mjs?v=equipment-6');
       const {avatar,skin,shirt,shirtLight,pants,hair,shoeMat,eyeMat,studs,naturalHair,legs,knees,arms,elbows,johnLimb,addBlackLabCoat,johnCartoonHead,johnTorso}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile,anisotropy:renderer.capabilities.getMaxAnisotropy()});
       scene.add(avatar);
       const networkJoints=[...legs,...knees,...arms,...elbows];
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       const avatarTemplate=avatar.clone(true);
-      const {updateAvatarModel,disposeAvatarModel}=await import('./avatar-models.mjs?v=stable-6');
-      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=hair-23');
-      const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=stable-8');
+      const {updateAvatarModel,disposeAvatarModel}=await import('./avatar-models.mjs?v=equipment-7');
+      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=equipment-24');
+      const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=equipment-9');
       const npcs = [];
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
         const root = new THREE.Group();
@@ -4926,6 +4927,8 @@
         updateMobileQuality(t);
         updateLightBudget(t);
         updateGuests(dt,t);updateAvatarModel(avatar,dt);for(const guest of guests.values())updateAvatarModel(guest,dt);
+        updateEquipment(avatar,t,{suspended:!!interactionPose});
+        for(const guest of guests.values())updateEquipment(guest,t,{pose:false,suspended:guest.userData.networkPose?.equipmentActive===false});
         updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
         renderMonitorVideos();
@@ -4933,7 +4936,7 @@
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=emotes-36');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=equipment-37');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -5054,7 +5057,7 @@
         mountAvatarPreview: container=>createAvatarEditorPreview({container,THREE,template:avatarTemplate,applyAppearance:applyAvatarAppearance}),
         onAvatar: appearance=>applyAvatarAppearance(avatar,appearance,THREE),
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
-        getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z])}),
+        getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z]),equipmentActive:!interactionPose}),
         onMembers: members => {
           for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeAvatarModel(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
@@ -5126,7 +5129,7 @@
       requestAnimationFrame(loop);
       try{
         await worldAssets.wait();
-        const {waitForAvatarModel}=await import('./avatar-models.mjs?v=stable-6');await waitForAvatarModel(avatar);
+        const {waitForAvatarModel}=await import('./avatar-models.mjs?v=equipment-7');await waitForAvatarModel(avatar);
         await worldAssets.wait();
         updateRoomLoading(95,'Preparando a primeira imagem do mundo...');
         if(errorBox.textContent)throw new Error(errorBox.textContent);
