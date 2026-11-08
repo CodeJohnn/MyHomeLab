@@ -1,13 +1,18 @@
 import {accessoryById,validateEquipment,articulatedAccessoryModels} from './accessory-catalog.mjs';
 import {createAccessoryVisual} from './accessory-models.mjs';
 const states=new WeakMap();
+function restoreHead(state){
+  const head=state.context?.head;
+  if(head&&state.headRest&&head.quaternion.equals(state.headApplied))head.quaternion.copy(state.headRest);
+  state.headRest=null;
+}
 function buildContext(THREE,root,visual){
   const hands={};
   for(const [slot,index] of [['LeftHand',0],['RightHand',1]]){
     const hand=root.getObjectByName('networkJoint'+(6+index));
     hands[slot]={hand,lower:hand,upper:root.getObjectByName('networkJoint'+(4+index)),side:index===0?-1:1};
   }
-  return {THREE,root,visual,head:visual,hands};
+  return {THREE,root,visual,head:visual,hands,targets:new Map(),down:new THREE.Vector3(0,-1,0),headTilt:new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),.12)};
 }
 function mountFor(context,slot){
   const {THREE,root,head,hands}=context;
@@ -18,7 +23,7 @@ function mountFor(context,slot){
     head.add(mount);return mount;
   }
   if(slot.endsWith('Hand')){const hand=hands[slot].hand;if(!hand)return null;hand.add(mount);mount.position.set(0,-.265,.015);return mount;}
-  root.add(mount);mount.position.set(0,slot==='Back'?1.08:1.12,slot==='Back'?-.19:0);return mount;
+  root.add(mount);mount.position.set(0,slot==='Back'?1.08:1.12,slot==='Back'?-.205:0);return mount;
 }
 export function applyEquipment(root,config,THREE){
   const equipment=validateEquipment(config.accessories)||{};
@@ -35,13 +40,14 @@ export function applyEquipment(root,config,THREE){
     if(slot.endsWith('Hand')&&!articulatedAccessoryModels.has(config.model||'default'))continue;
     const mount=mountFor(state.context,slot);if(!mount)continue;
     const resource=createAccessoryVisual(THREE,entry.id,entry.color);mount.add(resource.visual);
+    if(entry.id==='camera')resource.visual.position.x=slot==='LeftHand'?.065:-.065;
     state.entries.set(slot,{...resource,mount,item:accessoryById.get(entry.id)});
   }
   state.handEntries=[...state.entries].filter(([slot])=>slot.endsWith('Hand'));
 }
 export function disposeEquipment(root){
   const state=states.get(root);if(!state)return;
-  if(state.headRest&&state.context?.head)state.context.head.quaternion.copy(state.headRest);
+  restoreHead(state);
   for(const entry of state.entries.values()){entry.release();entry.mount.removeFromParent();}
   states.delete(root);
 }
@@ -52,7 +58,10 @@ export function solveElbow(THREE,shoulder,target,a,b,side){
   const direction=target.clone().sub(shoulder),distance=Math.min(a+b-.0001,Math.max(Math.abs(a-b)+.0001,direction.length()));
   if(direction.lengthSq()<1e-12)direction.set(0,-1,0);else direction.normalize();
   const along=(a*a-b*b+distance*distance)/(2*distance),height=Math.sqrt(Math.max(0,a*a-along*along));
-  const bend=new THREE.Vector3(side*.35,-1,0).addScaledVector(direction,-new THREE.Vector3(side*.35,-1,0).dot(direction)).normalize();
+  const bend=new THREE.Vector3(side*.35,-1,0);
+  bend.addScaledVector(direction,-bend.dot(direction));
+  if(bend.lengthSq()<1e-10){bend.set(0,0,1);bend.addScaledVector(direction,-bend.dot(direction));}
+  bend.normalize();
   return {elbow:shoulder.clone().addScaledVector(direction,along).addScaledVector(bend,height),target:shoulder.clone().addScaledVector(direction,distance)};
 }
 export function updateEquipment(root,time,{suspended=false,pose=true}={}){
@@ -61,11 +70,13 @@ export function updateEquipment(root,time,{suspended=false,pose=true}={}){
   const handEntries=state.handEntries;
   if(suspended||!handEntries.length){
     for(const [,entry] of handEntries)entry.mount.visible=!suspended;
-    if(state.headRest&&context.head){context.head.quaternion.copy(state.headRest);state.headRest=null;}
+    restoreHead(state);
     return;
   }
+  // Remote avatars already receive their joint pose; visibility still needs restoring.
+  for(const [,entry] of handEntries)entry.mount.visible=true;
   if(pose){
-  const targets=new Map();
+  const targets=context.targets;targets.clear();
   for(const [slot,entry] of handEntries){
     entry.mount.visible=true;
     const side=slot==='LeftHand'?-1:1,mode=entry.item.pose;
@@ -74,25 +85,30 @@ export function updateEquipment(root,time,{suspended=false,pose=true}={}){
     if(mode==='phone'||mode==='camera')target=[side*.22,1.17,.34];
     if(mode==='umbrella')target=[side*.30,1.12,.18];
     if(mode==='twoHands'){const grip=entry.item.id==='tablet'?.128:entry.item.id==='book'?.16:.18;target=[grip,1.04,.39];targets.set('LeftHand',new THREE.Vector3(-grip,1.04,.39));}
-    if(mode!=='carry')target[1]+=.008*Math.sin(time*.002);
+    if(mode!=='carry'){
+      const bob=.008*Math.sin(time*.002);target[1]+=bob;
+      if(mode==='twoHands')targets.get('LeftHand').y+=bob;
+    }
     targets.set(slot,new THREE.Vector3(...target));
   }
     for(const [slot,position] of targets){
       const chain=context.hands[slot];if(!chain?.hand||!chain.lower||!chain.upper)continue;
       {
-        const shoulder=chain.upper.position.clone(),solution=solveElbow(THREE,shoulder,position,.28,.265,chain.side),down=new THREE.Vector3(0,-1,0);
+        const shoulder=chain.upper.position.clone(),solution=solveElbow(THREE,shoulder,position,chain.lower.position.length()||.28,.265,chain.side),down=context.down;
         chain.upper.quaternion.setFromUnitVectors(down,solution.elbow.clone().sub(shoulder).normalize());
         chain.lower.quaternion.setFromUnitVectors(down,solution.target.clone().sub(solution.elbow).normalize().applyQuaternion(chain.upper.quaternion.clone().invert()));
       }
     }
   }
-  root.updateWorldMatrix(true,true);
+  root.updateWorldMatrix(true,false);
   root.getWorldQuaternion(context.rootQuaternion);
   for(const [,entry] of handEntries){
     entry.mount.quaternion.copy(entry.mount.parent.getWorldQuaternion(context.parentQuaternion).invert()).multiply(context.rootQuaternion);
   }
   if(pose&&context.head){
     if(!state.headRest)state.headRest=context.head.quaternion.clone();
-    context.head.quaternion.copy(state.headRest).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),.12));
+    else if(!context.head.quaternion.equals(state.headApplied))state.headRest.copy(context.head.quaternion);
+    context.head.quaternion.copy(state.headRest).multiply(context.headTilt);
+    state.headApplied||=new THREE.Quaternion();state.headApplied.copy(context.head.quaternion);
   }
 }

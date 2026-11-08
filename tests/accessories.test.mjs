@@ -108,3 +108,70 @@ test('multiplayer sincroniza somente configuração, permite troca e preserva eq
     assert.equal((await post(route+'/state',{pose:{x:0,y:0,z:0,r:0,equipmentActive:'yes'}},a.token)).status,400);
   }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 });
+
+
+test('todos os acessorios mantem encaixe e escala durante movimentos e retomam visibilidade',()=>{
+  for(const item of accessoryCatalog){
+    const root=avatarRig(),slot=item.slots.at(-1);
+    applyEquipment(root,{...defaultAvatar,accessories:equipAccessory({},item.id,slot)},THREE);
+    const mount=root.getObjectByName('equipment:'+slot);
+    assert.ok(mount,item.id);
+    const local=mount.position.clone();
+    root.position.set(3,.4,-2);root.rotation.set(.08,1.2,-.06);root.scale.setScalar(.8);
+    root.getObjectByName('onlineAvatarHead').rotation.y=.35;
+    root.getObjectByName('networkJoint7').rotation.x=-.7;
+    updateEquipment(root,750,{pose:false});root.updateMatrixWorld(true);
+    assert.ok(mount.position.equals(local),item.id+' anchor drift');
+    const scale=mount.getWorldScale(new THREE.Vector3());
+    assert.ok(Math.abs(scale.x-scale.y)<1e-6&&Math.abs(scale.y-scale.z)<1e-6,item.id+' stretched');
+    const bounds=new THREE.Box3().setFromObject(mount);
+    assert.ok([...bounds.min.toArray(),...bounds.max.toArray()].every(Number.isFinite),item.id);
+    if(slot.endsWith('Hand')){
+      updateEquipment(root,800,{pose:false,suspended:true});assert.equal(mount.visible,false);
+      updateEquipment(root,900,{pose:false});assert.equal(mount.visible,true,item.id+' hidden after interaction');
+    }
+    disposeEquipment(root);
+  }
+  assert.equal(accessoryPoolSize(),0);
+});
+
+test('IK preserva o cotovelo quando o alvo coincide com a direcao de dobra',()=>{
+  const shoulder=new THREE.Vector3(),target=new THREE.Vector3(.35,-1,0).normalize().multiplyScalar(.3);
+  const result=solveElbow(THREE,shoulder,target,.28,.265,1);
+  assert.ok(Math.abs(result.elbow.length()-.28)<1e-6);
+  assert.ok(Math.abs(result.elbow.distanceTo(result.target)-.265)<1e-6);
+});
+
+test('objetos de duas maos mantem as pegadas alinhadas ao longo do tempo',()=>{
+  for(const id of ['laptop_open','tablet','book']){
+    const root=avatarRig();applyEquipment(root,{...defaultAvatar,accessories:equipAccessory({},id)},THREE);
+    for(const time of [0,750,2000,3500]){
+      updateEquipment(root,time);root.updateMatrixWorld(true);
+      const a=root.getObjectByName('networkJoint6').localToWorld(new THREE.Vector3(0,-.265,.015));
+      const b=root.getObjectByName('networkJoint7').localToWorld(new THREE.Vector3(0,-.265,.015));
+      assert.ok(Math.abs(a.y-b.y)<.006,id+' unequal grip height');
+    }
+    disposeEquipment(root);
+  }
+});
+
+
+test('pose de acessorio preserva novas animacoes da cabeca ao suspender e remover',()=>{
+  const root=avatarRig();applyEquipment(root,{...defaultAvatar,accessories:equipAccessory({},'phone')},THREE);
+  updateEquipment(root,0);
+  const head=root.getObjectByName('onlineAvatarHead');
+  head.rotation.set(.1,.4,-.05);const animated=head.quaternion.clone();
+  updateEquipment(root,100);updateEquipment(root,200,{suspended:true});
+  assert.ok(head.quaternion.angleTo(animated)<1e-6);
+  updateEquipment(root,300);head.rotation.y=.8;const next=head.quaternion.clone();
+  disposeEquipment(root);assert.ok(head.quaternion.angleTo(next)<1e-6);
+});
+
+test('camera encaixa pelo grip da mao selecionada sem espelhar a geometria',()=>{
+  for(const slot of ['LeftHand','RightHand']){
+    const root=avatarRig();applyEquipment(root,{...defaultAvatar,accessories:equipAccessory({},'camera',slot)},THREE);
+    const camera=root.getObjectByName('accessory:camera');
+    assert.equal(camera.position.x,slot==='LeftHand'?.065:-.065);
+    assert.deepEqual(camera.scale.toArray(),[1,1,1]);disposeEquipment(root);
+  }
+});

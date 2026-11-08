@@ -45,13 +45,13 @@ export function createAccessoryVisual(THREE,id,color){
         else ring(.241,.002,0,.047,0,'seam',[Math.PI/2,0,0]);
       }
     }else if(shape==='headset'||shape==='bluetooth'){
-      const arch=[];for(let i=0;i<=12;i++){const a=i/12*Math.PI;arch.push([Math.cos(a)*.215,.025+Math.sin(a)*.263,-.005]);}
+      const arch=[];for(let i=0;i<=12;i++){const a=i/12*Math.PI;arch.push([Math.cos(a)*.184,.025+Math.sin(a)*.224,-.005]);}
       tube(arch,.014,'metal');tube(arch.slice(2,-2),.022,'rubber');
       for(const side of [-1,1]){
-        ball(.036,.073,.065,side*.207,-.004,0,'rubber');ball(.027,.061,.055,side*.239,-.004,0);
-        ball(.012,.042,.035,side*.264,-.004,0,'accent');box(.008,.024,.008,side*.269,-.02,.031,'metal',.003);
+        ball(.028,.061,.052,side*.177,-.004,0,'rubber');ball(.023,.053,.047,side*.201,-.004,0);
+        ball(.010,.036,.030,side*.223,-.004,0,'accent');box(.008,.024,.008,side*.229,-.02,.027,'metal',.003);
       }
-      if(shape==='headset'){tube([[-.24,-.03,.015],[-.24,-.09,.11],[-.10,-.11,.22]],.006,'metal');ball(.025,.013,.016,-.095,-.11,.22,'rubber');}
+      if(shape==='headset'){tube([[-.20,-.03,.015],[-.20,-.09,.11],[-.10,-.09,.20]],.006,'metal');ball(.025,.013,.016,-.095,-.09,.20,'rubber');}
     }else if(shape==='sunglasses'||shape==='optical'){
       for(const side of [-1,1]){
         const points=[];for(let i=0;i<20;i++){const a=i/20*Math.PI*2;points.push([side*.066+Math.cos(a)*.057,.018+Math.sin(a)*.045,.218]);}
@@ -69,7 +69,7 @@ export function createAccessoryVisual(THREE,id,color){
     }else if(shape==='backpack'){
       box(.34,.43,.16,0,0,-.08,'body',.05);box(.265,.19,.055,0,-.10,-.18,'detail',.025);zip(0,-.10,-.211,.22,.13);
       tube([[-.06,.207,-.08],[-.05,.25,-.08],[.05,.25,-.08],[.06,.207,-.08]],.012,'rubber');
-      for(const side of [-1,1])tube([[side*.12,.17,-.025],[side*.17,.17,.19],[side*.16,-.15,.31],[side*.115,-.19,.015]],.018,'rubber');
+      for(const side of [-1,1])tube([[side*.12,.17,-.025],[side*.20,.14,.35],[side*.18,-.15,.38],[side*.235,-.18,.20],[side*.22,-.19,.015],[side*.115,-.19,-.025]],.014,'rubber');
       zip(0,.01,-.165,.29,.35);box(.08,.025,.007,0,.115,-.166,'accent',.005);
       if(id!=='school_bag')for(const side of [-1,1])box(.064,.19,.075,side*.20,-.09,-.075,'detail',.02);
       if(id==='travel_bag'){cylinder(.027,.14,.20,-.025,-.08,'metal');cylinder(.025,.018,.20,.052,-.08,'rubber');}
@@ -78,7 +78,7 @@ export function createAccessoryVisual(THREE,id,color){
       const cross=shape==='crossbody',x=cross?.22:.32,y=-.28,z=cross?.19:.025;
       box(.25,.215,.11,x,y,z,'body',.037);box(.23,.075,.015,x,y+.05,z+.063,'detail',.018);zip(x,y,z+.061,.205,.155);
       box(.026,.032,.012,x,y+.015,z+.077,'metal',.004);
-      if(cross)tube([[-.20,.17,.01],[-.08,.02,.19],[x+.06,y+.09,z+.02],[x-.06,y+.09,z+.02],[-.19,.15,-.15]],.012,'rubber');
+      if(cross)tube([[-.20,.17,.10],[-.08,.02,.21],[x+.06,y+.09,z+.02],[x-.06,y+.09,z+.02],[.24,-.06,-.08],[-.19,.15,-.17]],.012,'rubber');
       else{tube([[x-.09,y+.09,z],[.22,.20,-.015],[.33,.17,.01],[x+.09,y+.09,z]],.012,'rubber');if(shape==='handbag')tube([[x-.08,y+.10,z+.04],[x-.06,y+.21,z+.04],[x+.06,y+.21,z+.04],[x+.08,y+.10,z+.04]],.009,'metal');}
     }else if(shape.startsWith('laptop')){
       const open=shape==='laptop_open',cx=open?-.18:0;
@@ -124,6 +124,7 @@ export function createAccessoryVisual(THREE,id,color){
       geometry.computeBoundingSphere();
       const material=new THREE.MeshStandardMaterial({color:palette[finish],roughness:finish==='metal'?.35:finish==='glass'||finish==='clear'?.18:.72,metalness:finish==='metal'?.65:0,
         transparent:finish==='clear'||finish==='glass',opacity:finish==='clear'?.2:finish==='glass'?.85:1,side:THREE.DoubleSide});
+      if(finish==='clear'||finish==='glass')material.depthWrite=false;
       if(finish==='screen'){material.emissive.set('#0b2437');material.emissiveIntensity=.25;}
       materials.push(material);const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=finish!=='clear'&&finish!=='glass';group.add(mesh);
     }
