@@ -14,7 +14,7 @@ async function body(req, max = 4096) {
   for await (const chunk of req) { size+=chunk.length; if(size>max) throw Object.assign(new Error('Arquivo ou mensagem grande demais.'),{status:413}); chunks.push(chunk); }
   return Buffer.concat(chunks);
 }
-function snapshot(room) { room.world||=createWorld();return {world:room.world,members:[...room.members.values()].map(m=>({id:m.id,name:m.name,pose:m.pose,progression:publicProgression(m.progression||accountProgression(null)),avatar:m.avatar||defaultAvatar})),messages:room.messages||[],media:room.media,serverTime:Date.now()}; }
+function snapshot(room) { room.world||=createWorld();return {world:room.world,members:[...room.members.values()].map(m=>({id:m.id,name:m.name,pose:m.pose,typingFor:Math.max(0,(m.typingUntil||0)-Date.now()),progression:publicProgression(m.progression||accountProgression(null)),avatar:m.avatar||defaultAvatar})),messages:room.messages||[],media:room.media,serverTime:Date.now()}; }
 function broadcast(room) { const event=`data: ${JSON.stringify(snapshot(room))}\n\n`; for(const m of room.members.values()) m.stream?.write(event); }
 function removeMember(room,token){
   const member=room.members.get(token);if(!member)return;
@@ -122,6 +122,7 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
         }
         if(action==='state' && req.method==='POST') {
           const input=JSON.parse((await body(req)).toString());
+          if(input.typing!==undefined&&typeof input.typing!=='boolean')return reply(res,400,{error:'Estado de digitação inválido.'});
           if(input.worldAction?.type==='door'&&input.worldAction.id==='restricted'&&input.worldAction.open===true){
             if(!serverRoomPassword)return reply(res,503,{error:'Configure SERVER_ROOM_PASSWORD no Render para abrir esta porta.'});
             if(member.doorAttempt&&Date.now()-member.doorAttempt<1000)return reply(res,429,{error:'Aguarde um instante antes de tentar novamente.'});
@@ -141,9 +142,10 @@ export async function handleApi(req,res,url,{createRoomWorld=createWorld,serverR
           if(input.message!==undefined){
             if(typeof input.message!=='string'||!input.message.trim()||input.message.length>280)return reply(res,400,{error:'Mensagem inválida (máximo 280 caracteres).'});
             if(Date.now()-(member.lastMessage||0)<700)return reply(res,429,{error:'Aguarde um instante para enviar outra mensagem.'});
-            member.lastMessage=Date.now();room.messages||=[];room.messages.push({id:id(),sender:member.id,name:member.name,text:input.message.trim(),time:Date.now()});room.messages=room.messages.slice(-40);
+            member.lastMessage=Date.now();member.typingUntil=0;room.messages||=[];room.messages.push({id:id(),sender:member.id,name:member.name,text:input.message.trim(),time:Date.now()});room.messages=room.messages.slice(-40);
           }
           if(input.playback && room.media) {const p=input.playback;if(room.media.kind==='peer'&&member.id!==room.media.hostId)return reply(res,403,{error:'A reproducao e controlada por quem transmite.'});if(typeof p.paused!=='boolean'||!Number.isFinite(p.time)||p.time<0||p.time>604800)return reply(res,400,{error:'Reprodução inválida.'});room.media={...room.media,paused:p.paused,time:p.time,updatedAt:Date.now()};}
+          if(input.typing!==undefined)member.typingUntil=input.typing&&input.message===undefined?Date.now()+5000:0;
           broadcast(room);return reply(res,200,{ok:true});
         }
         return reply(res,405,{error:'Operação não permitida.'});

@@ -1,7 +1,7 @@
-export const chatFonts={name:'600 24px "Segoe UI", system-ui, sans-serif',message:'400 32px "Segoe UI", system-ui, sans-serif'};
+export const chatFonts={name:'500 24px "Segoe UI", system-ui, sans-serif',message:'400 26px "Segoe UI", system-ui, sans-serif'};
 
 export function layoutSpeechBubble(text,sender,measure){
-  const maxWidth=640,lines=[];
+  const maxWidth=420,lines=[],heading=`${sender} disse:`;
   // Wrap at words where possible, splitting only words longer than the whole bubble.
   for(const paragraph of String(text).split('\n')){
     let line='';
@@ -19,25 +19,24 @@ export function layoutSpeechBubble(text,sender,measure){
     }
     lines.push(line);
   }
-  const contentWidth=Math.max(72,Math.min(maxWidth,measure(sender,'name')),...lines.map(line=>measure(line,'message')));
-  return {lines,width:Math.ceil(contentWidth+72),height:Math.ceil(104+lines.length*42),contentWidth};
+  const contentWidth=Math.max(48,Math.min(maxWidth,measure(heading,'name')),...lines.map(line=>measure(line,'message')));
+  return {lines,heading,width:Math.ceil(contentWidth+48),height:Math.ceil(76+lines.length*32),contentWidth};
 }
 
 export function paintSpeechBubble(canvas,text,sender){
   const ctx=canvas.getContext('2d');
   const layout=layoutSpeechBubble(text,sender,(value,kind)=>{ctx.font=chatFonts[kind];return ctx.measureText(value).width;});
   canvas.width=layout.width;canvas.height=layout.height;
-  const {width,height}=layout,bodyBottom=height-26,center=width/2;
-  ctx.shadowColor='rgba(0,0,0,.22)';ctx.shadowBlur=10;ctx.shadowOffsetY=4;
-  ctx.beginPath();ctx.roundRect(12,10,width-24,bodyBottom-10,22);
+  const {width,height}=layout,bodyBottom=height-20,center=width/2;
+  ctx.shadowColor='rgba(0,0,0,.18)';ctx.shadowBlur=6;ctx.shadowOffsetY=3;
+  ctx.beginPath();ctx.roundRect(8,8,width-16,bodyBottom-8,14);
   // A single silhouette avoids a seam or a doubled shadow at the tail.
-  ctx.moveTo(center-13,bodyBottom-1);ctx.lineTo(center+13,bodyBottom-1);ctx.lineTo(center,bodyBottom+14);ctx.closePath();
-  const background=ctx.createLinearGradient(0,10,0,bodyBottom);
-  background.addColorStop(0,'#ffffff');background.addColorStop(1,'#eef5f3');ctx.fillStyle=background;ctx.fill();
+  ctx.moveTo(center-10,bodyBottom-1);ctx.lineTo(center+10,bodyBottom-1);ctx.lineTo(center,bodyBottom+10);ctx.closePath();
+  ctx.fillStyle='#ffffff';ctx.fill();
   ctx.shadowBlur=0;ctx.shadowOffsetY=0;
   ctx.textBaseline='top';ctx.textAlign='left';
-  ctx.font=chatFonts.name;ctx.fillStyle='#287d6a';ctx.fillText(sender,36,28,width-72);
-  ctx.font=chatFonts.message;ctx.fillStyle='#203b36';
-  layout.lines.forEach((line,index)=>ctx.fillText(line,36,66+index*42));
+  ctx.font=chatFonts.name;ctx.fillStyle='#222222';ctx.fillText(layout.heading,24,20,width-48);
+  ctx.font=chatFonts.message;ctx.fillStyle='#222222';
+  layout.lines.forEach((line,index)=>ctx.fillText(line,24,50+index*32));
   return layout;
 }

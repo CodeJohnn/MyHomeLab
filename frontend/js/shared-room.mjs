@@ -5,8 +5,10 @@ import {apiUrl} from './config.mjs';
 import {characterReactions} from './emotion-reactions.mjs';
 import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs?v=auth-2';
 import {claimDailyReward} from './daily-rewards.mjs?v=auth-2';
+import {createTypingPresence} from './typing-presence.mjs';
 
-export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,mountAvatarPreview,onSelfProgression}) {
+export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,onTyping,mountAvatarPreview,onSelfProgression}) {
+  let typingPresence=null;
   let selfProgression={level:1,xp:0},previousSelfLevel=null,selfProgressionSignature='';
   const onlineDock=document.createElement('details');
   onlineDock.className='roomOnlineDock';onlineDock.hidden=true;onlineDock.open=true;
@@ -181,7 +183,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   const el=n=>panel.querySelector(`[data-${n}]`)||profileDialog.querySelector(`[data-${n}]`), video=el('video');
   function setOnlineConnected(value){
     onlineDock.hidden=!value;
-    if(!value){updateOnlineDock([]);previousMembers=null;}
+    if(!value){typingPresence?.stop();updateOnlineDock([]);previousMembers=null;}
     panel.dataset.connected=String(value);
     for(const input of social.querySelectorAll('input,button'))input.disabled=!value;
     el('no-session').hidden=value;
@@ -194,8 +196,12 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   const seenMessages=new Set();
   const sessionKey=key=>`homelab.session.${key}`;
   el('name').value=localStorage.getItem('homelab.name')||`Visitante ${Math.floor(Math.random()*900+100)}`;
+  typingPresence=createTypingPresence({send:typing=>token&&!closed?api('state',{typing}):undefined,onChange:active=>onTyping?.(active)});
+  el('message').addEventListener('input',()=>typingPresence.input(el('message').value));
+  el('message').addEventListener('blur',()=>typingPresence.stop());
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)typingPresence.stop();});
   async function sendMessage(text){if(!token)return status('Entre no mundo para conversar.');try{await api('state',{message:text});}catch(e){showError(e);}}
-  el('form').onsubmit=e=>{e.preventDefault();const text=el('message').value.trim();if(text){sendMessage(text);el('message').value='';}};
+  el('form').onsubmit=e=>{e.preventDefault();const text=el('message').value.trim();if(text){typingPresence.stop();sendMessage(text);el('message').value='';}};
   el('wave').onclick=()=>sendMessage('👋');el('heart').onclick=()=>sendMessage('❤️');
   function sendReaction(type){
     const message=characterReactions[type]?.message;
@@ -344,7 +350,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   },100);
   setInterval(()=>{if(token&&media)apply();},5000);
   setInterval(()=>{if(token&&!closed&&!document.hidden)void api('prestige',{}).catch(()=>{});},60000);
-  addEventListener('pagehide',()=>{events?.close();peer.close();avatarPreview?.dispose();});
+  addEventListener('pagehide',()=>{typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();});
   el('join').textContent='Entrar no mundo';
   let checkingAvailability=false,lastAvailabilityCheck=-Infinity,wasAvailable=false,autoJoinStarted=false,availabilityAttempts=0;
   async function checkAvailability(force=false){
@@ -367,7 +373,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     if(available&&!token)el('count').textContent='Disponivel';
     if(available&&!autoJoinStarted){autoJoinStarted=true;el('join').click();}
   }
-  addEventListener('offline',()=>{panel.hidden=true;onlineDock.hidden=true;visibilityControls.hidden=true;wasAvailable=false;onMembers([]);});
+  addEventListener('offline',()=>{typingPresence.stop();panel.hidden=true;onlineDock.hidden=true;visibilityControls.hidden=true;wasAvailable=false;onMembers([]);});
   addEventListener('online',()=>{checkAvailability(true);if(autoJoinStarted&&!token&&!closed)void el('join').onclick();});
   addEventListener('focus',()=>checkAvailability());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkAvailability();});

@@ -4898,7 +4898,7 @@
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=performance-32');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=typing-33');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -4965,21 +4965,44 @@
         sprite.position.y=bubble?2.42+height/2:2.1;sprite.scale.set(width,height,1);sprite.renderOrder=100;return sprite;
       }
       function disposeTag(tag){tag.userData.disposed=true;tag.material.map.dispose();tag.material.dispose();tag.removeFromParent();}
+      function updateTypingIndicator(character,time){
+        if(!(character.userData.typingUntil>time)){
+          if(character.userData.typingSprite){disposeTag(character.userData.typingSprite);character.userData.typingSprite=null;}
+          return;
+        }
+        if(!character.userData.typingSprite){
+          const canvas=document.createElement('canvas');canvas.width=132;canvas.height=72;
+          const ctx=canvas.getContext('2d');ctx.fillStyle='#ffffff';
+          ctx.beginPath();ctx.roundRect(6,6,120,52,18);ctx.fill();
+          ctx.beginPath();ctx.moveTo(56,57);ctx.lineTo(76,57);ctx.lineTo(66,67);ctx.closePath();ctx.fill();
+          ctx.fillStyle='#616b68';
+          for(const x of [44,66,88]){ctx.beginPath();ctx.arc(x,32,5,0,Math.PI*2);ctx.fill();}
+          const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+          const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false,toneMapped:false}));
+          sprite.scale.set(.42,.23,1);sprite.renderOrder=102;character.add(sprite);character.userData.typingSprite=sprite;
+        }
+        const sprite=character.userData.typingSprite;
+        sprite.position.y=2.48+Math.sin(time*.005)*.025;
+        sprite.material.opacity=.85+Math.sin(time*.005)*.15;
+      }
       function updateGuests(dt,t) {
         updateCharacterReaction(avatar,t);
-        if(ownBubble){ownBubble.position.copy(avatar.position);ownBubble.position.y+=ownBubble.userData.height;ownBubble.material.opacity=Math.min(1,Math.max(0,(ownBubbleUntil-t)/500));if(t>ownBubbleUntil){disposeTag(ownBubble);ownBubble=null;}}
+        updateTypingIndicator(avatar,t);
+        if(ownBubble){ownBubble.visible=!(avatar.userData.typingUntil>t);ownBubble.position.copy(avatar.position);ownBubble.position.y+=ownBubble.userData.height;ownBubble.material.opacity=Math.min(1,Math.max(0,(ownBubbleUntil-t)/500));if(t>ownBubbleUntil){disposeTag(ownBubble);ownBubble=null;}}
         for(const guest of guests.values()){
           updateCharacterReaction(guest,t);
+          updateTypingIndicator(guest,t);
           const p=guest.userData.networkPose;if(!p)continue;
           const blend=1-Math.exp(-18*dt);guest.position.x+=(p.x-guest.position.x)*blend;guest.position.y+=(p.y-guest.position.y)*blend;guest.position.z+=(p.z-guest.position.z)*blend;
           guest.rotation.y+=Math.atan2(Math.sin(p.r-guest.rotation.y),Math.cos(p.r-guest.rotation.y))*blend;
           (p.joints||[]).forEach((rotation,i)=>{const joint=guest.userData.networkJoints[i];if(joint){joint.rotation.x=THREE.MathUtils.lerp(joint.rotation.x,rotation[0],blend);joint.rotation.y=THREE.MathUtils.lerp(joint.rotation.y,rotation[1],blend);joint.rotation.z=THREE.MathUtils.lerp(joint.rotation.z,rotation[2],blend);}});
-          if(guest.userData.bubble){guest.userData.bubble.material.opacity=Math.min(1,Math.max(0,(guest.userData.bubbleUntil-t)/500));if(t>guest.userData.bubbleUntil){disposeTag(guest.userData.bubble);guest.userData.bubble=null;}}
+          if(guest.userData.bubble){guest.userData.bubble.visible=!(guest.userData.typingUntil>t);guest.userData.bubble.material.opacity=Math.min(1,Math.max(0,(guest.userData.bubbleUntil-t)/500));if(t>guest.userData.bubbleUntil){disposeTag(guest.userData.bubble);guest.userData.bubble=null;}}
           if(guest.userData.waveUntil>t){const arm=guest.userData.networkJoints[5];if(arm){arm.rotation.z=-2.5;arm.rotation.x=Math.sin(t*.014)*.3;}}
         }
       }
       let ownNobleTag=null;
       sharedRoom=createSharedRoom({
+        onTyping:active=>{avatar.userData.typingUntil=active?Infinity:0;},
         onSelfProgression:member=>{if(ownNobleTag)disposeTag(ownNobleTag);ownNobleTag=nameTag(member.name,false,'',member.progression.level);avatar.add(ownNobleTag);avatar.userData.nobleLevel=member.progression.level;actionTitle.querySelector('span').textContent=nobleLabel(member.progression.level);about.querySelectorAll('p')[1].textContent=nobleLabel(member.progression.level);},
         onWorld:world=>{applyRoomWorld(world);updateBilliardsState(world?.billiards);},
         onReaction:type=>showCharacterReaction(avatar,type),
@@ -4988,11 +5011,12 @@
         onSpawn: p=>{if(p){avatar.position.set(p.x,p.y,p.z);avatar.rotation.y=p.r;}},
         getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z])}),
         onMembers: members => {
-          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeAvatarModel(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
+          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeAvatarModel(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}
             guest.userData.networkJoints||=networkJoints.map((_,i)=>guest.getObjectByName(`networkJoint${i}`));
+            guest.userData.typingUntil=member.typingFor>0?performance.now()+Math.min(5000,member.typingFor):0;
             if(guest.userData.displayName!==member.name||guest.userData.nobleLevel!==(member.progression?.level||1)){disposeTag(guest.userData.tag);guest.userData.tag=nameTag(member.name,false,'',member.progression?.level||1);guest.add(guest.userData.tag);guest.userData.displayName=member.name;guest.userData.nobleLevel=member.progression?.level||1;}
             if(member.avatar)applyAvatarAppearance(guest,member.avatar,THREE);
             guest.userData.networkPose=member.pose;
