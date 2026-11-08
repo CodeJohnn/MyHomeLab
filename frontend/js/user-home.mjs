@@ -26,7 +26,7 @@ export function createUserHome({host,onPlay,onRequireLogin}){
     const label=document.createElement('label');label.textContent=title;const input=document.createElement('input');input.type='color';input.name=key;input.value=value;label.append(input);page.querySelector('[data-colors]').append(label);
   }
   const accessoryInventory=createAccessoryInventory({onChange:equipment=>{if(equipment.Head)form.elements.hat.value='none';preview();}});
-  form.insertBefore(accessoryInventory.element,form.querySelector('.userSave'));
+  page.querySelector('[data-clothes]').append(accessoryInventory.element);
   form.elements.hat.addEventListener('input',()=>{if(form.elements.hat.value!=='none')accessoryInventory.remove('Head');});
   function read(){
     accessoryInventory.setModel(form.elements.model.value);const accessories=accessoryInventory.read();

@@ -10,3 +10,12 @@
 .accessoryInventory :is(button,input,select):focus-visible{outline:2px solid #90c8d5;outline-offset:2px}.accessoryInventory button:disabled{opacity:.35;cursor:not-allowed}
 @media(min-width:1050px){.userEditor .accessoryGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){.accessoryCard{padding:8px}.accessoryInventoryBody{padding-inline:8px}.accessoryGrid{gap:6px}.accessoryTools{gap:8px}}
+
+/* Keep the accessory picker beside footwear in the profile's clothing grid. */
+.userClothes>.accessoryInventory{grid-column:auto;align-self:start;margin-top:21px;border-radius:3px;background:#0c0c0c;border-color:#414141}
+.userClothes>.accessoryInventory>summary{box-sizing:border-box;min-height:39px;padding:10px;font:13px Arial;color:#e4e4e4;gap:6px}
+.userClothes>.accessoryInventory>summary::before{margin-right:2px}
+.userClothes .accessoryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:520px){
+  .userClothes>.accessoryInventory[open]{grid-column:1/-1;margin-top:0}
+}
