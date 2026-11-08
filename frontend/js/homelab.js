@@ -11,6 +11,8 @@
     import {createAvatarPortraits} from './avatar-portraits.mjs';
     import {loadReactionImage} from './reaction-assets.mjs';
     import {updateEquipment} from './avatar-equipment.mjs';
+    import {mergeNpcHair} from './npc-visuals.mjs';
+    import {createNpcMind} from './npc-mind.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -2696,44 +2698,50 @@
       const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=equipment-24');
       const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=equipment-9');
       const npcs = [];
+      const npcMind=createNpcMind();
+      let nextNpcThink=0,nextSimulatedEvent=120000,simulatedEventSequence=0,lastNpcAnnouncement=-Infinity,lastObservedIncident=null;
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
         const root = new THREE.Group();
         root.position.set(x, 0, z);
         root.rotation.y = -.35;
         scene.add(root);
-        const skinMat = M(skinColor), outfit = M('#080808'), trousers = M(style === 'curly' ? '#242a35' : '#141b25');
-        const darkHair = M('#241910'), boots = M('#16191b');
-        skinMat.roughness=.72;outfit.roughness=.94;trousers.roughness=.95;
-        const bodyProfile=[new THREE.Vector2(.145,0),new THREE.Vector2(.155,.04),new THREE.Vector2(.16,.18),new THREE.Vector2(.185,.34),new THREE.Vector2(.175,.4),new THREE.Vector2(.09,.47)];
+        const fabricColor=new THREE.Color(outfitColor).lerp(new THREE.Color('#202831'),.32);
+        const skinMat = M(skinColor), outfit = M(fabricColor), trousers = M(style === 'curly' ? '#303443' : '#222b36');
+        const darkHair = M(style==='casual'?'#191b24':style==='technician'?'#35251e':'#241b20'), boots = M('#242b33');
+        const eyeWhiteMat=M('#eeeae2',0,.42),irisMat=M(style==='curly'?'#79643f':'#59422d',0,.4),earMat=M(new THREE.Color(skinColor).multiplyScalar(.87));
+        skinMat.roughness=.78;outfit.roughness=.89;trousers.roughness=.94;darkHair.roughness=.87;boots.roughness=.7;
+        const bodyProfile=[[.145,0],[.153,.018],[.155,.04],[.153,.075],[.16,.18],[.174,.27],[.185,.34],[.175,.4],[.09,.47]].map(([r,y])=>new THREE.Vector2(r,y));
         const torso=new THREE.Mesh(new THREE.LatheGeometry(bodyProfile,20),outfit);torso.position.y=.8;torso.scale.z=.69;torso.castShadow=true;root.add(torso);
         const isSuit=false;
         function softLimb(parent,width,length,depth,material,x,y,z) {
           const mesh=new THREE.Mesh(new THREE.CapsuleGeometry(1,6,4,10),material);
           mesh.scale.set(width/2,length/8,depth/2);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
         }
-        addBlackLabCoat(root);
+        const coatLayer=new THREE.Group();coatLayer.name='npcCoat';coatLayer.scale.x=.88;root.add(coatLayer);
+        addBlackLabCoat(coatLayer,{color:fabricColor.clone().multiplyScalar(.72),trim:fabricColor.clone().lerp(new THREE.Color('#c4cbd0'),.28)});
         const npcArms = [], npcLegs = [], npcKnees = [], npcElbows = [], eyes = [];
         if(style==='curly') {
-          const skirt=new THREE.Mesh(new THREE.CylinderGeometry(.175,.235,.27,24,1,false),M('#252c37',.02,.92));
+          const skirtProfile=[[.229,-.135],[.235,-.119],[.218,-.055],[.189,.065],[.175,.135]].map(([r,y])=>new THREE.Vector2(r,y));
+          const skirt=new THREE.Mesh(new THREE.LatheGeometry(skirtProfile,20),M('#303443',0,.92));
           skirt.position.set(0,.705,0);skirt.scale.z=.75;skirt.castShadow=true;root.add(skirt);
           const waistband=new THREE.Mesh(new THREE.CylinderGeometry(.177,.177,.035,24),outfit);waistband.position.y=.835;waistband.scale.z=.75;root.add(waistband);
         } else softLimb(root,.33,.19,.23,trousers,0,.75,0);
         cyl(root, .065, .1, skinMat, 0, 1.32, 0);
         const head = new THREE.Group();
-        head.position.y = 1.59; head.scale.setScalar(1.4);
+        head.position.y = 1.59; head.scale.setScalar(1.32);
         root.add(head);
-        const face=sphere(head,.18,skinMat,0,0,.015);face.scale.set(.95,1.02,.94);
-        const jaw=sphere(head,.125,skinMat,0,-.085,.045);jaw.scale.set(1.05,.77,.94);
+        const face=sphere(head,.18,skinMat,0,0,.015);face.scale.set(.94,1.04,.94);
+        const jaw=sphere(head,.121,skinMat,0,-.085,.037);jaw.scale.set(1.03,.72,.88);
         for (const side of [-1, 1]) {
-          sphere(head, .037, skinMat, side * .176, 0, .01);
+          const ear=sphere(head,.037,skinMat,side*.170,0,.01);ear.scale.set(.48,.9,.68);
           const eye=new THREE.Group();eye.position.set(side*.066,.026,.174);head.add(eye);eyes.push(eye);
-          const eyeWhite=sphere(eye,.036,M('#f5f1e9',0,.3),0,0,0);eyeWhite.scale.set(.87,1.14,.5);
-          const iris=sphere(eye,.025,M(style==='curly'?'#79643f':'#59422d',0,.3),0,0,.016);iris.scale.z=.35;
-          const pupil=sphere(eye,.016,eyeMat,0,0,.023);pupil.scale.set(.83,1.2,.35);sphere(eye,.007,white,-.008,.013,.029);sphere(eye,.003,white,.008,-.009,.029);
-          const lid=new THREE.CatmullRomCurve3([new THREE.Vector3(-.032,.004,0),new THREE.Vector3(0,.044,.006),new THREE.Vector3(.032,.004,0)]);
+          const eyeWhite=sphere(eye,.036,eyeWhiteMat,0,0,0);eyeWhite.scale.set(.87,.96,.46);
+          const iris=sphere(eye,.022,irisMat,0,0,.016);iris.scale.z=.30;
+          const pupil=sphere(eye,.013,eyeMat,0,0,.022);pupil.scale.set(.85,1.1,.30);sphere(eye,.005,white,-.007,.010,.027);sphere(eye,.0025,white,.007,-.007,.027);
+          const lid=new THREE.CatmullRomCurve3([new THREE.Vector3(-.032,.004,0),new THREE.Vector3(0,.035,.006),new THREE.Vector3(.032,.004,0)]);
           eye.add(new THREE.Mesh(new THREE.TubeGeometry(lid,8,.0025,4,false),darkHair));
-          const earInner=sphere(head,.022,M(skinColor).clone(),side*.178,-.004,.026);earInner.scale.set(.45,.85,.45);earInner.material.color.multiplyScalar(.82);
-          const brow=box(head,.055,.014,.015,darkHair,side*.066,.089,.17,.006);brow.rotation.z=side*-.08;
+          const earInner=sphere(head,.019,earMat,side*.179,-.004,.022);earInner.scale.set(.30,.85,.45);
+          const brow=sphere(head,.029,darkHair,side*.066,.079,.174);brow.scale.set(1,.20,.28);brow.rotation.z=side*-.08;
           const leg = new THREE.Group(); leg.position.set(side * .105, .735, 0); root.add(leg); npcLegs.push(leg);
           softLimb(leg,.14,.33,.155,style==='curly'?skinMat:trousers,0,-.15,0);
           const knee = new THREE.Group(); knee.position.y = -.3; leg.add(knee); npcKnees.push(knee);
@@ -2744,7 +2752,7 @@
             for(let lace=0;lace<5;lace++)box(knee,.06,.006,.009,metal,0,-.12-lace*.035,.081,.001);
             box(knee,.15,.03,.27,boots,0,-.408,.055,.007);
           }
-          const shoe=sphere(knee,.1,boots,0,-.36,.055);shoe.scale.set(.92,.7,1.55);box(knee,.175,.025,.29,boots,0,-.417,.055,.008);
+          const shoe=sphere(knee,.1,boots,0,-.36,.055);shoe.scale.set(.88,.7,1.48);box(knee,.175,.025,.29,boots,0,-.417,.055,.012);
           const arm = new THREE.Group();
           arm.position.set(side * .184, 1.2, 0);
           arm.rotation.z = side * .08;
@@ -2759,9 +2767,9 @@
           for(let finger=0;finger<4;finger++)softLimb(elbow,.012,.036,.014,skinMat,-.02+finger*.014,-.306,.008);
           const cuff=new THREE.Mesh(new THREE.TorusGeometry(.052,.005,5,14),outfit);cuff.rotation.x=Math.PI/2;cuff.position.y=-.23;elbow.add(cuff);
         }
-        const nose=sphere(head,.023,skinMat,0,-.012,.182);nose.scale.set(.9,.9,1.15);
+        const nose=sphere(head,.023,skinMat,0,-.012,.182);nose.scale.set(.78,.92,1.04);
         const lipColor=M(skinColor);lipColor.color.multiply(new THREE.Color('#a76a6b'));
-        const lips=sphere(head,.027,lipColor,0,-.074,.17);lips.scale.set(1,.16,.19);
+        const lips=sphere(head,.027,lipColor,0,-.074,.17);lips.scale.set(.88,.14,.19);
         const lowerLip=sphere(head,.021,skinMat,0,-.082,.17);lowerLip.scale.set(1,.18,.22);
         if(hairStyle==='straight') {
           const cap=new THREE.Mesh(new THREE.SphereGeometry(.19,28,20,0,Math.PI*2,0,1.48),darkHair);
@@ -2785,7 +2793,10 @@
                 if(row>=3)continue;
                 const curl=sphere(head,.057,darkHair,curlX,.20-row*.05,Math.max(curlZ,-.115));
                 curl.scale.z=.55;
-              }else sphere(head, .057, darkHair, curlX, .16 - row * .065, curlZ);
+              }else{
+                const curl=sphere(head,.057,darkHair,curlX,.16-row*.065,curlZ);
+                curl.scale.set(.94,1.08,.88);curl.rotation.z=Math.sin(angle)*.25;
+              }
             }
           }
           sphere(head, .065, darkHair, 0, .18, 0);
@@ -2812,6 +2823,7 @@
 
           }
         }
+        mergeNpcHair(THREE,head,darkHair);
         npcs.push({ name, root, head, arms: npcArms, forearms: npcElbows, legs: npcLegs, knees: npcKnees, eyes, torso, nextBlink: 2 + Math.random()*4, blinkTime: 0, taskIndex: npcs.length, wait: 1 + npcs.length, path: [], phase: 0 });
         return root;
       }
@@ -3391,11 +3403,13 @@
         }
         return null;
       }
-      function planNpcTask(npc,keepTask=false) {
+      function planNpcTask(npc,keepTask=false,requestedTask=null) {
+        if(npc.aiInvestigation&&!requestedTask)requestedTask={id:npc.aiInvestigation.event.target,action:'investigate'};
         const personalId = ['setupVitoria','setupXandy','setupAlex'][npcs.indexOf(npc)];
         const choices = npcTasks.filter(task => task.id !== npc.task?.id && !npcs.some(other => other !== npc && other.task?.id === task.id));
         const helperStops=['setupVitoria','setupXandy','setupAlex','mesaL','mesa'];
-        const task = keepTask&&npc.task?npc.task:npc.role==='helper'?{id:helperStops[npc.taskIndex%helperStops.length],action:'help'}:npc.role==='programming' ? {id:personalId,action:'work'} : npc.role==='soldering' ? {id:'mesaL',action:'solder'} : personalId && Math.random() < .55 && npc.task?.id !== personalId ? {id:personalId,action:'work'} : choices[Math.floor(Math.random() * choices.length)] || npcTasks[0];
+        const helperTask=npc.role==='helper'&&!keepTask&&!requestedTask?npcMind.chooseTask(npc,helperStops.filter(id=>!npcs.some(other=>other!==npc&&other.task?.id===id)).map(id=>({id,action:'help'}))):null;
+        const task = requestedTask || (keepTask&&npc.task?npc.task:npc.role==='helper'?helperTask||{id:'mesa',action:'help'}:npc.role==='programming' ? {id:personalId,action:'work'} : npc.role==='soldering' ? {id:'mesaL',action:'solder'} : personalId && Math.random() < .55 && npc.task?.id !== personalId ? {id:personalId,action:'work'} : npcMind.chooseTask(npc,choices) || npcTasks[0]);
         if(!keepTask)npc.taskIndex++;
         npc.task = task;
         npc.helpAnnounced=false;
@@ -3595,7 +3609,7 @@
           Snot:'Oi! Estou trabalhando nesta placa. Pode falar.'
         };
         const greeting=greetings[npc.name] || ['Oi! Pode falar.', 'Opa, o que aconteceu?', 'Oi! Precisa de ajuda?'][npcs.indexOf(npc)%3] || 'Oi! Pode falar.';
-        npcSay(npc,greeting);
+        npcSay(npc,npcMind.chooseLine(npc,[greeting,'Bom te ver de novo. Quer retomar um assunto ou começar outro?','Vou fazer uma pausa para te ouvir. O que você tem em mente?']));
         document.getElementById('npcMessage').focus();
       }
       function answerNpc(message) {
@@ -3731,6 +3745,46 @@
       }
       function updateNpcs(dt, t) {
         if (edit) return;
+        if(t>=nextNpcThink&&!document.hidden){
+          nextNpcThink=t+1000;
+          const incidentId=serverIncident.down?'world:'+serverIncident.id:null;
+          if(lastObservedIncident&&lastObservedIncident!==incidentId)npcMind.resolve(lastObservedIncident);
+          lastObservedIncident=incidentId;
+          if(incidentId)npcMind.observe({id:incidentId,type:'connection',target:serverIncident.rackId,label:byId[serverIncident.rackId]?.label||'rack'},t);
+          if(t>=nextSimulatedEvent&&!serverIncident.down){
+            nextSimulatedEvent=t+120000+Math.random()*90000;
+            const samples=[['service','bancadaTI','serviço de teste da bancada'],['equipment','instrumentosTI','instrumento de diagnóstico'],['connection','rackExtraTI','conexão de teste do rack']];
+            const [type,target,label]=samples[simulatedEventSequence% samples.length];
+            npcMind.observe({id:'local:'+ ++simulatedEventSequence,type,target,label},t);
+          }
+          for(const npc of npcs){
+            if(npc===talkingNpc||npc.spouseHoldUntil>t||npc.callRemaining>0)continue;
+            if(npc.aiInvestigation){
+              const investigation=npc.aiInvestigation;
+              if(investigation.event.id.startsWith('world:')&&investigation.event.id!==incidentId){
+                npc.aiLastEvent={...investigation.event,action:investigation.action,outcome:'resolved-externally'};
+                npc.aiInvestigation=null;npc.path=[];planNpcTask(npc);continue;
+              }
+              if(t<investigation.deadline&&(npc.path.length||t<investigation.ready))continue;
+              const target=byId[investigation.event.target]?.g.getWorldPosition(new THREE.Vector3());
+              const reached=!!target&&npc.root.position.distanceTo(target)<3;
+              if(t-lastNpcAnnouncement<14000)continue;
+              npcSay(npc,npcMind.complete(npc,investigation.event,investigation.action,reached),true);lastNpcAnnouncement=t;
+              npc.aiInvestigation=null;npc.path=[];planNpcTask(npc);npc.wait=4;continue;
+            }
+            const decision=npcMind.decide(npc,t,{busy:npc.path.length>0||t-lastNpcAnnouncement<14000,working:!!npc.seated||npc.role==='soldering'});
+            if(!decision)continue;
+            if(decision.text){npcSay(npc,decision.text,true);lastNpcAnnouncement=t;}
+            if(decision.action==='investigate'||decision.action==='attempt'){
+              if(!byId[decision.event.target])continue;
+              standNpc(npc);npc.aiInvestigation={...decision,deadline:t+30000,ready:t+6500};
+              planNpcTask(npc,false,{id:decision.event.target,action:'investigate'});
+            }else if(decision.action==='routine'){
+              const task=npcMind.chooseTask(npc,npcTasks.filter(task=>task.id!=='mesaL'&&!npcs.some(other=>other!==npc&&other.task?.id===task.id)));
+              if(task){standNpc(npc);planNpcTask(npc,false,task);npc.wait=8+Math.random()*8;}
+            }
+          }
+        }
         for (const npc of npcs) {
           if(npc.spouseHoldUntil>t){
             npc.root.rotation.y=Math.atan2(avatar.position.x-npc.root.position.x,avatar.position.z-npc.root.position.z);
@@ -3812,6 +3866,13 @@
               }else if(npc.role!=='helper'&&npc.blocked>2){npc.path=[];npc.wait=1;npc.blocked=0;}
             }
           } else {
+            if(npc.aiInvestigation){
+              npc.legs.forEach(leg=>leg.rotation.x=0);npc.knees.forEach(knee=>knee.rotation.x=0);
+              const target=byId[npc.aiInvestigation.event.target]?.g.position;
+              if(target)npc.root.rotation.y=Math.atan2(target.x-pos.x,target.z-pos.z);
+              npc.arms.forEach((arm,i)=>arm.rotation.x=i?-.4:0);
+              continue;
+            }
             if(npc.role==='soldering' && npc.task?.action==='solder') {
               const work=solderWorkPosition();
               if(work && Math.hypot(pos.x-work.position.x,pos.z-work.position.z)<.18 && npcSegmentClear(pos.x,pos.z,work.position.x,work.position.z)){
@@ -3863,7 +3924,7 @@
                 if(nearby&&!npc.helpAnnounced){
                   npc.helpAnnounced=true;
                   const lines={setupVitoria:'Vitoria, vamos revisar a interface e os testes juntas?',setupXandy:'Xandy, vou conferir a rede e o deploy com voce.',setupAlex:'Alex, vamos revisar os acessos e os backups.',mesaL:'Posso ajudar a conferir as pecas e organizar a bancada.',mesa:'Vou conferir seu projeto com voce. Se precisar, estou por aqui.'};
-                  npcSay(npc,lines[task.id]);
+                  npcSay(npc,npcMind.chooseLine(npc,[lines[task.id],'Passei para ouvir o andamento deste projeto. Tem algum ponto que podemos revisar juntos?','Vou comparar os resultados com a última visita antes de sugerir mudanças.']),true);
                 }
                 npc.arms[0].rotation.x=nearby?-.55+Math.sin(npc.phase*2)*.1:0;
                 npc.arms[1].rotation.x=nearby?-.2:0;

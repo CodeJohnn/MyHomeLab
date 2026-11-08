@@ -1,5 +1,6 @@
 import { guedesReplies } from './guedessec-dialogue.mjs';
 import { extraDialogueTopics } from './npc-extra-dialogue.mjs?v=2';
+import {npcPersonality} from './npc-mind.mjs';
 // Repertorios locais por personagem, sem servico externo.
 export const dialogueBanks = [
   {
@@ -498,7 +499,7 @@ export const dialogueBanks = [
     ]
   }
 ];
-export function replyToNpc(npc, message, index, taskLabel) {
+function baseReplyToNpc(npc, message, index, taskLabel) {
   const bank = dialogueBanks[index % dialogueBanks.length];
   const memory = npc.dialogueMemory ||= { counts: {}, history: [] };
   const normalized = message.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -560,4 +561,40 @@ export function replyToNpc(npc, message, index, taskLabel) {
   const count=memory.counts[topic.id] || 0; memory.counts[topic.id]=count+1; memory.topic=topic.id;
   if(topic.id==='work' && taskLabel) return 'Agora estou cuidando de '+taskLabel+'. '+topic.replies[count % topic.replies.length];
   return topic.replies[count % topic.replies.length];
+}
+
+
+// Session memory includes every branch, including technical replies and follow-ups.
+export function replyToNpc(npc,message,index,taskLabel){
+  message=String(message).slice(0,300);
+  const memory=npc.dialogueMemory||={counts:{},history:[]};
+  const exchanges=memory.exchanges||=[],recent=memory.recentReplies||=[];
+  const normalized=message.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  let reply;
+  if(/lembra.*conversa|o que.*conversamos|retomar.*assunto/.test(normalized)){
+    const previous=exchanges.at(-1);
+    reply=previous?'Na nossa última troca você disse: “'+previous.message+'”. Quer continuar desse ponto?':'Ainda não conversamos nesta sessão. Que assunto você quer começar?';
+  }else if(/personalidade|como voce e|seu jeito/.test(normalized)){
+    reply='Meu jeito é '+npcPersonality(npc).trait+'. '+(taskLabel?'Agora estou perto de '+taskLabel+'.':'Gosto de escolher uma tarefa de cada vez.');
+  }else if(npc.aiLastEvent&&/rede|servidor|falha|problema|alerta|equipamento/.test(normalized)){
+    const event=npc.aiLastEvent;
+    reply='O último alerta que observei foi em '+event.label+'. '+(event.outcome==='unreachable'?'Não consegui chegar ao local.':event.outcome==='resolved-externally'?'O alerta foi encerrado por outra ação.':event.action==='ignore'?'Preferi manter minha tarefa naquele momento.':event.outcome?'Já fiz uma observação local, sem confirmar a causa.':'Guardei esse alerta para acompanhar.')+' Isso é uma simulação; não executei comandos nem alterei o servidor.';
+  }else reply=baseReplyToNpc(npc,message,index,taskLabel);
+  if(recent.includes(reply)&&!/nome/.test(normalized)){
+    const bank=dialogueBanks[index%dialogueBanks.length];
+    const extra=extraDialogueTopics.find(topic=>new RegExp(topic.pattern,'i').test(normalized));
+    const topic=bank.topics.find(topic=>new RegExp(topic.pattern,'i').test(normalized));
+    const options=memory.brandTopic?guedesReplies[index%guedesReplies.length]:extra?.replies||topic?.replies;
+    const alternative=options?.find(text=>!recent.includes(text));
+    const followups=[
+      'Vamos avançar a partir do que já conversamos: qual resultado você quer observar primeiro?',
+      'Já discutimos esse ponto. Você encontrou algum detalhe novo para compararmos com a hipótese anterior?',
+      'Para não repetir a explicação, podemos usar um exemplo seu. O que você tentou e o que aconteceu?',
+      'Podemos transformar nossa conversa em um próximo passo pequeno. Que parte você quer testar?'
+    ];
+    reply=alternative||followups.find(text=>!recent.includes(text))||followups.reduce((oldest,text)=>recent.lastIndexOf(text)<recent.lastIndexOf(oldest)?text:oldest);
+  }
+  exchanges.push({message,reply});if(exchanges.length>12)exchanges.shift();
+  recent.push(reply);if(recent.length>8)recent.shift();
+  return reply;
 }

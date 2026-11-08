@@ -43,8 +43,8 @@ export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anis
           const print=new THREE.Mesh(geometry,shirtPrintMaterial);torso.add(print);
         }
       }
-      function addBlackLabCoat(root) {
-        const cloth=M('#080808',0,.94),seam=M('#30343a');
+      function addBlackLabCoat(root,{color='#080808',trim='#30343a'}={}) {
+        const cloth=M(color,0,.9),seam=M(trim,0,.86);
         const profile=[new THREE.Vector2(.205,0),new THREE.Vector2(.208,.06),new THREE.Vector2(.18,.34),new THREE.Vector2(.20,.60),new THREE.Vector2(.17,.68),new THREE.Vector2(.09,.73)];
         const coat=new THREE.Mesh(new THREE.LatheGeometry(profile,24),cloth);
         coat.position.y=.55;coat.scale.z=.8;coat.castShadow=true;root.add(coat);
