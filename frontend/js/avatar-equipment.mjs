@@ -12,7 +12,11 @@ function buildContext(THREE,root,visual){
 function mountFor(context,slot){
   const {THREE,root,head,hands}=context;
   const mount=new THREE.Group();mount.name='equipment:'+slot;mount.userData.equipmentSlot=slot;
-  if(['Head','Face','FaceDetail','Ears'].includes(slot)){head.add(mount);return mount;}
+  if(['Head','Face','FaceDetail','Ears'].includes(slot)){
+    // Hat geometry starts near the eye line; seat its brim above the eyebrows.
+    if(slot==='Head')mount.position.y=.065;
+    head.add(mount);return mount;
+  }
   if(slot.endsWith('Hand')){const hand=hands[slot].hand;if(!hand)return null;hand.add(mount);mount.position.set(0,-.265,.015);return mount;}
   root.add(mount);mount.position.set(0,slot==='Back'?1.08:1.12,slot==='Back'?-.19:0);return mount;
 }
