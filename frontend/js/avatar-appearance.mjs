@@ -2,6 +2,7 @@ import {applyAvatarModel} from './avatar-models.mjs?v=equipment-7';
 import {feminineBustOffset,applyBodyShape} from './avatar-body.mjs';
 import {createNaturalHair} from './avatar-hair.mjs?v=equipment-3';
 import {applyEquipment} from './avatar-equipment.mjs';
+import {clothRadius} from './avatar-cloth.mjs';
 let guedesLogoTexture;
 function shirtLogo(THREE){
   if(!guedesLogoTexture){guedesLogoTexture=new THREE.TextureLoader().load(new URL('../assets/guedessec.png',import.meta.url).href,()=>globalThis.dispatchEvent(new Event('avatar-texture-ready')));guedesLogoTexture.colorSpace=THREE.SRGBColorSpace;}
@@ -62,7 +63,7 @@ export function applyAvatarAppearance(root,config,THREE){
         }
         node.material.needsUpdate=true;
       }
-      node.material.roughness=part==='skin'?.8:.95;
+      node.material.roughness=part==='skin'?.8:part==='shoes'?(config.footwear==='formal'?.48:.78):part==='pants'?(config.bottom==='jeans'?.96:.87):.9;
       node.material.metalness=0;
     }
     if(node.userData.avatarTorso)applyBodyShape(node,config.gender);
@@ -77,10 +78,8 @@ export function applyAvatarAppearance(root,config,THREE){
     const clothes=new THREE.Group();clothes.name='customAvatarClothes';root.add(clothes);
     const add=(geometry,color,x,y,z)=>{const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.9}));mesh.position.set(x,y,z);mesh.castShadow=true;clothes.add(mesh);return mesh;};
     // Small fabric details follow the actual torso surface, without floating boxes.
-    const profile=[[0,.19],[.04,.21],[.2,.22],[.35,.24],[.43,.205],[.49,.095]];
     function surfaceZ(x,y){
-      const localY=y-.79;let radius=.19;
-      for(let i=1;i<profile.length;i++)if(localY<=profile[i][0]){const [y0,r0]=profile[i-1],[y1,r1]=profile[i];radius=r0+(r1-r0)*(localY-y0)/(y1-y0);break;}
+      const radius=clothRadius(y-.79);
       const sx=config.gender==='feminine'?.92:1;
       const z=Math.sqrt(Math.max(0,radius*radius-(x/sx)**2));
       return z*.8+(config.gender==='feminine'?feminineBustOffset(x,y)*Math.min(1,z/.18)**2:0)+.0035;
@@ -94,6 +93,20 @@ export function applyAvatarAppearance(root,config,THREE){
       const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);geometry.computeVertexNormals();
       const panel=add(geometry,color,0,0,0);if(map){panel.material.alphaMap=map;panel.material.transparent=true;panel.material.alphaTest=.2;}panel.material.polygonOffset=true;panel.material.polygonOffsetFactor=-1;panel.material.polygonOffsetUnits=-1;return panel;
     }
+    const fabricColor=new THREE.Color(config.shirt||'#17191e');
+    const trim=fabricColor.clone().lerp(new THREE.Color('#ffffff'),.12);
+    const shadow=fabricColor.clone().multiplyScalar(.72);
+    function tailoredPanel(points,color){
+      const geometry=new THREE.BufferGeometry();
+      geometry.setAttribute('position',new THREE.Float32BufferAttribute(points.flatMap(([x,y])=>[x,y,surfaceZ(x,y)+.002]),3));
+      geometry.setIndex([0,1,2,0,2,3]);geometry.computeVertexNormals();
+      const panel=add(geometry,color,0,0,0);panel.material.side=THREE.DoubleSide;
+    }
+    if(!intimateOutfit(outfit)){
+      // Narrow tonal hem follows the same surface as the shirt.
+      fabricPanel(.25,.807,.816,shadow);
+    }
+    function intimateOutfit(value){return value==='underwear'||value==='sport';}
     if(outfit==='pt_lula'){const print=fabricPanel(.30,.91,1.235,'#ffffff');print.material.map=ptLulaPrint(THREE);}
     if(outfit==='brazil'){
       const print=fabricPanel(.30,.92,1.22,'#ffffff');print.material.map=brazilPrint(THREE);print.material.transparent=true;print.material.alphaTest=.2;
@@ -103,8 +116,15 @@ export function applyAvatarAppearance(root,config,THREE){
       const top=outfit==='polo'?1.23:1.24,bottom=outfit==='polo'?1.1:.84;
       fabricPanel(.022,bottom,top,config.shirt);
       for(let y=top-.035;y>bottom;y-=.065)add(new THREE.SphereGeometry(.006,8,6),'#b9b6ab',0,y,surfaceZ(0,y)+.003);
+      for(const side of [-1,1])tailoredPanel([[side*.018,1.253],[side*.085,1.24],[side*.105,1.192],[side*.043,1.211]],trim);
     }
-    if(outfit==='jacket')fabricPanel(.06,.84,1.24,'#d4d2c8');
+    if(outfit==='jacket'){
+      fabricPanel(.075,.84,1.24,'#d4d2c8');
+      for(const side of [-1,1]){
+        tailoredPanel([[side*.035,1.245],[side*.108,1.205],[side*.075,1.115],[side*.018,1.04]],trim);
+        tailoredPanel([[side*.075,.914],[side*.153,.914],[side*.153,.903],[side*.075,.903]],shadow);
+      }
+    }
 
   }
   const head=root.getObjectByName('onlineAvatarHead');if(!head)return;

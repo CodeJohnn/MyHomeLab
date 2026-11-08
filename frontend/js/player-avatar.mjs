@@ -1,3 +1,5 @@
+import {clothProfile,softenFabric} from './avatar-cloth.mjs';
+
 export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anisotropy=1}){
   const guedesLogoUrl=new URL('../assets/guedessec.png',import.meta.url).href;
   const M=(color,metalness=0,roughness=.72)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
@@ -8,10 +10,12 @@ export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anis
       const avatar = new THREE.Group();
       const skin = M('#bd896c'), shirt = M('#080808'), shirtLight = M('#151515'), pants = M('#17191e'), hair = M('#292725'), shoeMat = M('#20242b'), eyeMat = M('#16191d');
       const pelvis=sphere(avatar,1,pants,0,.70,-.015);pelvis.scale.set(.19,.12,.135);pelvis.userData.avatarPelvis=true;
-      const johnBodyShape=[new THREE.Vector2(.19,0),new THREE.Vector2(.21,.04),new THREE.Vector2(.22,.2),new THREE.Vector2(.24,.35),new THREE.Vector2(.205,.43),new THREE.Vector2(.095,.49)];
+      const johnBodyShape=clothProfile.map(([y,r])=>new THREE.Vector2(r,y));
       const johnTorso=new THREE.Mesh(new THREE.LatheGeometry(johnBodyShape,24),shirt);johnTorso.position.y=.79;johnTorso.scale.z=.8;johnTorso.castShadow=true;avatar.add(johnTorso);
       function johnLimb(parent,width,length,depth,material,x,y,z) {
-        const part=new THREE.Mesh(new THREE.CapsuleGeometry(1,6,5,12),material);part.scale.set(width/2,length/8,depth/2);part.position.set(x,y,z);part.castShadow=true;parent.add(part);return part;
+        const geometry=new THREE.CapsuleGeometry(1,6,5,12);
+        if(material===shirt||material===shirtLight||material===pants)softenFabric(geometry);
+        const part=new THREE.Mesh(geometry,material);part.scale.set(width/2,length/8,depth/2);part.position.set(x,y,z);part.castShadow=true;parent.add(part);return part;
       }
       const johnCollar=new THREE.Mesh(new THREE.TorusGeometry(.078,.014,8,24),shirtLight);johnCollar.rotation.x=Math.PI/2;johnCollar.position.y=1.29;johnCollar.userData.avatarCollar=true;avatar.add(johnCollar);
 
@@ -97,11 +101,19 @@ export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anis
         hip.add(knee);
         knees.push(knee);
         sphere(knee, .073, pants, 0, 0, 0);
-        johnLimb(knee,.15,.35,.16,pants,0,-.17,0);
-        const johnShoe=sphere(knee,.105,shoeMat,0,-.35,.055);johnShoe.scale.set(.9,.7,1.5);
-        const ankle=box(knee,.16,.13,.18,shoeMat,0,-.275,.005,.02);ankle.userData.avatarShoeUpper=true;
-        box(knee, .17, .035, .29, black, 0, -.39, .045, .008);
-        for (let i = 0; i < 4; i++) box(knee, .065, .008, .012, studs, 0, -.19 - i * .033, .1, .002);
+        const lowerLeg=new THREE.Group();lowerLeg.position.y=.105;knee.add(lowerLeg);
+        johnLimb(lowerLeg,.15,.35,.16,pants,0,-.17,0);
+        const johnShoe=sphere(lowerLeg,.105,shoeMat,0,-.35,.055);johnShoe.scale.set(.9,.7,1.5);
+        // Slightly narrow the heel and toe while keeping the sole height intact.
+        const shoePositions=johnShoe.geometry.attributes.position;
+        for(let i=0;i<shoePositions.count;i++){
+          const z=shoePositions.getZ(i),toe=Math.max(0,z/.105),heel=Math.max(0,-z/.105);
+          shoePositions.setX(i,shoePositions.getX(i)*(1-.12*toe*toe-.08*heel));
+        }
+        shoePositions.needsUpdate=true;johnShoe.geometry.computeVertexNormals();
+        const ankle=box(lowerLeg,.16,.13,.18,shoeMat,0,-.275,.005,.02);ankle.userData.avatarShoeUpper=true;
+        box(lowerLeg, .17, .035, .29, black, 0, -.39, .045, .008);
+        for (let i = 0; i < 4; i++) box(lowerLeg, .065, .008, .012, studs, 0, -.19 - i * .033, .1, .002);
 
 
         const shoulder = new THREE.Group();
