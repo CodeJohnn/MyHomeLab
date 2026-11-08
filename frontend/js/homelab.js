@@ -9,6 +9,7 @@
     import {createFrameClock} from './frame-clock.mjs';
     import {closestInteraction,isPhysicalInteractionHit,canActivateHit,interactionRoots,interactionHitsFor} from './interaction-picking.mjs';
     import {createAvatarPortraits} from './avatar-portraits.mjs';
+    import {loadReactionImage} from './reaction-assets.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -30,7 +31,7 @@
       const { createRoomAudio } = await import('./room-audio.mjs?v=8');
       const { createAdminTerminal } = await import('./admin-terminal.mjs?v=3');
       const { normalizeMonitorUrl, embeddedMonitorUrl } = await import('./monitor-urls.mjs?v=3');
-      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=1');
+      const { characterReactions, reactionFromMessage } = await import('./emotion-reactions.mjs?v=assets-2');
       const { replyToNpc } = await import('./npc-dialogue.mjs?v=5');
       const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');
       const worldAssets=trackWorldAssets(THREE.DefaultLoadingManager,(loaded,total)=>updateRoomLoading(10+Math.floor(loaded/Math.max(1,total)*75),'Carregando recursos do mundo...'));
@@ -2945,10 +2946,14 @@
       const actionButtons=document.createElement('div');actionButtons.className='characterSubmenu characterActions';actionButtons.hidden=true;actionMenu.append(actionButtons);document.body.append(actionMenu);
       const reactionSection=document.createElement('section');reactionSection.className='characterSubmenu characterReactions';reactionSection.hidden=true;
       const reactionHeading=document.createElement('strong');reactionHeading.textContent='Reagir';reactionSection.append(reactionHeading);actionTitle.after(reactionSection);
-      for(const [kind,label] of [['laugh','Rir'],['anger','Ficar com raiva'],['wave','Acenar'],['heart','Curtir']]){
-        const button=document.createElement('button');button.type='button';button.textContent=label;reactionSection.append(button);
+      for(const [kind,label] of [...Object.entries(characterReactions).map(([kind,reaction])=>[kind,reaction.label]),['wave','Acenar'],['heart','Curtir']]){
+        const button=document.createElement('button');button.type='button';button.className='characterEmoteButton';
+        const reaction=characterReactions[kind];
+        if(reaction?.image){const image=document.createElement('img');image.src=new URL(reaction.image,import.meta.url).href;image.alt='';image.loading='lazy';button.append(image);}
+        else{const icon=document.createElement('span');icon.textContent=reaction?.emoji||(kind==='wave'?'👋':'❤️');icon.setAttribute('aria-hidden','true');button.append(icon);}
+        const caption=document.createElement('span');caption.textContent=label;button.append(caption);reactionSection.append(button);
         button.onclick=()=>{
-          if(kind==='laugh'||kind==='anger'){if(sharedRoom)sharedRoom.react(kind);else showCharacterReaction(avatar,kind);}
+          if(characterReactions[kind]){if(sharedRoom)sharedRoom.react(kind);else showCharacterReaction(avatar,kind);}
           else if(kind==='wave'){actionButtons.querySelector('[data-action-wave]')?.click();sharedRoom?.sendSocialReaction(kind);}
           else{emitKissHearts({root:avatar},performance.now());sharedRoom?.sendSocialReaction(kind);}
           closeAvatarMenu();
@@ -4910,7 +4915,7 @@
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=social-hud-35');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=emotes-36');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
@@ -4930,9 +4935,9 @@
       });
       addEventListener('pagehide',()=>characterHover.dispose(),{once:true});
       let ownBubble=null,ownBubbleUntil=0;
-      const reactionSounds=Object.fromEntries(Object.entries(characterReactions).map(([type,reaction])=>{
+      const reactionSounds=Object.fromEntries(Object.entries(characterReactions).filter(([,reaction])=>reaction.audio).map(([type,reaction])=>{
         const audio=new Audio(new URL(reaction.audio,import.meta.url));
-        audio.preload='auto';audio.volume=.85;
+        audio.preload='none';audio.volume=.85;
         return [type,audio];
       }));
       function clearCharacterReaction(character) {
@@ -4949,11 +4954,19 @@
         const ctx=canvas.getContext('2d');ctx.font='112px "Segoe UI Emoji", sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
         ctx.fillText(reaction.emoji,80,74);
         const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-        const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false}));
+        const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false,toneMapped:false}));
         sprite.position.set(0,2.38,0);sprite.scale.set(.82,.82,1);sprite.renderOrder=101;
         character.add(sprite);character.userData.reactionSprite=sprite;character.userData.reactionType=type;character.userData.reactionUntil=performance.now()+3200;
+        if(reaction.image)void loadReactionImage(reaction.image).then(image=>{
+          if(!image||character.userData.reactionSprite!==sprite||!sprite.parent)return;
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          const scale=Math.min(148/image.naturalWidth,132/image.naturalHeight);
+          const width=image.naturalWidth*scale,height=image.naturalHeight*scale;
+          ctx.drawImage(image,(canvas.width-width)/2,(canvas.height-height)/2,width,height);texture.needsUpdate=true;
+        });
         if(!playSound)return;
         const audio=reactionSounds[type];
+        if(!audio)return;
         audio.currentTime=0;
         audio.play().catch(error=>{
           if(error.name==='NotAllowedError')sharedRoom?.notify('Clique em um botão de reação para ativar o áudio.');

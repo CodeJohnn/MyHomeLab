@@ -2,7 +2,7 @@ import {avatarModels} from './avatar-model-catalog.mjs?v=stable-6';
 import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
-import {characterReactions} from './emotion-reactions.mjs';
+import {characterReactions,reactionFromMessage} from './emotion-reactions.mjs?v=assets-2';
 import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nobility-ui.mjs?v=auth-2';
 import {claimDailyReward} from './daily-rewards.mjs?v=auth-2';
 import {createTypingPresence} from './typing-presence.mjs';
@@ -229,6 +229,13 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
     const button=document.createElement('button');button.type='button';button.textContent=emoji;button.setAttribute('aria-label','Inserir '+emoji);emojiPicker.append(button);
     button.onclick=()=>{const input=composer.querySelector('[data-message]');if(input.value.length-(input.selectionEnd-input.selectionStart)+emoji.length>input.maxLength)return;input.setRangeText(emoji,input.selectionStart,input.selectionEnd,'end');input.dispatchEvent(new Event('input',{bubbles:true}));closeEmojiPicker();input.focus();};
   }
+  const emoteHeading=document.createElement('strong');emoteHeading.className='spaceEmoteHeading';emoteHeading.textContent='Emotes';emojiPicker.append(emoteHeading);
+  for(const [type,reaction] of Object.entries(characterReactions)){
+    const button=document.createElement('button');button.type='button';button.className='spaceEmoteButton';button.title=reaction.label;button.setAttribute('aria-label',reaction.label);
+    if(reaction.image){const image=document.createElement('img');image.src=new URL(reaction.image,import.meta.url).href;image.alt='';image.loading='lazy';button.append(image);}
+    else button.textContent=reaction.emoji;
+    button.onclick=()=>{sendReaction(type);closeEmojiPicker();};emojiPicker.append(button);
+  }
   document.addEventListener('pointerdown',event=>{if(!emojiPicker.contains(event.target)&&!emojiToggle.contains(event.target))closeEmojiPicker();});
   panel.addEventListener('keydown',event=>{if(event.key==='Escape')closeEmojiPicker();});
   composer.append(emojiPicker);panel.querySelector('.onlineBody').append(composer);
@@ -260,6 +267,7 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
   function sendReaction(type){
     const message=characterReactions[type]?.message;
     if(!message)return;
+    typingPresence?.stop();
     onReaction?.(type);
     if(token)void sendMessage(message);
   }
@@ -356,7 +364,11 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
           }
           seenMessages.add(message.id);const line=document.createElement('div');line.className='onlineMessage'+(message.sender===selfId?' isOwn':'');
           const heading=document.createElement('div');heading.className='onlineMessageHeading';const name=document.createElement('strong');name.textContent=message.sender===selfId?'Você':message.name;const time=document.createElement('time');time.textContent=new Date(message.time).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});heading.append(name,time);
-          line.dataset.initials=initials(message.name);const text=document.createElement('p');text.textContent=message.text;line.append(heading,text);el('chat').append(line);while(el('chat').children.length>40)el('chat').firstChild.remove();el('chat').scrollTop=el('chat').scrollHeight;
+          line.dataset.initials=initials(message.name);const text=document.createElement('p');
+          const reaction=characterReactions[reactionFromMessage(message.text)];
+          if(reaction?.image){const image=document.createElement('img');image.className='onlineMessageEmote';image.src=new URL(reaction.image,import.meta.url).href;image.alt=reaction.label;text.append(image);}
+          else text.textContent=reaction?reaction.emoji+' '+reaction.label:message.text;
+          line.append(heading,text);el('chat').append(line);while(el('chat').children.length>40)el('chat').firstChild.remove();el('chat').scrollTop=el('chat').scrollHeight;
           if(Date.now()+offset-message.time<5000)onMessage?.({...message,self:message.sender===selfId});
         }
         const hadMedia=Boolean(media);
