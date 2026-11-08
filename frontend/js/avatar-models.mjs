@@ -35,7 +35,7 @@ function loadAsset(definition,THREE){
     const bounds=new THREE.Box3().setFromObject(model),height=bounds.max.y-bounds.min.y;if(!Number.isFinite(height)||height<=0)throw new Error('Altura invalida: '+definition.label);
     const scale=definition.height/height;model.scale.multiplyScalar(scale);model.position.set(-(bounds.min.x+bounds.max.x)*.5*scale,-bounds.min.y*scale,-(bounds.min.z+bounds.max.z)*.5*scale);
     const rigidMotion=!gltf.animations.length;
-    scene.traverse(node=>{if(node.isMesh){node.castShadow=definition.id!=='jessica'&&definition.id!=='female_bikini';node.receiveShadow=false;}});
+    scene.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=false;}});
     mixer.stopAllAction();mixer.uncacheRoot(model);
     const asset={scene,animations:gltf.animations,rigidMotion,refs:0,used:performance.now()};ready.set(definition.id,asset);return asset;
   })().catch(error=>{assets.delete(definition.id);throw error;}));

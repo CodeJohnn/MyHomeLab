@@ -14,7 +14,7 @@ test('avatar individual e atualizado, validado e preservado ao reconectar',async
     const b=await(await post(route+'/join',{name:'Bruno'})).json();
     assert.deepEqual(b.members.find(m=>m.id===a.id).avatar,feminine);
     assert.deepEqual(b.members.find(m=>m.id===b.id).avatar,defaultAvatar);
-    const changed={...feminine,model:'jessica',hairStyle:'curly',hair:'#663311'};
+    const changed={...feminine,model:'female_punk',hairStyle:'curly',hair:'#663311'};
     assert.equal((await post(route+'/state',{avatar:changed},a.token)).status,200);
     assert.equal((await post(route+'/state',{avatar:{...changed,shirt:'<script>'}},a.token)).status,400);
     const resumed=await(await post(route+'/join',{token:a.token})).json();

@@ -101,7 +101,7 @@ test('ossos importados compensam escala do GLB e os objetos seguem a mão animad
 });
 
 test('GLBs articulados reais têm fixação de cabeça e mão sem escalas inválidas',async()=>{
-  for(const id of ['punk','female_punk','caveirata','noia','jessica','plus_size']){
+  for(const id of ['punk','female_punk','caveirata']){
     const definition=avatarModels.find(model=>model.id===id),bytes=await readFile(new URL('../frontend/assets/personagens/'+definition.file,import.meta.url));
     // Geometry and skeleton validation only: decoding image pixels requires a browser.
     const loader=new GLTFLoader();for(const name of ['TEST_TEXTURES','EXT_texture_webp','EXT_texture_avif','KHR_texture_basisu'])loader.register(()=>({name,loadTexture:()=>Promise.resolve(new THREE.Texture())}));

@@ -1,6 +1,6 @@
 import {autoAvatarWeights} from './auto-avatar-weights.mjs';
 export async function createAutoAvatarRig(wrapper,THREE,height,id){
-  const profile=id==='gnomo'?{hips:.30,shoulder:.53,head:.66,armEdge:.15}:id==='android'?{hips:.36,shoulder:.63,head:.72,armEdge:.16}:{};
+  const profile=id==='android'?{hips:.36,shoulder:.63,head:.72,armEdge:.16}:{};
   const hips=profile.hips||.44,shoulder=profile.shoulder||.73,head=profile.head||.8;
   const bones=[];
   function bone(index,parent,x,y,z){const b=new THREE.Bone();b.name='autoRig_'+index;b.position.set(x,y,z);(parent||wrapper).add(b);bones[index]=b;return b;}
