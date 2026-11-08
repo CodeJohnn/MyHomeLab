@@ -21,7 +21,7 @@ export function createUserHome({host,onPlay,onRequireLogin}){
   }
   form.elements.model.replaceChildren(...avatarModels.map(model=>new Option(model.label,model.id)));
   for(const [key,choices] of Object.entries(wardrobe)){
-    const label=document.createElement('label');label.textContent={outfit:'Parte de cima',bottom:'Parte de baixo',footwear:'Calcado',hat:'Acessorio'}[key];
+    const label=document.createElement('label');label.textContent={outfit:'Parte de cima',bottom:'Parte de baixo',footwear:'Calcado',hat:'Acessorio'}[key];if(key==='hat')label.style.display='none';
     const select=document.createElement('select');select.name=key;choices.forEach(([id,title])=>select.add(new Option(title,id)));label.append(select);page.querySelector('[data-clothes]').append(label);
   }
   for(const [key,title,value] of [['skin','Pele','#bd896c'],['hair','Cabelo','#292725'],['shirt','Camisa','#080808'],['pants','Calca','#17191e'],['shoes','Calcado','#20242b']]){
