@@ -5,6 +5,7 @@
     import {instanceMeshes} from './repeated-meshes.mjs';
     import {paintPlayerNameplate} from './player-nameplate.mjs';
     import {createScreenDepth} from './screen-depth.mjs';
+    import {paintSpeechBubble} from './speech-bubble.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -4953,28 +4954,15 @@
         sprite.material.opacity=Math.min(1,remaining/450);
       }
       function nameTag(text,bubble=false,sender='',level=1) {
-        const canvas=document.createElement('canvas');canvas.width=768;
-        const ctx=canvas.getContext('2d');ctx.font='30px Arial';
-        const lines=[];let line='';
-        for(const char of Array.from(text)){
-          if(char==='\n'||ctx.measureText(line+char).width>650){lines.push(line);line=char==='\n'?'':char;}else line+=char;
-        }
-        if(line||!lines.length)lines.push(line);
-        canvas.height=bubble?116+lines.length*42:132;
-        const h=canvas.height;ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=12;ctx.shadowOffsetY=5;
-        ctx.beginPath();ctx.roundRect(12,8,744,h-(bubble?32:20),bubble?24:30);ctx.fillStyle=bubble?'#f3faf7':'rgba(12,29,35,.94)';ctx.fill();
-        ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-        if(bubble){
-          ctx.beginPath();ctx.moveTo(365,h-30);ctx.lineTo(384,h-7);ctx.lineTo(403,h-30);ctx.fill();
-          ctx.fillStyle='#238567';ctx.font='bold 22px Arial';ctx.textAlign='left';ctx.fillText(sender,42,43,650);
-          ctx.fillStyle='#173b35';ctx.font='30px Arial';lines.forEach((value,i)=>ctx.fillText(value,42,85+i*42));
-        }
+        const canvas=document.createElement('canvas');
+        if(bubble)paintSpeechBubble(canvas,text,sender);
         const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
-        const material=new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false});
+        const material=new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false,toneMapped:false});
         const sprite=new THREE.Sprite(material);
         if(!bubble)paintPlayerNameplate(canvas,text,level,{onUpdate:()=>{texture.needsUpdate=true;},isDisposed:()=>sprite.userData.disposed});
-        const width=bubble?2.4:1.65*canvas.width/768;
-        sprite.position.y=bubble?2.3+(width*h/768)/2:2.1;sprite.scale.set(width,width*canvas.height/canvas.width,1);sprite.renderOrder=100;return sprite;
+        const width=bubble?canvas.width/320:1.65*canvas.width/768;
+        const height=width*canvas.height/canvas.width;
+        sprite.position.y=bubble?2.42+height/2:2.1;sprite.scale.set(width,height,1);sprite.renderOrder=100;return sprite;
       }
       function disposeTag(tag){tag.userData.disposed=true;tag.material.map.dispose();tag.material.dispose();tag.removeFromParent();}
       function updateGuests(dt,t) {
