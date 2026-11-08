@@ -4,6 +4,7 @@
     import {createPerformanceMonitor} from './performance-monitor.mjs';
     import {instanceMeshes} from './repeated-meshes.mjs';
     import {paintPlayerNameplate} from './player-nameplate.mjs';
+    import {createScreenDepth} from './screen-depth.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -32,7 +33,7 @@
       const { RoundedBoxGeometry } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/geometries/RoundedBoxGeometry.js');
       const { CSS3DRenderer, CSS3DObject } = await import('https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/renderers/CSS3DRenderer.js');
       const isMobile = matchMedia('(pointer: coarse)').matches || innerWidth <= 700;
-      const scene = new THREE.Scene(); scene.background = new THREE.Color('#101923'); let camera = new THREE.OrthographicCamera(-8, 8, 5, -5, -400, 600); const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.6 : 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.shadowMap.enabled = !isMobile; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.4; document.body.prepend(renderer.domElement);
+      const scene = new THREE.Scene(); scene.background = new THREE.Color('#101923'); let camera = new THREE.OrthographicCamera(-8, 8, 5, -5, -400, 600); const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); renderer.domElement.id='worldCanvas'; renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.6 : 1.5)); renderer.setSize(innerWidth, innerHeight); renderer.shadowMap.enabled = !isMobile; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.4; document.body.prepend(renderer.domElement);
       // A vista ortografica baixa inclui terreno dos dois lados do plano da camera.
       // Near positivo recortava o gramado na parte inferior da tela.
       const overviewCamera=camera;
@@ -1060,6 +1061,8 @@
       };
       // Exibe o próprio vídeo HTML no plano do monitor, sem reamostrar seus frames no WebGL.
       const videoScene = new THREE.Scene(), videoRenderer = new CSS3DRenderer();
+      const screenDepth=createScreenDepth(THREE);
+      addEventListener('pagehide',()=>screenDepth.dispose(),{once:true});
       videoRenderer.setSize(innerWidth, innerHeight);
       videoRenderer.domElement.id = 'monitorVideoLayer';
       document.body.append(videoRenderer.domElement);
@@ -1077,29 +1080,16 @@
         monitor.htmlScreen.scale.setScalar(width / 1280);
         videoScene.add(monitor.htmlScreen);
       }
-      const screenPosition = new THREE.Vector3(), screenNormal = new THREE.Vector3();
-      const screenRay = new THREE.Raycaster();
+      const screenPosition = new THREE.Vector3(), screenNormal = new THREE.Vector3(),screenScale=new THREE.Vector3();
       const monitorFrustum=new THREE.Frustum(),monitorProjection=new THREE.Matrix4();
       const monitorTowardCamera=new THREE.Vector3();
       const youtubeRoomPlayers=new WeakMap();
-      let lastMonitorOcclusionCheck = -Infinity;
       function renderMonitorVideos() {
-        let visibleOccluders=null;
-        function getVisibleOccluders(){
-          if(visibleOccluders)return visibleOccluders;
-          const meshes=new Set();
-          for(const root of [...objects.map(o=>o.g),...wallOccluders,...npcs.map(n=>n.root),restrictedDoor,firstPersonCeilings]){
-            if(!isSceneVisible(root))continue;
-            root.traverseVisible(node=>{if(node.isMesh)meshes.add(node);});
-          }
-          return visibleOccluders=[...meshes];
-        }
         camera.updateMatrixWorld();
         monitorProjection.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);
         monitorFrustum.setFromProjectionMatrix(monitorProjection);
-        const checkOcclusion = performance.now() - lastMonitorOcclusionCheck >= (isMobile ? 180 : 100);
-        if (checkOcclusion) lastMonitorOcclusionCheck = performance.now();
         for (const monitor of playableScreens.values()) {
+          screenDepth.setVisible(monitor.mesh,false);
           if(monitor.localExpanded)continue;
           if(monitor.contentKind==='video' && monitor.url && !monitor.htmlScreen) {
             const size=monitor.mesh.geometry.parameters,video=monitor.video;
@@ -1143,46 +1133,20 @@
           }
           for(const [screen,active] of [[monitor.htmlScreen,monitor.contentKind==='video' && !!monitor.url],[monitor.websiteScreen,monitor.contentKind==='website' && !!monitor.websiteUrl]]) {
             if(!screen)continue;
-            // Offscreen HTML monitors need no transforms or triangle raycasts.
+            // Offscreen HTML monitors need no transforms or depth masks.
             if(!active||!isSceneVisible(monitor.mesh)||!monitorFrustum.intersectsObject(monitor.mesh)){
               screen.visible=false;
-              screen.userData.occlusionVisible=undefined;
               continue;
             }
             monitor.mesh.getWorldPosition(screenPosition);monitor.mesh.getWorldQuaternion(screen.quaternion);
+            monitor.mesh.getWorldScale(screenScale);
+            screen.scale.copy(screenScale).multiplyScalar(monitor.mesh.geometry.parameters.width/1280);
             screenNormal.set(0,0,1).applyQuaternion(screen.quaternion);
-            screen.position.copy(screenPosition).addScaledVector(screenNormal,.006);
+            screen.position.copy(screenPosition).addScaledVector(screenNormal,.006*screenScale.z);
             const towardCamera=monitorTowardCamera.copy(camera.position).sub(screen.position);
-            let visible=active && isSceneVisible(monitor.mesh) && screenNormal.dot(towardCamera)>0;
-            if (visible && (checkOcclusion || screen.userData.occlusionVisible === undefined)) {
-              screenRay.far=Infinity;
-              screenRay.set(screen.position.clone().addScaledVector(screenNormal,.02),towardCamera.normalize());
-              let owner=monitor.mesh;while(owner.parent && !owner.userData.id && !owner.userData.screenOwner)owner=owner.parent;
-              const belongsToMonitor=object=>{for(let node=object;node;node=node.parent)if(node===owner)return true;return false;};
-              // O HTML da tela nao tem profundidade WebGL: esconde-o se uma parede estiver na frente.
-              const toCamera=camera.getWorldDirection(new THREE.Vector3()).negate();
-              const samples=[screen.position.clone()];
-              if(monitor.mesh===guedesTvScreen) {
-                const size=monitor.mesh.geometry.parameters;
-                for(const x of [-.48,.48])for(const y of [-.48,.48])samples.push(new THREE.Vector3(x*size.width,y*size.height,0).applyQuaternion(screen.quaternion).add(screen.position));
-              }
-              visible=samples.every(point=>{
-                const origin=point.clone().addScaledVector(screenNormal,.02);
-                const towardEye=camera.position.clone().sub(origin);
-                const depth=camera.isPerspectiveCamera?towardEye.length():towardEye.dot(toCamera);
-                const direction=camera.isPerspectiveCamera?towardEye.normalize():toCamera;
-                screenRay.set(origin,direction);
-                screenRay.far=Math.max(0,depth-.01);
-                const obstruction=screenRay.intersectObjects(getVisibleOccluders().filter(mesh=>!belongsToMonitor(mesh)),false)[0];
-                return !obstruction || obstruction.distance>=depth;
-              });
-              screen.userData.occlusionVisible=visible;
-            } else if (visible) {
-              visible=screen.userData.occlusionVisible;
-            } else {
-              screen.userData.occlusionVisible=false;
-            }
+            const visible=active && isSceneVisible(monitor.mesh) && screenNormal.dot(towardCamera)>0;
             screen.visible=visible;
+            if(visible)screenDepth.setVisible(monitor.mesh,true);
           }
         }
         videoRenderer.render(videoScene,camera);
@@ -4928,9 +4892,9 @@
         updateGuests(dt,t);updateAvatarModel(avatar,dt);for(const guest of guests.values())updateAvatarModel(guest,dt);
         updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
+        renderMonitorVideos();
         if(!document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.renderStart();renderer.render(scene, camera);performanceMonitor.renderEnd();if(resolveReadyFrame){resolveReadyFrame();resolveReadyFrame=null;}}
         updateNpcChats(dt);
-        renderMonitorVideos();
         performanceMonitor.end(t);
       }
       const { createSharedRoom } = await import('./shared-room.mjs?v=performance-32');

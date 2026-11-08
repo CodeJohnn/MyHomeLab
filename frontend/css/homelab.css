@@ -413,7 +413,9 @@ canvas:active { cursor: grabbing; }
 #wallColor { width: 48px; height: 40px; padding: 2px; cursor: pointer; }
 #wallTools small { display: block; margin-top: 7px; color: #d4d4d4; }
 
-#monitorVideoLayer { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+#monitorVideoLayer { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+#worldCanvas { position: fixed; inset: 0; z-index: 1; }
+body:has(#monitorVideoLayer .interactiveMonitorFrame) #worldCanvas { pointer-events: none; }
 #monitorVideoLayer * { pointer-events: none !important; }
 #hud, #tip, #mobile { z-index: 2; }
 
