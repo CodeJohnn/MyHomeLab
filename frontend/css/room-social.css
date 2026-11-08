@@ -1,44 +1,78 @@
-.onlineRoom{left:max(16px,env(safe-area-inset-left));right:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));width:min(340px,calc(100vw - 32px));background:#181818ed;border-color:#ffffff30;border-radius:16px;box-shadow:0 12px 40px #0005}
-.onlineRoom>summary{min-height:48px}
-.onlineRoom .onlineTabPages{max-height:min(360px,calc(100dvh - 180px))}
-.onlineRoom [data-page=chat]{min-height:0}
-.onlineRoom .onlineSocial{display:flex;flex-direction:column;min-height:0}
-.onlineRoom .onlineSocial>.onlineSectionTitle{display:none}
-.onlineRoom [data-chat]{height:clamp(140px,22dvh,240px);max-height:calc(100dvh - 240px);min-height:60px;overflow:auto;overscroll-behavior:contain;padding:6px 2px;scrollbar-width:thin}
-.onlineMessage{position:relative;margin:10px 0;padding:0 0 0 38px;background:none;border:0}
-.onlineMessage::before{content:attr(data-initials);position:absolute;left:0;top:4px;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#393939;color:#fff;border:1px solid #ffffff30;font:600 10px system-ui}
-.onlineMessageHeading{padding:0 8px;margin-bottom:4px;font-size:10px}
-.onlineMessage p{margin:0;padding:9px 12px;border-radius:4px 14px 14px;background:#383838;color:#f5f5f5;font-size:13px;line-height:1.5;overflow-wrap:anywhere;white-space:pre-wrap}
-.onlineMessage.isOwn{padding:0 38px 0 0;background:none}
-.onlineMessage.isOwn::before{left:auto;right:0;background:#e8e8e8;color:#111}
-.onlineMessage.isOwn p{background:#ececec;color:#171717;border-radius:14px 4px 14px 14px}
-.onlineRoom [data-form]{display:flex;gap:6px;margin-top:10px}.onlineRoom [data-message]{min-width:0;flex:1;border-radius:22px;padding:11px 13px}.onlineRoom [data-form] button{border-radius:22px}
-.onlineSystemMessage{font-size:11px;line-height:1.5;color:#bdbdbd;padding:6px 4px}
-.roomOnlineDock{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:18;width:min(760px,calc(100vw - 760px));min-width:240px;border:1px solid #ffffff30;border-radius:16px;background:#181818ed;color:#eee;box-shadow:0 8px 30px #0005;font:12px system-ui}
-.roomOnlineDock[hidden]{display:none}
-.roomOnlineDock summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;padding:10px 16px;min-height:40px}.roomOnlineDock summary::-webkit-details-marker{display:none}.roomOnlineDock summary>span:last-child{margin-left:auto}.roomOnlineDock [data-total]{background:#ffffff18;border-radius:20px;padding:2px 8px}
-.roomOnlineMembers{display:flex;gap:10px;overflow-x:auto;padding:0 14px 12px;scrollbar-width:thin;overscroll-behavior:contain}
-.roomOnlineMember{flex:0 0 76px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px}.roomOnlineMember>span:last-child{max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
-.roomMemberPortrait{position:relative;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;border:2px solid #a8a8a8;background:linear-gradient(140deg,#484848,#242424);font-size:15px;font-weight:600}.roomMemberPortrait::after{content:'';position:absolute;right:-2px;bottom:0;width:10px;height:10px;border:2px solid #181818;border-radius:50%;background:#80cf9b}
-@media(max-width:1000px){.roomOnlineDock{left:auto;right:12px;transform:none;width:min(480px,calc(100vw - 390px))}}
-@media(max-width:700px),(pointer:coarse){
-  .onlineRoom{top:max(64px,env(safe-area-inset-top));bottom:auto;left:10px;right:auto;width:min(340px,calc(100vw - 20px))}
-  .onlineRoom .onlineTabPages{max-height:45dvh}.onlineRoom [data-chat]{height:30dvh;max-height:30dvh;min-height:90px}
-  .onlineRoom .onlineReactions{display:none}
-  .roomOnlineDock{left:auto;right:10px;bottom:max(10px,env(safe-area-inset-bottom));width:calc(100vw - 180px);min-width:0;max-width:480px}
-  .roomOnlineDock summary{padding:8px 10px;font-size:11px;min-height:44px}.roomOnlineMembers{gap:6px;padding:0 8px 10px}.roomOnlineMember{flex-basis:58px}.roomOnlineMember>span:last-child{max-width:58px}.roomMemberPortrait{width:40px;height:40px;font-size:13px}
-}
-@media(orientation:landscape) and (max-height:500px) and (pointer:coarse){.onlineRoom{top:60px;width:280px}.onlineRoom [data-chat]{height:25dvh;min-height:60px}.onlineRoom .onlineTabPages{max-height:50dvh}.roomOnlineDock{max-width:340px}.roomOnlineMembers{max-height:68px}}
+/* Social HUD: a compact composer and a horizontal, scrollable avatar dock. */
+:root{--space-chat-width:clamp(300px,27vw,380px);--space-hud-bottom:max(12px,env(safe-area-inset-bottom))}
 .socialPanelHidden{display:none!important}
-.roomSocialVisibility{position:fixed;right:max(12px,env(safe-area-inset-right));top:64px;z-index:21;display:flex;gap:6px;padding:5px;border:1px solid #ffffff24;border-radius:12px;background:#181818ed}
-.roomSocialVisibility[hidden]{display:none}
-.roomSocialVisibility button{min-height:38px;padding:8px 12px;border-radius:8px;background:#292929;color:#eee;border:1px solid #ffffff20;font:12px system-ui}
-.roomSocialVisibility button[aria-pressed=false]{background:#111;color:#aaa}
-.roomSocialVisibility button:focus-visible{outline:2px solid #fff;outline-offset:2px}
-@media(max-width:700px),(pointer:coarse){.roomSocialVisibility{top:auto;bottom:calc(136px + env(safe-area-inset-bottom));right:10px;flex-direction:column;gap:4px}.roomSocialVisibility button{min-height:44px;padding:8px 10px;font-size:11px}}
-.roomSocialVisibility{top:auto;bottom:max(14px,env(safe-area-inset-bottom));right:14px;padding:0;gap:6px;background:none;border:0;flex-direction:row}
-.roomSocialVisibility button{min-height:44px;padding:8px 12px;border-radius:24px;background:#161616d9;box-shadow:0 3px 10px #0003;font-size:11px}
-.roomSocialVisibility button[aria-pressed=false]{background:#161616c9;color:#c6c6c6}
-.roomOnlineDock{bottom:max(12px,env(safe-area-inset-bottom))}
-.onlineRoom{background:#181818f5}
-@media(max-width:700px),(pointer:coarse){.roomSocialVisibility{top:max(12px,env(safe-area-inset-top));bottom:auto;right:10px;flex-direction:row;gap:4px}.roomSocialVisibility button{min-height:44px;padding:8px 10px}.roomOnlineDock{bottom:max(10px,env(safe-area-inset-bottom))}}
+.onlineRoom{position:fixed;left:max(12px,env(safe-area-inset-left));right:auto;top:auto;bottom:var(--space-hud-bottom);width:var(--space-chat-width);border:1px solid #cce8cfaa;border-radius:20px 20px 5px 5px;background:linear-gradient(145deg,#537e66ed,#3d7957ed);box-shadow:0 5px 18px #123b3526;color:#fff;font:13px/1.4 "Segoe UI",system-ui,sans-serif;overflow:visible;color-scheme:light;backdrop-filter:blur(8px)}
+.onlineRoom>summary{display:flex;justify-content:center;gap:14px;min-height:34px;padding:6px 18px;list-style:none;border:0!important;cursor:pointer;border-radius:20px 20px 0 0}
+.onlineRoom .onlineHeading{flex:0 1 auto;justify-content:center;font-size:14px;font-weight:600;letter-spacing:-.2px}
+.onlineRoom .onlineCount{display:none}
+.onlineRoom[data-menu=false][data-history=closed]{min-height:90px}
+.onlineRoom>summary .onlineChevron{font-size:23px;line-height:16px;color:#fff;transform:none}
+.onlineRoom[data-history=open]>summary .onlineChevron{transform:rotate(180deg)}
+.onlineRoom[data-history=closed]>summary .onlineChevron{transform:none}
+.onlineRoom .onlineBody{display:grid;padding:3px 12px 10px;gap:6px}
+.onlineRoom .onlineTabPages{max-height:min(350px,45dvh);overflow:auto;padding:0;scrollbar-color:#bad8c8 transparent}
+.onlineRoom .onlineTabPages>[data-page]{padding:0;gap:8px}
+.onlineRoom[data-menu=false][data-history=closed] .onlineTabPages{display:none}
+.onlineRoom .onlineSocial{display:flex;flex-direction:column;min-height:0}
+.onlineRoom .onlineSectionTitle,.onlineRoom .onlineReactions{display:none}
+.onlineRoom [data-chat]{display:none;min-height:80px;height:clamp(120px,22dvh,220px);max-height:30dvh;overflow:auto;margin:4px 0 8px;padding:10px;background:#234d3c45;border:1px solid #e0f4e22e;border-radius:12px;scrollbar-color:#c0d9c8 transparent}
+.onlineRoom[data-history=open] [data-chat]{display:flex}
+.onlineRoom [data-chat]:empty::before{color:#e4eee7;font-size:12px}
+.onlineMessage{max-width:90%;padding:8px 10px;margin:2px 0;background:#e3f0e5;color:#233c31;border:0;border-radius:12px 12px 12px 3px}
+.onlineMessage.isOwn{background:#fff;color:#203d30;border-radius:12px 12px 3px 12px}
+.onlineMessageHeading strong{color:#2f6850;font-size:10px}.onlineMessageHeading time{color:#75887a}
+.onlineMessage p{font:13px/1.45 "Segoe UI",system-ui,sans-serif}.onlineSystemMessage{color:#e6f3e9;font-size:11px}
+.onlineRoom [data-form]{position:relative;display:flex;align-items:center;gap:8px;margin:0;padding:0;width:100%}
+.onlineRoom [data-message]{flex:1;min-width:0;width:0;min-height:30px;height:30px;padding:5px 14px;background:#fff;color:#30463c;border:1px solid #d9e6df;border-radius:18px;box-shadow:inset 0 1px 3px #193e351a;font:14px "Segoe UI",system-ui,sans-serif}
+.onlineRoom [data-message]::placeholder{color:#aab8b5;font-weight:400}
+.onlineRoom [data-form]>button{display:grid;place-items:center;flex:0 0 23px;width:23px;min-height:30px;padding:0;border:0;background:transparent;color:#fff;border-radius:7px;box-shadow:none}
+.onlineRoom [data-form]>.onlineOptions{font-size:24px;background:#155c66;border-radius:50%;height:22px;min-height:22px;flex-basis:22px;width:22px;line-height:1}
+.onlineRoom [data-form]>.spaceEmojiToggle{font-size:22px}
+.onlineRoom [data-form]>.onlinePrimary svg{width:23px;height:23px}
+.onlineRoom [data-form]>button:hover{background:#ffffff25}
+.onlineRoom .spaceEmojiPicker{position:absolute;bottom:calc(100% + 14px);right:0;z-index:25;display:grid;grid-template-columns:repeat(4,38px);gap:4px;padding:8px;background:#f5fbf7;border:1px solid #b8d4c6;border-radius:14px;box-shadow:0 5px 20px #163b3540}
+.onlineRoom .spaceEmojiPicker button{border:0;min-height:36px;padding:4px;background:transparent;font-size:23px}.onlineRoom .spaceEmojiPicker button:hover{background:#dcece3}
+.onlineRoom .onlineStatus{display:none;color:#fff;border:0;padding:4px;margin:0;font-size:11px}
+.onlineRoom[data-error=true] .onlineStatus,.onlineRoom[data-menu=true] .onlineStatus{display:block}
+.onlineRoom .onlineTabs{background:#254f3e55}.onlineRoom .onlineTabs button{color:#ebf6ee}.onlineRoom .onlineTabs button[aria-selected=true]{background:#e0eee3;color:#214a36}
+.onlineRoom .onlineWelcome p,.onlineRoom .onlinePageHeading p,.onlineRoom .onlinePerson{color:#e5f0e7}.onlineRoom .onlinePerson{background:#28523e;border-color:#b1ceb9}
+.onlineRoom :is(button,input,summary):focus-visible{outline:2px solid #f3ffcb;outline-offset:3px}
+
+.roomOnlineDock{position:fixed;left:calc(var(--space-chat-width) + 36px);right:max(12px,env(safe-area-inset-right));bottom:var(--space-hud-bottom);z-index:18;display:flex;align-items:center;gap:9px;height:90px;padding:4px 10px;border:2px solid #d6f5f4b3;border-radius:28px 28px 5px 5px;background:linear-gradient(180deg,#81bac9ed,#69aabdF2);box-shadow:inset 0 1px 4px #ffffff40,0 5px 18px #1a53642b;color:#fff;font:12px "Segoe UI",system-ui,sans-serif;box-sizing:border-box;backdrop-filter:blur(8px)}
+.roomOnlineDock[hidden]{display:none}
+.roomOnlineTotal{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.roomOnlineSelf{display:flex;align-items:center;flex:0 0 72px;height:100%;border-right:1px solid #cfeced55;padding-right:10px}
+.roomOnlineMembers{display:flex;align-items:center;flex:1;min-width:0;height:100%;gap:10px;overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
+.roomOnlineMembers::-webkit-scrollbar{display:none}
+.roomOnlineDock .roomOnlineMember{position:relative;display:grid;place-items:center;flex:0 0 72px;width:72px;min-width:72px;height:76px;padding:3px;margin:0;border:1px solid #487f94;border-radius:19px;background:#528fa955;box-shadow:inset 0 1px 1px #ffffff40;color:#fff;cursor:pointer;scroll-snap-align:start}
+.roomOnlineDock .roomOnlineMember:hover{background:#a5d4de55;border-color:#e2f3f4}
+.roomOnlineDock .roomOnlineMember>span:not(.roomMemberPortrait){display:none}
+.roomOnlineDock .roomOnlineMember.isSelf{border:0;background:none;box-shadow:none;min-width:62px;width:62px;flex-basis:62px}
+.roomOnlineDock .roomMemberPortrait{position:relative;display:grid;place-items:center;width:56px;height:62px;border:2px solid #9ecbda;border-radius:50%;background:linear-gradient(#659eae,#79b4c1);font-size:18px;font-weight:600;box-sizing:border-box}
+.roomOnlineDock .roomMemberPortrait img{width:100%;height:100%;object-fit:contain;border:0;border-radius:50%}
+.roomOnlineDock .roomMemberPortrait::after{content:'';position:absolute;right:-4px;bottom:-2px;width:11px;height:11px;border:3px solid #70aaba;border-radius:50%;background:#91c6ce}
+.roomOnlineDock .isSelf .roomMemberPortrait{border-color:#87ed97;background:linear-gradient(#286f86,#387991)}
+.roomOnlineDock .isSelf .roomMemberPortrait::after{width:16px;height:16px;background:#68d880;border-color:#81bbc5}
+.roomOnlineDock .roomOnlineMember.isEmpty{cursor:default;background:#5b98ae40}
+.roomEmptyPortrait{position:relative;display:grid;place-items:center;width:48px;height:58px;border:2px solid #9ccbd6;border-radius:50%;color:#d8e4e6;font-size:30px;font-weight:700;background:radial-gradient(ellipse at 50% 37%,#7e9098 0 26%,transparent 28%),radial-gradient(ellipse at 50% 100%,#7e9098 0 50%,transparent 52%),#77adbf}
+.roomMemberArrow{flex:0 0 24px;display:grid;place-items:center;width:24px;height:56px;border:0;background:none;color:#c3e4e8;font-size:44px;font-weight:300;padding:0;cursor:pointer;border-radius:8px}
+.roomMemberArrow:disabled{opacity:.4;cursor:default}.roomMemberArrow:not(:disabled):hover{color:#fff;background:#ffffff14}
+.roomOnlineDock button:focus-visible,.roomOnlineDock summary:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.roomOnlineDock>.nobleRanking{position:absolute;right:6px;bottom:calc(100% + 7px);z-index:19;border:1px solid #c3e3dd66;border-radius:12px;background:#3c6f63f2;max-width:min(320px,80vw);box-shadow:0 3px 12px #183d3a33}
+.roomOnlineDock>.nobleRanking>summary{padding:5px 10px;cursor:pointer;font-size:10px;color:#e4f1ec;list-style:none}.roomOnlineDock>.nobleRanking ol{padding-top:4px;max-height:25dvh}.roomOnlineDock>.nobleRanking .nobleIdentity{color:#f1efc9}
+.roomMemberCard{position:absolute;left:8px;bottom:calc(100% + 8px);z-index:22;display:grid;gap:8px;min-width:180px;max-width:min(280px,80vw);padding:16px 38px 16px 16px;border:1px solid #c9e9ec;border-radius:18px;background:#386a79f5;box-shadow:0 8px 24px #194a5544;overflow-wrap:anywhere}.roomMemberCard>strong{font-size:14px}.roomMemberCard .nobleIdentity{color:#f4f4df;font-size:11px}.roomMemberCard .nobleIdentity img{width:32px;height:32px}.roomMemberCard>button{position:absolute;right:8px;top:6px;border:0;background:none;color:#fff;font-size:22px;cursor:pointer}
+.roomSocialVisibility{position:fixed;right:12px;bottom:112px;z-index:21;display:flex;gap:6px;padding:0;background:none;border:0}
+.roomSocialVisibility[hidden]{display:none}.roomSocialVisibility button{min-height:28px;padding:5px 10px;border:1px solid #c1ded77a;border-radius:20px;background:#356c60d9;color:#edf7f2;font:11px "Segoe UI",system-ui,sans-serif;cursor:pointer}.roomSocialVisibility button[aria-pressed=false]{opacity:.65}
+@media(max-width:1000px){:root{--space-chat-width:300px}.roomOnlineDock{left:324px;gap:4px;padding-inline:6px}.roomOnlineMembers{gap:6px}.roomOnlineSelf{flex-basis:62px;padding-right:6px}.roomOnlineDock .roomOnlineMember{flex-basis:64px;min-width:64px;width:64px}.roomMemberArrow{flex-basis:20px;width:20px}}
+@media(max-width:700px),(pointer:coarse){
+  .onlineRoom{left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));width:auto;bottom:max(10px,env(safe-area-inset-bottom));top:auto}
+  .onlineRoom [data-message]{height:36px;min-height:36px;font-size:16px}.onlineRoom [data-form]>button{min-height:36px;flex-basis:30px;width:30px}.onlineRoom [data-form]>.onlineOptions{min-height:26px;width:26px;flex-basis:26px}.onlineRoom .onlineBody{padding-bottom:8px}.onlineRoom>summary{min-height:32px}
+  .onlineRoom .onlineTabPages{max-height:35dvh}.onlineRoom [data-chat]{height:25dvh;max-height:25dvh}
+  .roomOnlineDock{left:10px;right:10px;top:max(112px,env(safe-area-inset-top));bottom:auto;height:76px;border-radius:22px;gap:5px}
+  .roomOnlineDock .roomOnlineMember{height:62px;min-width:56px;width:56px;flex-basis:56px;border-radius:16px}.roomOnlineDock .roomMemberPortrait{height:52px;width:46px}.roomOnlineSelf{flex-basis:54px;padding-right:5px}.roomOnlineDock .roomOnlineMember.isSelf{min-width:48px;width:48px;flex-basis:48px}.roomEmptyPortrait{height:48px;width:40px;font-size:25px}
+  .roomOnlineDock>.nobleRanking{bottom:auto;top:calc(100% + 6px)}.roomMemberArrow{font-size:36px;flex-basis:18px;width:18px}
+  .roomMemberCard{bottom:auto;top:calc(100% + 8px)}
+  .roomSocialVisibility{top:max(14px,env(safe-area-inset-top));bottom:auto;right:10px}.roomSocialVisibility button{min-height:36px}
+  #mobile{bottom:calc(112px + env(safe-area-inset-bottom))}
+}
+@media(prefers-reduced-motion:reduce){.roomOnlineMembers{scroll-behavior:auto}}

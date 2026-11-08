@@ -7,31 +7,64 @@ import {renderNobility,showNoblePromotion,progressionAccountHeaders} from './nob
 import {claimDailyReward} from './daily-rewards.mjs?v=auth-2';
 import {createTypingPresence} from './typing-presence.mjs';
 
-export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,onTyping,mountAvatarPreview,onSelfProgression}) {
+export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,onMessage,onWorld,onAvatar,onReaction,onTyping,mountAvatarPreview,onSelfProgression}) {
   let typingPresence=null;
   let selfProgression={level:1,xp:0},previousSelfLevel=null,selfProgressionSignature='';
-  const onlineDock=document.createElement('details');
-  onlineDock.className='roomOnlineDock';onlineDock.hidden=true;onlineDock.open=true;
-  onlineDock.innerHTML='<summary>Pessoas online <span data-total>0</span><span aria-hidden="true">⌄</span></summary><div class="roomOnlineMembers" aria-label="Pessoas na sala"></div>';
+  const onlineDock=document.createElement('section');
+  onlineDock.className='roomOnlineDock';onlineDock.hidden=true;onlineDock.setAttribute('aria-label','Pessoas online');
+  onlineDock.innerHTML='<span class="roomOnlineTotal" data-total aria-live="polite">0</span><div class="roomOnlineSelf"></div><button type="button" class="roomMemberArrow" data-members-prev aria-label="Participantes anteriores">‹</button><div class="roomOnlineMembers" aria-label="Participantes da sala"></div><button type="button" class="roomMemberArrow" data-members-next aria-label="Próximos participantes">›</button>';
   document.body.append(onlineDock);
   let dockSignature='',peopleSignature='',worldSignature='';
+  let lastDockMembers=[];
+  let memberCard=null;
+  document.addEventListener('pointerdown',event=>{if(memberCard&&!onlineDock.contains(event.target)){memberCard.remove();memberCard=null;}});
+  const memberStrip=onlineDock.querySelector('.roomOnlineMembers');
+  const prevMembers=onlineDock.querySelector('[data-members-prev]'),nextMembers=onlineDock.querySelector('[data-members-next]');
+  function updateMemberArrows(){prevMembers.disabled=memberStrip.scrollLeft<2;nextMembers.disabled=memberStrip.scrollLeft+memberStrip.clientWidth>=memberStrip.scrollWidth-2;}
+  prevMembers.onclick=()=>memberStrip.scrollBy({left:-240,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});
+  nextMembers.onclick=()=>memberStrip.scrollBy({left:240,behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'});
+  memberStrip.addEventListener('scroll',updateMemberArrows,{passive:true});
+  const stripObserver=new ResizeObserver(updateMemberArrows);stripObserver.observe(memberStrip);
   const initials=name=>(name||'Visitante').trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toLocaleUpperCase('pt-BR');
   function updateOnlineDock(members){
-    const signature=JSON.stringify(members.map(member=>[member.id,member.name,member.progression?.level,member.progression?.xp,member.id===selfId]));
+    lastDockMembers=members;
+    const signature=JSON.stringify(members.map(member=>[member.id,member.name,member.avatar,member.progression?.level,member.progression?.xp,member.id===selfId]));
     if(signature===dockSignature)return;dockSignature=signature;
-    onlineDock.querySelector('[data-total]').textContent=members.length;
-    onlineDock.querySelector('.roomOnlineMembers').replaceChildren(...members.map(member=>{
-      const tile=document.createElement('div');tile.className='roomOnlineMember';
+    memberCard?.remove();memberCard=null;
+    onlineDock.querySelector('[data-total]').textContent=members.length+' pessoas online';
+    function memberTile(member,self=false){
+      const tile=document.createElement('button');tile.type='button';tile.className='roomOnlineMember'+(self?' isSelf':'');
       const portrait=document.createElement('span');portrait.className='roomMemberPortrait';portrait.textContent=initials(member.name);portrait.setAttribute('aria-hidden','true');
       const name=document.createElement('span');name.textContent=member.name+(member.id===selfId?' (você)':'');
       const rank=document.createElement('span');renderNobility(rank,member.progression);
-      tile.title=name.textContent;tile.append(portrait,name,rank);return tile;
-    }));
+      tile.title=name.textContent;tile.setAttribute('aria-label',name.textContent);tile.append(portrait,name,rank);
+      tile.onclick=()=>{
+        memberCard?.remove();memberCard=null;
+        if(self){openOnlineProfile();return;}
+        memberCard=document.createElement('aside');memberCard.className='roomMemberCard';memberCard.setAttribute('aria-label','Perfil de '+member.name);
+        const heading=document.createElement('strong');heading.textContent=member.name;
+        const identity=document.createElement('span');renderNobility(identity,member.progression);
+        const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Fechar perfil');close.onclick=()=>{memberCard?.remove();memberCard=null;tile.focus();};
+        memberCard.append(heading,identity,close);onlineDock.append(memberCard);
+      };
+      Promise.resolve(getPortrait?.(member)).then(src=>{if(!src||!tile.isConnected)return;const image=document.createElement('img');image.src=src;image.alt='';portrait.replaceChildren(image);}).catch(()=>{});
+      return tile;
+    }
+    const self=members.find(member=>member.id===selfId),others=members.filter(member=>member.id!==selfId);
+    onlineDock.querySelector('.roomOnlineSelf').replaceChildren(...(self?[memberTile(self,true)]:[]));
+    const slots=others.map(member=>memberTile(member));
+    for(let index=members.length;index<12;index++){
+      const slot=document.createElement('div');slot.className='roomOnlineMember isEmpty';slot.title='Lugar disponível';slot.setAttribute('aria-label','Lugar disponível');
+      const silhouette=document.createElement('span');silhouette.className='roomEmptyPortrait';silhouette.textContent='+';slot.append(silhouette);slots.push(slot);
+    }
+    memberStrip.replaceChildren(...slots);requestAnimationFrame(updateMemberArrows);
     const ranking=onlineDock.querySelector('.nobleRanking ol');
     ranking.replaceChildren(...[...members].sort((a,b)=>(b.progression?.level||1)-(a.progression?.level||1)||(b.progression?.xp||0)-(a.progression?.xp||0)||a.name.localeCompare(b.name)).map(member=>{
       const row=document.createElement('li'),name=document.createElement('strong'),rank=document.createElement('span');name.textContent=member.name;renderNobility(rank,member.progression);row.append(name,rank);return row;
     }));
   }
+  const refreshPortraits=()=>{dockSignature='';updateOnlineDock(lastDockMembers);};
+  addEventListener('avatar-texture-ready',refreshPortraits);
   const presenceNotices=document.createElement('div');
   presenceNotices.className='roomPresenceNotices';
   presenceNotices.setAttribute('role','status');
@@ -59,7 +92,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   }
   const panel=document.createElement('details');
   panel.hidden=true;
-  panel.innerHTML=`<summary><span class="onlineHeading"><span class="onlineIndicator"></span>Conversa</span><span class="onlineCount" data-count>Conectando</span><button type="button" class="onlineOptions" aria-label="Opcoes da sala">&#8943;</button><span class="onlineChevron" aria-hidden="true">&#8964;</span></summary>
+  panel.innerHTML=`<summary aria-expanded="false"><span class="onlineHeading">Chat do Espaço</span><span class="onlineCount" data-count>Conectando</span><button type="button" class="onlineOptions" aria-label="Opções do espaço">⌂</button><span class="onlineChevron" aria-hidden="true">⌃</span></summary>
   <div class="onlineBody"><nav class="onlineTabs" role="tablist" aria-label="Painel online"><button type="button" id="online-tab-room" role="tab" aria-controls="online-page-room" aria-selected="true" data-tab="room">Sala</button><button type="button" id="online-tab-chat" role="tab" aria-controls="online-page-chat" aria-selected="false" tabindex="-1" data-tab="chat">Conversa</button><button type="button" id="online-tab-profile" role="tab" aria-controls="online-page-profile" aria-selected="false" tabindex="-1" data-tab="profile">Perfil</button><button type="button" id="online-tab-media" role="tab" aria-controls="online-page-media" aria-selected="false" tabindex="-1" data-tab="media">Tela</button></nav>
   <div class="onlineTabPages">
     <section id="online-page-room" role="tabpanel" aria-labelledby="online-tab-room" data-page="room"><div class="onlineWelcome"><span class="onlineWelcomeIcon" aria-hidden="true">&#9672;</span><h3>Um espaço para jogar junto</h3><p>Crie uma sala e convide seus amigos para o laboratório.</p></div><div class="onlineRoomEntry"><button data-join>Entrar na sala publica</button></div><div class="onlinePeople"><div class="onlineSectionTitle">PARTICIPANTES</div><div data-people class="onlinePeopleList"></div></div><div class="onlineActions"><button data-leave class="onlineLeave" hidden>Sair da sala</button></div></section>
@@ -68,15 +101,20 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     <section id="online-page-media" role="tabpanel" aria-labelledby="online-tab-media" data-page="media" hidden><div class="onlinePageHeading"><h3>Uma sessao de cinema</h3><p>Escolha um filme do seu computador para assistir com os amigos.</p></div><section class="onlineMedia"><p class="onlineMediaHint" data-no-session>Entre em uma sala para compartilhar.</p><label data-upload hidden class="onlineUpload"><span>Escolher um video</span><input data-file type="file" accept="video/mp4,video/webm,video/ogg"><small>Transmissao direta. Mantenha esta pagina aberta.</small></label><video data-video controls playsinline hidden></video><button data-stop hidden>Encerrar transmissao</button><button data-resume hidden>Ativar som / reproduzir</button></section></section>
   </div><p data-status role="status" class="onlineStatus"></p></div>`;
   document.body.append(panel);
-  panel.className='onlineRoom';panel.dataset.menu='false';
+  panel.className='onlineRoom';panel.dataset.menu='false';panel.dataset.history='closed';
+  panel.querySelector('summary').addEventListener('click',event=>{
+    if(event.target.closest('button'))return;
+    event.preventDefault();panel.dataset.history=panel.dataset.history==='open'?'closed':'open';
+    panel.querySelector('summary').setAttribute('aria-expanded',String(panel.dataset.history==='open'));panel.open=true;
+  });
   const visibilityControls=document.createElement('nav');
   visibilityControls.className='roomSocialVisibility';visibilityControls.hidden=true;
   visibilityControls.setAttribute('aria-label','Visibilidade dos painéis');
   panel.id='roomChatPanel';onlineDock.id='roomOnlinePanel';
 
   for(const [key,label,target] of [['chat','Conversa',panel],['online','Online',onlineDock]]){
-    let visible=false;
-    try{visible=localStorage.getItem('homelab.panel.compact.'+key)==='visible';}catch{}
+    let visible=true;
+    try{visible=localStorage.getItem('homelab.panel.compact.'+key)!=='hidden';}catch{}
     const button=document.createElement('button');button.type='button';
     button.setAttribute('aria-controls',target.id);
     const apply=()=>{
@@ -169,7 +207,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       localStorage.setItem('homelab.avatar',JSON.stringify(appearance));localStorage.setItem('homelab.name',name);nameInput.value=name;onAvatar?.(appearance);
       profileConfirmed=true;
       const resolve=profileResolve;profileResolve=null;profileDialog.close();resolve?.(true);
-      panel.dataset.menu='false';selectOnlineTab('chat');panel.open=!matchMedia('(max-width:600px)').matches;
+      panel.dataset.menu='false';selectOnlineTab('chat');panel.open=true;
     }catch(error){avatarEditor.querySelector('[data-avatar-feedback]').textContent=error.message;}finally{button.disabled=false;}
   };
   syncModelControls();
@@ -177,7 +215,23 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
   onAvatar?.(readAvatar());
   const social=document.createElement('div');social.className='onlineSocial';
   social.innerHTML='<div class="onlineSectionTitle">CONVERSA</div><div data-chat role="log" aria-live="polite" aria-label="Conversa da sala"></div><form data-form><input data-message maxlength="280" placeholder="Escreva uma mensagem..." aria-label="Mensagem" autocomplete="off"><button class="onlinePrimary" aria-label="Enviar mensagem">Enviar</button></form><div class="onlineReactions"><button type="button" data-wave>&#128075; Acenar</button><button type="button" data-heart>&#9825; Curtir</button><button type="button" data-laugh>&#128514; Rir</button><button type="button" data-anger>😡 Raiva</button></div>';
-  panel.querySelector('.onlineChatSlot').append(social);panel.open=!matchMedia('(max-width: 600px)').matches;
+  panel.querySelector('.onlineChatSlot').append(social);panel.open=true;
+  social.querySelector('[data-chat]').id='roomChatHistory';panel.querySelector('summary').setAttribute('aria-controls','roomChatHistory');
+  const composer=social.querySelector('[data-form]'),options=panel.querySelector('.onlineOptions');composer.prepend(options);
+  social.querySelector('[data-message]').placeholder='Digite sua mensagem';
+  const submit=composer.querySelector('[type=submit]')||composer.querySelector('.onlinePrimary');
+  submit.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="currentColor"/></svg>';
+  const emojiToggle=document.createElement('button');emojiToggle.type='button';emojiToggle.className='spaceEmojiToggle';emojiToggle.textContent='🙂';emojiToggle.setAttribute('aria-label','Inserir emoji');emojiToggle.setAttribute('aria-expanded','false');composer.insertBefore(emojiToggle,submit);
+  const emojiPicker=document.createElement('div');emojiPicker.className='spaceEmojiPicker';emojiPicker.hidden=true;emojiPicker.setAttribute('aria-label','Emojis');social.append(emojiPicker);
+  function closeEmojiPicker(){emojiPicker.hidden=true;emojiToggle.setAttribute('aria-expanded','false');}
+  emojiToggle.onclick=()=>{emojiPicker.hidden=!emojiPicker.hidden;emojiToggle.setAttribute('aria-expanded',String(!emojiPicker.hidden));};
+  for(const emoji of ['🙂','😂','❤️','👋','👍','🎉','😮','😡']){
+    const button=document.createElement('button');button.type='button';button.textContent=emoji;button.setAttribute('aria-label','Inserir '+emoji);emojiPicker.append(button);
+    button.onclick=()=>{const input=composer.querySelector('[data-message]');if(input.value.length-(input.selectionEnd-input.selectionStart)+emoji.length>input.maxLength)return;input.setRangeText(emoji,input.selectionStart,input.selectionEnd,'end');input.dispatchEvent(new Event('input',{bubbles:true}));closeEmojiPicker();input.focus();};
+  }
+  document.addEventListener('pointerdown',event=>{if(!emojiPicker.contains(event.target)&&!emojiToggle.contains(event.target))closeEmojiPicker();});
+  panel.addEventListener('keydown',event=>{if(event.key==='Escape')closeEmojiPicker();});
+  composer.append(emojiPicker);panel.querySelector('.onlineBody').append(composer);
   panel.addEventListener('keydown',e=>e.stopPropagation());
   panel.addEventListener('keyup',e=>e.stopPropagation());
   const el=n=>panel.querySelector(`[data-${n}]`)||profileDialog.querySelector(`[data-${n}]`), video=el('video');
@@ -185,7 +239,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     onlineDock.hidden=!value;
     if(!value){typingPresence?.stop();updateOnlineDock([]);previousMembers=null;}
     panel.dataset.connected=String(value);
-    for(const input of social.querySelectorAll('input,button'))input.disabled=!value;
+    for(const input of [...social.querySelectorAll('input,button'),...composer.querySelectorAll('input,button')])if(input!==options)input.disabled=!value;
     el('no-session').hidden=value;
   }
   setOnlineConnected(false);
@@ -220,7 +274,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
     if(!response.headers.get('content-type')?.includes('application/json'))throw new Error('N?o foi poss?vel conectar. Tente novamente em instantes.');
     const result=await response.json();if(!response.ok)throw Object.assign(new Error(result.error||'Falha de conexao.'),{status:response.status});return result;
   }
-  const showError=e=>{status(e.message);checkAvailability();};
+  const showError=e=>{status(e.message);panel.dataset.error='true';checkAvailability();};
   nameForm.onsubmit=async e=>{
     e.preventDefault();const name=el('name').value.trim();
     if(!name){nameFeedback.textContent='Digite seu nome para continuar.';el('name').focus();return;}
@@ -359,7 +413,7 @@ export function createSharedRoom({getPose,onMembers,onVideo,onSpawn,onMessage,on
       try{sessionStorage.removeItem(sessionKey(room));}catch{}
     }
     clearTimeout(reconnectTimer);reconnectTimer=null;
-    typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();
+    typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();stripObserver.disconnect();removeEventListener('avatar-texture-ready',refreshPortraits);
   });
   addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
   el('join').textContent='Entrar no mundo';

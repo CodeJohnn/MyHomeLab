@@ -8,6 +8,7 @@
     import {paintSpeechBubble} from './speech-bubble.mjs';
     import {createFrameClock} from './frame-clock.mjs';
     import {closestInteraction,isPhysicalInteractionHit,canActivateHit,interactionRoots,interactionHitsFor} from './interaction-picking.mjs';
+    import {createAvatarPortraits} from './avatar-portraits.mjs';
     performance.mark('homelab-world-start');
     const errorBox = document.getElementById('error');let sceneReady=false,rejectReadyFrame=null;
     function fail(e) {
@@ -4909,12 +4910,14 @@
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=presence-34');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=social-hud-35');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';
       let sharedVideoMonitor=null;
       const guests = new Map();
+      const portraitCapture=createAvatarPortraits({THREE,renderer,getCharacter:member=>member.id===sharedRoom?.getSelfId()?avatar:guests.get(member.id)});
+      addEventListener('pagehide',()=>portraitCapture.dispose(),{once:true});
       const {createCharacterHover}=await import('./character-hover.mjs');
       const characterHover=createCharacterHover({THREE,canvas:renderer.domElement,getCamera:()=>camera,
         isEnabled:()=>!edit&&!camDrag&&!panDrag&&actionMenu.hidden&&conversation.hidden&&!document.querySelector('dialog[open]'),
@@ -5013,6 +5016,7 @@
       }
       let ownNobleTag=null;
       sharedRoom=createSharedRoom({
+        getPortrait:member=>portraitCapture.get(member),
         onTyping:active=>{avatar.userData.typingUntil=active?Infinity:0;},
         onSelfProgression:member=>{if(ownNobleTag)disposeTag(ownNobleTag);ownNobleTag=nameTag(member.name,false,'',member.progression.level);avatar.add(ownNobleTag);avatar.userData.nobleLevel=member.progression.level;actionTitle.querySelector('span').textContent=nobleLabel(member.progression.level);about.querySelectorAll('p')[1].textContent=nobleLabel(member.progression.level);},
         onWorld:world=>{applyRoomWorld(world);updateBilliardsState(world?.billiards);},
