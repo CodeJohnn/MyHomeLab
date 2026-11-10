@@ -19,3 +19,16 @@ test('diagnóstico desativado não precisa de DOM nem consulta o renderer',()=>{
   monitor.begin();monitor.renderStart();monitor.renderEnd();monitor.end(1000);monitor.pause();monitor.dispose();
   assert.equal(globalThis.homelabPerformance,undefined);
 });
+
+test('diagnostico soma passes de renderizacao e restaura configuracao ao descartar',()=>{
+  const previousDocument=globalThis.document;let removed=0;
+  globalThis.document={createElement:()=>({style:{},remove(){removed++;}}),body:{append(){}}};
+  const renderer={info:{autoReset:true,render:{calls:0,triangles:0},memory:{geometries:2,textures:3},programs:[],reset(){this.render.calls=0;this.render.triangles=0;}},getPixelRatio:()=>1.5};
+  const monitor=createPerformanceMonitor(renderer,{enabled:true});
+  try{
+    monitor.begin();monitor.renderStart();monitor.renderEnd();monitor.end(1000);
+    monitor.begin();renderer.info.render.calls=12;renderer.info.render.triangles=120;monitor.renderStart();monitor.renderEnd();monitor.end(2000);
+    const snapshot=globalThis.homelabPerformance.snapshot();assert.equal(snapshot.drawCalls,12);assert.equal(snapshot.gpuMs,null);assert.equal(renderer.info.autoReset,false);
+  }finally{monitor.dispose();globalThis.document=previousDocument;}
+  assert.equal(renderer.info.autoReset,true);assert.equal(removed,1);assert.equal(globalThis.homelabPerformance,undefined);
+});

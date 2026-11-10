@@ -1,4 +1,5 @@
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {disposePrivateGeometry} from './primitive-pool.mjs';
 
 // Merge only direct, static hair pieces. Eyes and their blinking pivots stay intact.
 export function mergeNpcHair(THREE,head,material){
@@ -16,6 +17,6 @@ export function mergeNpcHair(THREE,head,material){
   if(!merged)return;
   merged.computeBoundingSphere();
   const hair=new THREE.Mesh(merged,material);hair.name='npcHair';hair.castShadow=true;
-  for(const piece of pieces){piece.removeFromParent();piece.geometry.dispose();}
+  for(const piece of pieces){piece.removeFromParent();disposePrivateGeometry(piece.geometry);}
   head.add(hair);
 }

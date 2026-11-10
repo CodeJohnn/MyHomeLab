@@ -1,5 +1,8 @@
 import {updateEquipment,hasEquippedHands,disposeEquipment} from './avatar-equipment.mjs';
-export function createAvatarEditorPreview({container,THREE,template,applyAppearance}){
+import {disposeAvatarAppearance} from './avatar-appearance.mjs';
+export function createAvatarEditorPreview({container,THREE,template,applyAppearance,ownsTemplate=false}){
+  const ownedGeometries=new Set(),ownedMaterials=new Set(),ownedTextures=new Set();
+  if(ownsTemplate)template.traverse(node=>{if(node.geometry)ownedGeometries.add(node.geometry);for(const material of [].concat(node.material||[])){ownedMaterials.add(material);for(const value of Object.values(material))if(value?.isTexture)ownedTextures.add(value);}});
   const scene=new THREE.Scene(),model=template.clone(true);
   model.position.set(0,0,0);model.rotation.set(0,-.2,0);model.visible=true;scene.add(model);
   scene.add(new THREE.HemisphereLight('#edf8ff','#788b80',2.8));
@@ -45,6 +48,6 @@ export function createAvatarEditorPreview({container,THREE,template,applyAppeara
     update(config){lastConfig=config;applyAppearance(model,config,THREE);needsFit=true;requestRender();},
     setVisible(value){visible=value;lastTime=0;if(!value&&frame!==null){cancelAnimationFrame(frame);frame=null;}if(value){initialize();if(lastConfig)applyAppearance(model,lastConfig,THREE);requestRender();}},
     turn(angle){model.rotation.y=angle;requestRender();},
-    dispose(){disposed=true;disposeEquipment(model);document.removeEventListener('visibilitychange',requestRender);globalThis.removeEventListener('avatar-texture-ready',assetReady);visible=false;observer.disconnect();if(frame!==null)cancelAnimationFrame(frame);model.traverse(node=>{if(node.userData.avatarOwnMaterial)node.material?.dispose();});renderer?.dispose();}
+    dispose(){if(disposed)return;disposed=true;disposeEquipment(model);document.removeEventListener('visibilitychange',requestRender);globalThis.removeEventListener('avatar-texture-ready',assetReady);visible=false;observer.disconnect();if(frame!==null)cancelAnimationFrame(frame);disposeAvatarAppearance(model);ownedGeometries.forEach(geometry=>geometry.dispose());ownedMaterials.forEach(material=>material.dispose());ownedTextures.forEach(texture=>texture.dispose());ownedGeometries.clear();ownedMaterials.clear();ownedTextures.clear();renderer?.dispose();renderer?.forceContextLoss();}
   };
 }

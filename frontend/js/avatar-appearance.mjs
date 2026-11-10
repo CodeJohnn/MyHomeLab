@@ -36,8 +36,8 @@ function ptLulaPrint(THREE){
   return ptLulaTexture;
 }
 export function applyAvatarAppearance(root,config,THREE){
-  applyEquipment(root,config,THREE);
   const signature=JSON.stringify(config);if(root.userData.avatarSignature===signature)return;
+  applyEquipment(root,config,THREE);
   root.userData.avatarSignature=signature;
   root.traverse(node=>{
     if(node.userData.avatarHide)node.visible=false;
@@ -134,4 +134,20 @@ export function applyAvatarAppearance(root,config,THREE){
   const old=head.getObjectByName('customAvatarHair');
   if(old){const materials=new Set(),textures=new Set();old.traverse(n=>{n.geometry?.dispose();if(n.material){materials.add(n.material);if(n.material.map)textures.add(n.material.map);}});textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());old.removeFromParent();}
   head.add(createNaturalHair({THREE,color:config.hair,style:config.hairStyle,hat:equipmentHat?'cap':config.hat,hideHat:!!equipmentHat,hatColor:config.shirt,skinColor:config.skin}));
+}
+
+// Dispose instance-owned resources only; templates, pooled gear and print textures survive.
+export function disposeAvatarAppearance(root){
+  const geometries=new Set(),materials=new Set();
+  for(const name of ['customAvatarClothes','customAvatarHair']){
+    const group=root.getObjectByName(name);if(!group)continue;
+    group.traverse(node=>{if(node.geometry)geometries.add(node.geometry);for(const material of [].concat(node.material||[]))materials.add(material);});
+    group.removeFromParent();
+  }
+  root.traverse(node=>{
+    if(node.userData.avatarOwnMaterial){for(const material of [].concat(node.material||[]))materials.add(material);delete node.userData.avatarOwnMaterial;}
+    if(node.userData.bodyBasePositions){geometries.add(node.geometry);delete node.userData.bodyBasePositions;}
+  });
+  geometries.forEach(geometry=>geometry.dispose());materials.forEach(material=>material.dispose());
+  delete root.userData.avatarSignature;delete root.userData.clothingSignature;delete root.userData.avatarHairSignature;
 }
