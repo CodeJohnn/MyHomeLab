@@ -1,3 +1,5 @@
+import {createTouchControls,createTouchClickGuard,rotateMovement} from './touch-controls.mjs';
+import {createAdaptiveResolution} from './adaptive-resolution.mjs';
 import {createNobleSpriteEffects} from './nobility-sprite-effects.mjs';
 import {nobleCrestUrl} from './nobility-effects.mjs';
     import {createLightBudget} from './light-budget.mjs';
@@ -3166,7 +3168,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         camera.position.set(cameraCenter.x+Math.sin(viewYaw)*16*Math.cos(viewPitch),cameraCenter.y+16*Math.sin(viewPitch),cameraCenter.z+Math.cos(viewYaw)*16*Math.cos(viewPitch));camera.lookAt(cameraCenter);
         // A visibilidade fica em updateActiveRoomWalls, junto com as oclusoes.
         // Alterar aqui restaurava paredes ocultadas entre duas atualizacoes.
-      } cameraUpdate(); addEventListener('resize', () => { renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile?1.6:1.5));renderer.setSize(innerWidth, innerHeight); cameraUpdate() });
+      } cameraUpdate(); addEventListener('resize', () => { if(!isMobile)renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth, innerHeight); cameraUpdate() });
       const viewButton=document.getElementById('toggleFirstPerson');
       const viewSelect=document.createElement('select');viewSelect.id='cameraViewMode';viewSelect.setAttribute('aria-label','Modo de camera');
       viewSelect.style.cssText='position:fixed;left:14px;top:58px;z-index:6;padding:9px;border-radius:8px;background:#14212b;color:#e7eff4;border:1px solid #77918d;max-width:190px';
@@ -4154,6 +4156,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       }
       let tapOrigin = null, tapMoved = false, pinchDistance = 0;
       const touches = new Map(), canvas = renderer.domElement;
+      const touchClickGuard=createTouchClickGuard();
       const adminTerminal=createAdminTerminal(()=>['bancadaTI','instrumentosTI','rackExtraTI','pecasTI'].map(id=>({label:byId[id].label,position:byId[id].g.position.toArray(),online:!(serverIncident.down&&serverIncident.rackId===id)})),{
         openChallenge:(task,onSolved)=>logicIde.openChallenge(task,onSolved),
         getIncident:()=>serverIncident.down&&!serverIncident.repairRequested?{id:serverIncident.id,label:byId[serverIncident.rackId].label}:null,
@@ -4318,9 +4321,9 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (touches.size > 1) {
           const distance = fingerDistance();
-          if (pinchDistance > 0) zoom = THREE.MathUtils.clamp(zoom * distance / pinchDistance, .6, 2.5);
+          if (pinchDistance > 0&&distance>0){if(viewMode==='third')followDistance=THREE.MathUtils.clamp(followDistance*pinchDistance/distance,1.3,5);else if(!firstPerson)zoom=THREE.MathUtils.clamp(zoom*distance/pinchDistance,.6,2.5);}
           const [a,b]=[...touches.values()],center={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-          if(touchCenter)panCamera(center.x-touchCenter.x,center.y-touchCenter.y);touchCenter=center;
+          if(touchCenter&&viewMode==='overview')panCamera(center.x-touchCenter.x,center.y-touchCenter.y);touchCenter=center;
           pinchDistance = distance;
         }
       });
@@ -4330,11 +4333,20 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       renderer.domElement.addEventListener('pointerdown', e => { if(touches.size>1)return; if(e.button===1||e.button===2||e.shiftKey){e.preventDefault();panDrag=true;tapMoved=true;tapOrigin=null;oldX=e.clientX;oldY=e.clientY;canvas.setPointerCapture(e.pointerId);return;} if(e.button!==0)return; tapOrigin = { x: e.clientX, y: e.clientY }; tapMoved = false; oldY = e.clientY; oldX = e.clientX; if (edit) { const o = target(e); if (o) { select(o); setupPlane(o); point(e); if (ray.ray.intersectPlane(plane, hit)) { offset.copy(o.g.getWorldPosition(new THREE.Vector3())).sub(hit); dragging = true; renderer.domElement.setPointerCapture(e.pointerId) } } } else { camDrag = true; renderer.domElement.setPointerCapture(e.pointerId) } }); renderer.domElement.addEventListener('pointermove', e => { if(touches.size>1)return; if(panDrag){panCamera(e.clientX-oldX,e.clientY-oldY);oldX=e.clientX;oldY=e.clientY;return;} if(!tapOrigin)return; if (tapOrigin && Math.hypot(e.clientX - tapOrigin.x, e.clientY - tapOrigin.y) > 6) tapMoved = true; if (!tapMoved) return; if (edit && dragging && selected) { point(e); if (isDecorativeFrame(selected)) { dragFrameOnWall(selected); return; } if (ray.ray.intersectPlane(plane, hit)) { const p = hit.clone().add(offset); if (selected.kind === 'wallBack') { selected.g.position.x = THREE.MathUtils.clamp(p.x, -4, 4); selected.g.position.y = THREE.MathUtils.clamp(p.y, .6, 2.7) } else if (selected.kind === 'wallLeft') { selected.g.position.z = THREE.MathUtils.clamp(p.z, -3, 3); selected.g.position.y = THREE.MathUtils.clamp(p.y, 1.2, 2) } else { moveSafe(selected, new THREE.Vector3(p.x, selected.g.position.y, p.z)) } } } else if (camDrag) { if(viewMode==='third'){followOrbit-=(e.clientX-oldX)*.006;followPitch=THREE.MathUtils.clamp(followPitch+(e.clientY-oldY)*.004,.08,.9);oldX=e.clientX;oldY=e.clientY;return;} if(firstPerson) {
           eyeYaw-=(e.clientX-oldX)*.004;eyePitch=THREE.MathUtils.clamp(eyePitch-(e.clientY-oldY)*.004,-1.35,1.35);
           oldX=e.clientX;oldY=e.clientY;return;
-        } yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY;  } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit) activateAt(e); tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; panDrag=false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release);         renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); if(viewMode==='third'){followDistance=THREE.MathUtils.clamp(followDistance+e.deltaY*.003,1.3,5);return;} if(firstPerson)return; zoom=THREE.MathUtils.clamp(zoom*Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0015),.5,4) }, { passive: false });
+        } yaw += (e.clientX - oldX) * .006; pitch = THREE.MathUtils.clamp(pitch + (e.clientY - oldY) * .005, .15, 1.45); oldX = e.clientX; oldY = e.clientY;  } }); function release(e) { if (e && e.type === 'pointerup' && e.pointerType !== 'mouse' && tapOrigin && !tapMoved && !edit){touchClickGuard.recordTap();activateAt(e);} tapOrigin = null; const wasDragging = dragging; dragging = false; camDrag = false; panDrag=false; if (wasDragging && edit) save() } renderer.domElement.addEventListener('pointerup', release); renderer.domElement.addEventListener('pointercancel', release); renderer.domElement.addEventListener('lostpointercapture', release);         renderer.domElement.addEventListener('wheel', e => { e.preventDefault(); if(viewMode==='third'){followDistance=THREE.MathUtils.clamp(followDistance+e.deltaY*.003,1.3,5);return;} if(firstPerson)return; zoom=THREE.MathUtils.clamp(zoom*Math.exp(-Math.max(-200,Math.min(200,e.deltaY))*.0015),.5,4) }, { passive: false });
+      function cancelCanvasGesture(){
+        release();
+        for(const id of touches.keys())if(canvas.hasPointerCapture?.(id))canvas.releasePointerCapture(id);
+        touches.clear();pinchDistance=0;touchCenter=null;
+      }
+      const hideCanvasGesture=()=>{if(document.hidden)cancelCanvasGesture();};
+      addEventListener('blur',cancelCanvasGesture);addEventListener('resize',cancelCanvasGesture);
+      document.addEventListener('visibilitychange',hideCanvasGesture);
+      addEventListener('pagehide',()=>{cancelCanvasGesture();removeEventListener('blur',cancelCanvasGesture);removeEventListener('resize',cancelCanvasGesture);document.removeEventListener('visibilitychange',hideCanvasGesture);},{once:true});
       canvas.addEventListener('contextmenu',e=>e.preventDefault());
       // O clique nativo do mouse ocorre depois do pointerup e da liberação da captura.
       canvas.addEventListener('click', e => {
-        if (e.button!==0 || e.pointerType === 'touch' || e.pointerType === 'pen' || edit || tapMoved) return;
+        if (e.button!==0 || touchClickGuard.ignore(e) || edit || tapMoved) return;
         activateAt(e);
       });
       document.getElementById('edit').onclick = () => { edit = !edit; roomColliders=null; if(edit && viewMode!=='overview')toggleFirstPerson(false); walkTarget = null; if (edit) stopInteraction(); release(); keys.clear(); document.getElementById('edit').textContent = edit ? '✓ Concluir organização' : 'Ativar modo construção'; document.getElementById('edit').classList.toggle('active', edit); document.getElementById('status').textContent = edit ? 'Modo construção ativo • alterações salvas automaticamente' : 'Explore o escritório.'; if (!edit) select(null) };
@@ -4705,6 +4717,21 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         }
         save();
       }
+      function interactNearby(){
+        walkTarget = null;
+        if (interactionPose) stopInteraction();
+        else if (interactiveChairs.some(c=>c.id===near?.id)) sitOnChair(interactiveChairs.find(c=>c.id===near.id));
+        else if (near?.id === 'teclado') startInteraction('typing');
+        else if (near?.id === 'mouse') startInteraction('mouse');
+        else if (near) show(near);
+      }
+      function gameplayBlocked(){
+        const modal=edit||!actionMenu.hidden||bookLibrary.isOpen||boardEditor.open||!conversation.hidden||document.getElementById('adminTerminal')?.hidden===false;
+        const overlay=document.getElementById('dialog').style.display==='flex'||document.getElementById('screenView').style.display==='flex';
+        const editing=document.querySelector('dialog[open],input:focus,textarea:focus,[contenteditable=true]:focus');
+        const mobileChat=(isMobile||innerWidth<=900)&&document.querySelector('.onlineRoom[data-history=open]:not([hidden]):not(.socialPanelHidden),.onlineRoom[data-menu=true]:not([hidden]):not(.socialPanelHidden)');
+        return !!(modal||overlay||editing||mobileChat);
+      }
       addEventListener('keydown', e => {
         if (e.target?.matches?.('input, textarea, select')) return;
         if(document.querySelector('.socialActionDialog[open]'))return;
@@ -4715,15 +4742,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         if(k==='v'){toggleFirstPerson();return;}
         if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) e.preventDefault();
         if (edit) return;
-        if (k === 'e') {
-          walkTarget = null;
-          if (interactionPose) stopInteraction();
-          else if (interactiveChairs.some(c=>c.id===near?.id)) sitOnChair(interactiveChairs.find(c=>c.id===near.id));
-          else if (near?.id === 'teclado') startInteraction('typing');
-          else if (near?.id === 'mouse') startInteraction('mouse');
-          else if (near) show(near);
-          return;
-        }
+        if (k === 'e') {interactNearby();return;}
         if (k === ' ' && interactionPose === 'sit' && activePlayerChair?.id==='cadeira') {
           e.preventDefault();
           startInteraction('typing');
@@ -4737,12 +4756,21 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       });
       addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
       addEventListener('blur', () => keys.clear());
-      document.querySelectorAll('[data-key]').forEach(b => {
-        const k = b.dataset.key;
-        b.addEventListener('pointerdown', e => { e.preventDefault();if(interactionPose==='social'||interactionPose?.startsWith('emote:'))stopInteraction();if (!interactionPose) keys.add(k); b.setPointerCapture(e.pointerId) });
-        ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => b.addEventListener(type, () => keys.delete(k)));
+      const touchMovement={x:0,z:0},movementFrame={x:0,z:0};
+      const touchControls=createTouchControls({
+        root:document.getElementById('mobile'),isEnabled:()=>!gameplayBlocked(),
+        onMove:vector=>{
+          touchMovement.x=vector.x;touchMovement.z=vector.z;
+          if((vector.x||vector.z)&&!gameplayBlocked()&&interactionPose)stopInteraction();
+        },
+        onAction:action=>{
+          touchControls.reset();
+          if(action==='interact')interactNearby();
+          else if(action==='sit')sitAction.click();
+          else{openAvatarMenu();if(action==='dance')selectCharacterCategory('actions');if(action==='emotions')selectCharacterCategory('reactions');}
+        }
       });
-      document.getElementById('mobileInteract').onclick=()=>window.dispatchEvent(new KeyboardEvent('keydown',{key:'e'}));
+      addEventListener('pagehide',()=>touchControls.dispose(),{once:true});
       function show(o) { if(o.id==='vasoBanheiroNovo'){useToilet();return;} if(o.id==='bibliotecaNova'||o.id==='mesaLeitura'){keys.clear();walkTarget=null;bookLibrary.open();return;} if(o.id==='mesaSinuca'){keys.clear();walkTarget=null;openBilliards();return;} if(o.kind==='rug')return; if(writableBoards[o.id]){openBoardEditor(o.id);return;} if(isDecorativeFrame(o))return; if(o.id==='geladeiraEnergeticos'){toggleEnergyFridge();return;} if(o.id==='banquetaTI'){openAdminConsole();return;} document.getElementById('dt').textContent = o.label; document.getElementById('dd').textContent = o.desc; document.getElementById('dialog').style.display = 'flex'; keys.clear() }
       document.getElementById('close').onclick = () => document.getElementById('dialog').style.display = 'none';
       document.getElementById('dialog').onclick = e => { if (e.target.id === 'dialog') e.currentTarget.style.display = 'none' };
@@ -4750,6 +4778,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       let lastShadowUpdate=-Infinity;
       let walk = 0,resolveReadyFrame=null;
       const frameClock=createFrameClock({maxFps:isMobile?30:Infinity});
+      const adaptiveResolution=createAdaptiveResolution({enabled:isMobile,initialRatio:renderer.getPixelRatio(),onChange:ratio=>renderer.setPixelRatio(ratio)});
       const performanceMonitor=createPerformanceMonitor(renderer,{enabled:new URLSearchParams(location.search).get('perf')==='1'});
       addEventListener('pagehide',()=>performanceMonitor.dispose(),{once:true});
       const audioPositions={speaker:new THREE.Vector3(),ac:new THREE.Vector3()};
@@ -4762,7 +4791,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
-        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();frameClock.reset(t);return;}
+        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();frameClock.reset(t);adaptiveResolution.reset();touchControls.reset();return;}
         const dt=frameClock.next(t);
         if(dt===null)return;
         performanceMonitor.begin();
@@ -4774,25 +4803,25 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
           viewYaw=THREE.MathUtils.lerp(viewYaw,yaw,cameraBlend);viewPitch=THREE.MathUtils.lerp(viewPitch,pitch,cameraBlend);viewZoom=THREE.MathUtils.lerp(viewZoom,zoom,cameraBlend);cameraCenter.lerp(cameraGoal,cameraBlend);if(viewMode==='overview')cameraUpdate();
         }
         if(!interactionPose)networkJoints.forEach((joint,i)=>{locomotionPrevious[i*3]=joint.rotation.x;locomotionPrevious[i*3+1]=joint.rotation.y;locomotionPrevious[i*3+2]=joint.rotation.z;});
-        if (!edit && !bookLibrary.isOpen && !document.getElementById('logicIde')?.open && !boardEditor.open && document.getElementById('dialog').style.display !== 'flex' && !interactionPose) {
-          let dx = 0, dz = 0;
+        const inputBlocked=gameplayBlocked();
+        touchControls.setEnabled(!inputBlocked);
+        if (!inputBlocked && !interactionPose) {
+          let dx = touchMovement.x, dz = touchMovement.z;
+          if(viewMode==='overview'&&(dx||dz)){rotateMovement(dx,dz,viewYaw,movementFrame);dx=movementFrame.x;dz=movementFrame.z;}
           if (keys.has('w') || keys.has('arrowup')) dz--;
           if (keys.has('s') || keys.has('arrowdown')) dz++;
           if (keys.has('a') || keys.has('arrowleft')) dx--;
           if (keys.has('d') || keys.has('arrowright')) dx++;
           if(firstPerson && (dx||dz)) {
-            const localX=dx,localZ=dz;
-            dx=localX*Math.cos(eyeYaw)+localZ*Math.sin(eyeYaw);
-            dz=-localX*Math.sin(eyeYaw)+localZ*Math.cos(eyeYaw);
+            rotateMovement(dx,dz,eyeYaw,movementFrame);dx=movementFrame.x;dz=movementFrame.z;
           }
           if(viewMode==='third'&&(dx||dz)){
-            const localX=dx,localZ=dz;
-            dx=localX*Math.cos(followOrbit)+localZ*Math.sin(followOrbit);
-            dz=-localX*Math.sin(followOrbit)+localZ*Math.cos(followOrbit);
+            rotateMovement(dx,dz,followOrbit,movementFrame);dx=movementFrame.x;dz=movementFrame.z;
           }
           if (dx || dz) { pendingToilet=false;walkTarget = null; walkPath = []; }
           const running=keys.has('shift');
-          let step = dt * (running?3.7:2.3);
+          const keyboardMoving=keys.has('w')||keys.has('a')||keys.has('s')||keys.has('d')||keys.has('arrowup')||keys.has('arrowdown')||keys.has('arrowleft')||keys.has('arrowright');
+          let step = dt * (running?3.7:2.3) * (!keyboardMoving&&(touchMovement.x||touchMovement.z)?Math.min(1,Math.hypot(touchMovement.x,touchMovement.z)):1);
           if (walkTarget) {
             dx = walkTarget.x - avatar.position.x;
             dz = walkTarget.z - avatar.position.z;
@@ -4919,7 +4948,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         updateBilliardsScene(dt);
         if(t-lastShadowUpdate>100){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=t;}
         renderMonitorVideos();
-        if(!document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.renderStart();renderer.render(scene, camera);performanceMonitor.renderEnd();if(resolveReadyFrame){resolveReadyFrame();resolveReadyFrame=null;}}
+        if(!document.querySelector('.onlineProfileDialog[open]')&&!billiardsDialog.open&&!bookLibrary.isOpen){performanceMonitor.renderStart();renderer.render(scene, camera);performanceMonitor.renderEnd();adaptiveResolution.sample(t);if(resolveReadyFrame){resolveReadyFrame();resolveReadyFrame=null;}}
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }

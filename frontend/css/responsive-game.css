@@ -1,0 +1,99 @@
+:root{--app-height:100dvh;--app-width:100vw;--app-top:0px;--app-left:0px}
+body:not(.landingActive){overflow:hidden;overscroll-behavior:none}
+#worldCanvas{touch-action:none;display:block}
+#mobile.touchControls{display:none!important}
+#mobile.touchControls[hidden]{display:none!important}
+dialog{box-sizing:border-box;max-width:calc(var(--app-width) - 24px);max-height:calc(var(--app-height) - 24px);overscroll-behavior:contain}
+
+/* Touch is the base layout; the existing desktop HUD remains outside this query. */
+@media(max-width:900px),(pointer:coarse){
+  body:not(.landingActive) button{min-height:44px;touch-action:manipulation}
+  input:not([type=range]):not([type=color]):not([type=checkbox]),textarea,select{font-size:16px!important;max-width:100%;box-sizing:border-box}
+  .onlineProfileDialog .accessoryInventory button,.onlineProfileDialog .onlineAvatarPreviewAngles button,.onlineRoom .onlineTabs button{min-height:44px}
+  .landing input[type=color],.onlineProfileDialog input[type=color],.userCheck,.ambientSwitch,.accessoryTools label{min-height:44px}
+  dialog{overflow:auto;overflow-wrap:anywhere}
+  #mobile.touchControls{display:flex!important;position:fixed;inset:auto max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));justify-content:space-between;align-items:end;pointer-events:none;z-index:24;gap:12px;grid-template-columns:none!important}
+  #mobile.touchControls[hidden]{display:none!important}
+  .touchJoystick{position:relative;display:grid;place-items:center;flex:0 0 116px;width:116px;height:116px;border:1px solid #d3f3ed66;border-radius:50%;background:#173e4f88;touch-action:none;pointer-events:auto;user-select:none;-webkit-user-select:none}
+  .touchStick{width:48px;height:48px;border:2px solid #b6ebe5;border-radius:50%;background:radial-gradient(circle at 35% 30%,#80bec8,#286b81);box-shadow:0 3px 12px #0005;pointer-events:none}
+  .touchJoystickLabel{position:absolute;bottom:8px;color:#e7ffff;font:11px system-ui;pointer-events:none}
+  .touchActions{display:grid;grid-template-columns:repeat(2,minmax(60px,78px));gap:6px;pointer-events:auto}
+  #mobile.touchControls .touchActions button{border:1px solid #b6e0de88;border-radius:12px;background:#20556be8;color:#f2ffff;font:600 12px system-ui;padding:8px 5px;min-height:44px;touch-action:manipulation}
+  #mobile.touchControls .touchActions button:first-child{grid-column:1/-1;background:#397c67ef}
+  #toggleFirstPerson{display:none}
+  #cameraViewMode{top:max(8px,env(safe-area-inset-top))!important;left:max(8px,env(safe-area-inset-left))!important;max-width:calc(100vw - 156px - env(safe-area-inset-left) - env(safe-area-inset-right))!important;font-size:12px!important;min-height:44px;z-index:25!important}
+  #showToolbar{top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));max-width:40vw}
+  #status{max-width:calc(100vw - 28px);left:14px;right:14px;bottom:176px;box-sizing:border-box;overflow-wrap:anywhere}
+  .roomOnlineDock{top:calc(60px + env(safe-area-inset-top));bottom:auto;left:8px;right:8px;transform:none;width:auto;max-width:none;height:64px;box-sizing:border-box;padding:4px;gap:4px;border-radius:16px}
+  .roomOnlineDock .roomOnlineMember{min-width:46px;width:46px;flex-basis:46px;height:52px}
+  .roomOnlineDock .roomMemberPortrait{width:40px;height:44px}
+  .roomOnlineDock .roomOnlineSelf,.roomOnlineDock .roomOnlineMember.isSelf{min-width:42px;width:42px;flex-basis:42px}
+  .roomOnlineDock .roomMemberArrow{min-width:44px;padding:4px}
+  .roomOnlineDock>.nobleRanking{top:100%;bottom:auto;right:0;max-height:calc(var(--app-height) - 150px);overflow:auto}
+  .roomOnlineTotal{font-size:10px;max-width:62px;white-space:normal}
+  .roomSocialVisibility{top:calc(132px + env(safe-area-inset-top));bottom:auto;right:8px;max-width:calc(100vw - 16px)}
+  .roomSocialVisibility button{min-height:36px;padding:5px 10px}
+  .onlineRoom{left:auto;right:max(8px,env(safe-area-inset-right));top:auto;bottom:calc(174px + env(safe-area-inset-bottom));width:min(360px,calc(var(--app-width) - 16px));min-height:0!important;max-height:calc(var(--app-height) - 190px);box-sizing:border-box}
+  .onlineRoom>summary{min-height:44px;box-sizing:border-box;padding:8px 12px}
+  .onlineRoom[data-history=closed][data-menu=false] .onlineBody{display:none}
+  .onlineRoom[data-history=open],.onlineRoom[data-menu=true]{top:calc(var(--app-top) + 60px + env(safe-area-inset-top));bottom:auto;max-height:calc(var(--app-height) - 76px);overflow:auto}
+  .onlineRoom .onlineTabPages{max-height:calc(var(--app-height) - 230px);overscroll-behavior:contain}
+  .onlineRoom [data-chat]{min-height:0;max-height:calc(var(--app-height) - 240px);overflow:auto;overflow-wrap:anywhere}
+  .onlineRoom [data-form],.onlineComposer{min-width:0;max-width:100%;box-sizing:border-box}
+  .onlineRoom [data-message]{min-width:0;width:0;flex:1}
+  .onlineRoom[data-menu] [data-form]>button,.onlineRoom[data-menu] [data-form]>.onlineOptions{min-height:44px;width:44px;flex-basis:44px}
+  .onlineRoom[data-history=open]:not(.socialPanelHidden)~.roomSocialVisibility,.onlineRoom[data-menu=true]:not(.socialPanelHidden)~.roomSocialVisibility{display:none}
+  .onlineProfileDialog{width:min(740px,calc(var(--app-width) - 16px));max-height:calc(var(--app-height) - 16px);padding:16px;overflow:auto}
+  .onlineAvatarEditor,.onlineAvatarFields,.accessoryInventory{min-width:0;max-width:100%}
+  .onlineProfileLayout{grid-template-columns:minmax(0,1fr)}
+  .onlineAvatarPreview{position:static;border-right:0;border-bottom:1px solid #ffffff15;padding:12px}
+  .onlineAvatarPreviewStage{height:clamp(170px,35dvh,300px)}
+  .onlineProfileDialog img,.accessoryInventory img{max-width:100%;object-fit:contain}
+  #toolbar{top:max(8px,env(safe-area-inset-top));right:8px;width:min(380px,calc(var(--app-width) - 16px));max-height:calc(var(--app-height) - 16px);overflow:auto;z-index:95}
+  #npcConversation{left:8px;right:8px;bottom:8px;width:auto;max-height:calc(var(--app-height) - 24px);height:min(520px,calc(var(--app-height) - 24px));box-sizing:border-box}
+  #screenView{box-sizing:border-box;height:var(--app-height);top:var(--app-top);padding:8px}
+  #screenView article{max-height:calc(var(--app-height) - 16px);min-width:0;overflow:auto}
+  #adminTerminal{top:var(--app-top);height:var(--app-height);box-sizing:border-box;padding:8px}
+  #adminTerminal section{max-width:calc(var(--app-width) - 16px);max-height:calc(var(--app-height) - 16px);overflow:auto}
+  #adminTerminal form{padding:12px;flex-wrap:wrap}
+  #adminTerminal input{min-width:0;flex:1}
+  #adminTerminal .terminalOutput{max-height:calc(var(--app-height) - 220px);overflow:auto}
+  #logicIde{width:calc(var(--app-width) - 16px);height:calc(var(--app-height) - 16px);max-height:calc(var(--app-height) - 16px)}
+  #logicIde header{padding:8px;flex-wrap:wrap}
+  .libraryReader,.dailyWelcome,.billiardsDialog{max-width:calc(var(--app-width) - 16px);max-height:calc(var(--app-height) - 16px);overflow:auto}
+  .libraryReader header{flex-wrap:wrap}
+  .libraryReader select{min-width:0;max-width:100%}
+  .billiardsDialog{width:var(--app-width);height:var(--app-height);max-width:var(--app-width);max-height:var(--app-height)}
+  .monitorWorkspace{grid-template-columns:minmax(0,1fr)}
+  .monitorStage{min-width:0;min-height:120px}
+  .characterMenu,.characterMenu[data-expanded=true]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:fixed;left:50%!important;top:auto!important;bottom:max(8px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(520px,calc(var(--app-width) - 16px));height:auto;max-height:calc(var(--app-height) - 16px);box-sizing:border-box;padding:14px;overflow:auto;pointer-events:auto;background:linear-gradient(145deg,#377e92f5,#21586bf5);border:1px solid #a0d8df;border-radius:18px}
+  .characterMenu .characterIdentity{position:static;transform:none;grid-column:1/-1;width:auto;min-height:42px;padding-right:44px;box-sizing:border-box}
+  .characterMenu .characterOrbitButton{position:static!important;width:auto!important;min-height:78px;transform:none!important;font-size:11px!important}
+  .characterMenu .characterOrbitIcon{width:48px;height:48px}
+  .characterMenu .characterOrbitIcon svg{width:32px;height:32px}
+  .characterMenu .characterMenuClose{right:6px;top:6px;width:44px;height:44px}
+  .characterMenu .characterSubmenu{position:static;grid-column:1/-1;min-width:0;max-height:min(300px,calc(var(--app-height) - 280px));overflow:auto;margin:0;padding:10px}
+  .characterMenu .characterSubmenu button{min-height:44px}
+  .characterMenu .characterReactions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .roomPresenceNotices{top:180px;bottom:auto;max-width:calc(100vw - 24px);pointer-events:none}
+  .keyboardOpen #mobile.touchControls,.keyboardOpen .roomOnlineDock,.keyboardOpen .roomSocialVisibility{display:none!important}
+  .keyboardOpen .onlineRoom{top:calc(var(--app-top) + 8px);left:calc(var(--app-left) + 8px);right:auto;width:calc(var(--app-width) - 16px);max-height:calc(var(--app-height) - 16px);bottom:auto}
+  .keyboardOpen .onlineRoom .onlineTabPages,.keyboardOpen .onlineRoom [data-chat]{max-height:max(48px,calc(var(--app-height) - 170px))}
+  .keyboardOpen .onlineRoom[data-menu=false] .onlineTabs,.keyboardOpen .onlineRoom .onlineSectionTitle,.keyboardOpen .onlineRoom .onlineReactions{display:none}
+  .keyboardOpen #npcConversation{top:calc(var(--app-top) + 8px);bottom:auto;height:calc(var(--app-height) - 16px)}
+}
+@media(max-height:500px) and (orientation:landscape) and (max-width:900px),(max-height:500px) and (orientation:landscape) and (pointer:coarse){
+  .touchJoystick{width:100px;height:100px;flex-basis:100px}
+  .touchActions{grid-template-columns:repeat(3,minmax(52px,68px))}
+  #mobile.touchControls .touchActions button:first-child{grid-column:auto}
+  #cameraViewMode{max-width:136px!important}
+  .roomOnlineDock{left:calc(160px + env(safe-area-inset-left));right:calc(245px + env(safe-area-inset-right));top:8px;height:56px}
+  .roomOnlineDock .roomOnlineSelf,.roomOnlineDock .roomOnlineTotal{display:none}
+  .roomSocialVisibility{top:8px;right:8px}
+  .onlineRoom{top:64px;bottom:auto;max-height:calc(var(--app-height) - 80px);width:min(340px,46vw)}
+  .roomPresenceNotices{top:70px}
+  .characterMenu,.characterMenu[data-expanded=true]{grid-template-columns:repeat(6,minmax(0,1fr));width:calc(var(--app-width) - 16px);max-width:800px}
+  .characterMenu .characterSubmenu{max-height:calc(var(--app-height) - 175px)}
+  .onlineAvatarPreviewStage{height:150px}
+  #status{left:128px;right:230px;bottom:12px;max-width:calc(100vw - 358px);font-size:11px}
+}

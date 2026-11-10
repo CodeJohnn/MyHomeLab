@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="./frontend/css/room-social.css?v=7">
   <link rel="stylesheet" href="./frontend/css/nobility.css?v=3">
   <link rel="stylesheet" href="./frontend/css/daily-rewards.css?v=1">
+  <link rel="stylesheet" href="./frontend/css/responsive-game.css?v=1">
 
 </head>
 
@@ -25,11 +26,7 @@
   <main id="landing" class="landing"></main>
   <noscript>Ative o JavaScript para entrar no HomeLab.</noscript>
   <p id="status" hidden aria-live="polite"></p>
-  <nav id="mobile" aria-label="Controles de movimento">
-    <span class="empty"></span><button type="button" data-key="w" aria-label="Andar para frente">↑</button><span class="empty"></span>
-    <button type="button" data-key="a" aria-label="Andar para esquerda">←</button><button type="button" data-key="s" aria-label="Andar para trás">↓</button><button type="button" data-key="d" aria-label="Andar para direita">→</button>
-    <button type="button" class="mobileInteract" id="mobileInteract">Interagir</button>
-  </nav>
+  <nav id="mobile" class="touchControls" aria-label="Controles por toque"></nav>
   <aside id="toolbar" hidden style="display:none" aria-label="Editor do ambiente">
     <div id="toolbarHeader"><div><span class="editorEyebrow">GUEDESSEC / HOME LAB</span><h2>Editor do ambiente</h2></div><button id="hideToolbar" aria-label="Recolher painel" title="Recolher painel">&#10005;</button></div>
     <div class="editorMode"><span class="editorModeDot"></span><span>Seu espa&ccedil;o, do seu jeito</span></div>
@@ -99,7 +96,7 @@
   <script
     type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
   <script src="./frontend/js/editor-panel.js?v=1" defer></script>
-  <script type="module" src="./frontend/js/react-app.js?v=1"></script>
+  <script type="module" src="./frontend/js/react-app.js?v=2"></script>
 </body>
 
 </html>
