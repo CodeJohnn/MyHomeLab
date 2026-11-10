@@ -22,15 +22,8 @@
 </head>
 
 <body class="landingActive">
-  <main id="landing" class="landing">
-    <header class="landingNav"><a href="#" class="landingBrand" aria-label="HomeLab GuedesSEC"><img src="./frontend/assets/guedessec.png" alt="GuedesSEC" width="55" height="60"><span>GUEDESSEC<span class="brandSlash"> / </span><b>HOMELAB</b></span></a><nav class="landingAccountActions" aria-label="Acesso à conta"><a class="landingAboutLink" href="#about">Sobre o projeto</a><button type="button" data-enter>Entrar</button><button type="button" data-register>Criar conta</button></nav></header>
-    <section class="landingHero" aria-labelledby="landingTitle">
-      <div class="landingCopy"><p class="landingLabel">LABORAT&Oacute;RIO VIRTUAL</p><h1 id="landingTitle">HomeLab<span>_</span></h1><p class="landingIntro">Pode entrar.<br>O laborat&oacute;rio tamb&eacute;m &eacute; seu.</p><p class="landingDescription">Um escrit&oacute;rio em 3D para mexer nas coisas, conversar com o pessoal e jogar uma sinuca entre um projeto e outro.</p><button type="button" data-enter class="landingPlay">Entrar no laborat&oacute;rio <span aria-hidden="true">&#8594;</span></button><p class="landingEntryNote">Direto no navegador. Escolha seu avatar ao entrar.</p><p id="landingLoading" role="status" hidden></p></div>
-      <div class="landingIdentity"><img src="./frontend/assets/guedessec.png" alt="" width="490" height="531"><span>GUEDESSEC &mdash; HOME LAB</span></div>
-    </section>
-    <section class="landingBottom" id="about"><div class="landingAbout"><h2>O que tem por aqui?</h2><p>Computadores, sala de servidores, personagens e um espa&ccedil;o para encontrar amigos. Voc&ecirc; pode personalizar o ambiente, compartilhar v&iacute;deos e jogar junto.</p></div><details class="landingHelp"><summary>Como jogar <span>+</span></summary><p>Use as setas ou WASD para andar e E para interagir. Clique no seu personagem para abrir as a&ccedil;&otilde;es. A tecla V muda a c&acirc;mera.</p><p>No celular, use os controles na tela e toque nos objetos.</p></details></section>
-    <footer class="landingFooter"><span>Feito por GuedesSEC.</span><span>HomeLab / em desenvolvimento</span></footer>
-  </main>
+  <main id="landing" class="landing"></main>
+  <noscript>Ative o JavaScript para entrar no HomeLab.</noscript>
   <p id="status" hidden aria-live="polite"></p>
   <nav id="mobile" aria-label="Controles de movimento">
     <span class="empty"></span><button type="button" data-key="w" aria-label="Andar para frente">↑</button><span class="empty"></span>
@@ -106,7 +99,7 @@
   <script
     type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"}}</script>
   <script src="./frontend/js/editor-panel.js?v=1" defer></script>
-  <script type="module" src="./frontend/js/landing.mjs?v=47"></script>
+  <script type="module" src="./frontend/js/react-app.js?v=1"></script>
 </body>
 
 </html>

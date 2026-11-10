@@ -4,13 +4,21 @@
   "type": "module",
   "scripts": {
     "start": "node backend/server.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "build": "node scripts/build-react.mjs",
+    "dev:react": "node scripts/build-react.mjs --watch",
+    "prestart": "npm run build"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.15",
+    "esbuild": "^0.28.2",
     "three": "0.160.1"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }
