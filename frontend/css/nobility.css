@@ -1,9 +1,15 @@
 .nobleIdentity{--noble-color:#a5a8ae;display:inline-flex;align-items:center;justify-content:center;gap:8px;color:var(--noble-color);font:12px/1.4 system-ui;min-width:0}
 .nobleIdentity img{width:42px;height:42px;object-fit:contain;flex-shrink:0;border-bottom:2px var(--noble-border,solid) var(--noble-color)}
 .nobleIdentity>span{overflow-wrap:anywhere}
+.nobleIdentity img{animation:nobleCrestFloat 4s ease-in-out infinite;transition:scale .25s ease-out;transform-origin:center}
+.nobleIdentity:hover img{scale:1.08}
+@keyframes nobleCrestFloat{
+  0%,100%{transform:translateY(0) rotate(-2deg);filter:drop-shadow(0 0 2px var(--noble-color))}
+  50%{transform:translateY(-3px) rotate(2deg);filter:drop-shadow(0 0 5px var(--noble-color))}
+}
 .roomOnlineMember{flex-basis:118px}.roomOnlineMember>.nobleIdentity{font-size:9px;white-space:normal;text-align:center;max-width:118px}.roomOnlineMember .nobleIdentity img{width:24px;height:24px}.roomOnlineMember>span:last-child{max-width:118px;white-space:normal;overflow:visible}
 .nobleRanking{border-top:1px solid #ffffff20}.nobleRanking>summary{font-size:11px}.nobleRanking ol{max-height:220px;overflow:auto;margin:0;padding:0 16px 12px 38px}.nobleRanking li{padding:7px 0}.nobleRanking li strong{display:block;font-size:12px}.nobleRanking .nobleIdentity{font-size:11px}.nobleRanking img{width:28px;height:28px}
 .noblePromotion{position:fixed;top:20%;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 32px));padding:24px;text-align:center;background:#18161ff5;border:1px solid #d4b477;border-radius:18px;box-shadow:0 15px 70px #0008;z-index:150;pointer-events:none;animation:nobleArrival .6s ease-out}.noblePromotion small{display:block;letter-spacing:2px;color:#eadfc4;font:10px system-ui;margin-bottom:14px}.noblePromotion .nobleIdentity{flex-direction:column;font-size:18px}.noblePromotion img{width:110px;height:110px;filter:drop-shadow(0 0 15px #e5c36d44)}
 @keyframes nobleArrival{from{opacity:0;transform:translate(-50%,15px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
-@media(prefers-reduced-motion:reduce){.noblePromotion{animation:none}}
+@media(prefers-reduced-motion:reduce){.noblePromotion,.nobleIdentity img{animation:none}.nobleIdentity img{transition:none}.nobleIdentity:hover img{scale:1}}
 @media(max-width:700px),(pointer:coarse){.roomOnlineMember{flex-basis:86px}.roomOnlineMember>.nobleIdentity{max-width:86px;font-size:9px;flex-direction:column;gap:2px}.nobleRanking ol{max-height:30dvh}.userCard>.nobleIdentity{display:flex}}
