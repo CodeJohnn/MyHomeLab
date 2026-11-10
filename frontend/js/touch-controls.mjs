@@ -38,7 +38,8 @@ export function createTouchControls({root,onMove,onAction,isEnabled,win=globalTh
   function down(event){
     if(disposed||pointer!==null||!enabled||!isEnabled()||(event.button!==undefined&&event.button!==0))return;
     event.preventDefault();
-    const rect=pad.getBoundingClientRect();centerX=rect.left+rect.width/2;centerY=rect.top+rect.height/2;radius=rect.width*.32;
+    const rect=pad.getBoundingClientRect(),thumbWidth=stick.getBoundingClientRect?.().width||rect.width*.42;
+    centerX=rect.left+rect.width/2;centerY=rect.top+rect.height/2;radius=Math.max(1,(rect.width-thumbWidth)/2-2);
     pointer=event.pointerId;pad.setPointerCapture(pointer);move(event);
   }
   const up=event=>{if(event.pointerId===pointer)reset();};

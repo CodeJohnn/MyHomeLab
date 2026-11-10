@@ -40,7 +40,7 @@ test('direção do joystick acompanha a câmera sem aumentar velocidade ou aloca
 
 test('joystick isola pointers, permite ação simultânea e libera captura em cancelamento/rotação',()=>{
   const document=Object.assign(new EventTarget(),{hidden:false}),win=Object.assign(new EventTarget(),{document});
-  const pad=new EventTarget(),stick={style:{}},captured=new Set(),vectors=[],actions=[];
+  const pad=new EventTarget(),stick={style:{},getBoundingClientRect:()=>({width:40})},captured=new Set(),vectors=[],actions=[];
   pad.getBoundingClientRect=()=>({left:0,top:0,width:120,height:120});
   pad.setPointerCapture=id=>captured.add(id);pad.hasPointerCapture=id=>captured.has(id);pad.releasePointerCapture=id=>captured.delete(id);
   const root=Object.assign(new EventTarget(),{querySelector:selector=>selector==='.touchJoystick'?pad:stick,closest:()=>({dataset:{touchAction:'sit'}})});
@@ -53,6 +53,7 @@ test('joystick isola pointers, permite ação simultânea e libera captura em ca
     pad.dispatchEvent(pointer('pointercancel',2));assert.equal(captured.size,1);
     pad.dispatchEvent(pointer('pointercancel',1));assert.equal(captured.size,0);assert.deepEqual(vectors.at(-1),{x:0,z:0});
     pad.dispatchEvent(pointer('pointerdown',3,60,10));assert.ok(vectors.at(-1).z<0);
+    const offset=Number(stick.style.transform.match(/,(-?[\d.]+)px/)[1]);assert.ok(Math.abs(offset)+20<=60);
     win.dispatchEvent(new Event('resize'));assert.equal(captured.size,0);assert.deepEqual(vectors.at(-1),{x:0,z:0});
     allowed=false;const count=vectors.length;pad.dispatchEvent(pointer('pointerdown',4,100,60));assert.equal(vectors.length,count);
     root.dispatchEvent(new Event('click'));assert.equal(actions.length,1);

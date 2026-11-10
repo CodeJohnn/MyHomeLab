@@ -1,3 +1,4 @@
+import {createMobileHud} from './mobile-hud.mjs';
 import {wardrobe} from './avatar-wardrobe.mjs';
 import {createPeerVideo} from './peer-video.mjs';
 import {apiUrl} from './config.mjs';
@@ -112,6 +113,7 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
   visibilityControls.setAttribute('aria-label','Visibilidade dos painéis');
   panel.id='roomChatPanel';onlineDock.id='roomOnlinePanel';
 
+  const socialVisibility=[];
   for(const [key,label,target] of [['chat','Conversa',panel],['online','Online',onlineDock]]){
     let visible=true;
     try{visible=localStorage.getItem('homelab.panel.compact.'+key)!=='hidden';}catch{}
@@ -125,9 +127,10 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
       button.setAttribute('aria-pressed',String(visible));
     };
     button.onclick=()=>{visible=!visible;if(visible){target.open=true;if(key==='chat')selectOnlineTab('chat');}apply();try{localStorage.setItem('homelab.panel.compact.'+key,visible?'visible':'hidden');}catch{}};
-    apply();visibilityControls.append(button);
+    apply();visibilityControls.append(button);socialVisibility.push({key,target,button,apply});
   }
   document.body.append(visibilityControls);
+  const mobileHud=createMobileHud({entries:socialVisibility,panel,visibilityControls,openChat:()=>selectOnlineTab('chat')});
   const ranking=document.createElement('details');ranking.className='nobleRanking';ranking.innerHTML='<summary>Prestígio • nesta sala</summary><ol></ol>';onlineDock.append(ranking);
   const profilePrestige=document.createElement('div');renderNobility(profilePrestige);panel.querySelector('[data-page="profile"]').prepend(profilePrestige);
   const profileDialog=document.createElement('dialog');profileDialog.className='onlineProfileDialog';
@@ -431,7 +434,7 @@ export function createSharedRoom({getPose,getPortrait,onMembers,onVideo,onSpawn,
       try{sessionStorage.removeItem(sessionKey(room));}catch{}
     }
     clearTimeout(reconnectTimer);reconnectTimer=null;
-    typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();stripObserver.disconnect();removeEventListener('avatar-texture-ready',refreshPortraits);
+    typingPresence.stop();events?.close();peer.close();avatarPreview?.dispose();mobileHud.dispose();stripObserver.disconnect();removeEventListener('avatar-texture-ready',refreshPortraits);
   });
   addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
   el('join').textContent='Entrar no mundo';

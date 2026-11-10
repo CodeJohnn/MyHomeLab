@@ -6,7 +6,7 @@ body:not(.landingActive){overflow:hidden;overscroll-behavior:none}
 dialog{box-sizing:border-box;max-width:calc(var(--app-width) - 24px);max-height:calc(var(--app-height) - 24px);overscroll-behavior:contain}
 
 /* Touch is the base layout; the existing desktop HUD remains outside this query. */
-@media(max-width:900px),(pointer:coarse){
+@media(max-width:960px),(pointer:coarse){
   body:not(.landingActive) button{min-height:44px;touch-action:manipulation}
   input:not([type=range]):not([type=color]):not([type=checkbox]),textarea,select{font-size:16px!important;max-width:100%;box-sizing:border-box}
   .onlineProfileDialog .accessoryInventory button,.onlineProfileDialog .onlineAvatarPreviewAngles button,.onlineRoom .onlineTabs button{min-height:44px}
@@ -82,7 +82,7 @@ dialog{box-sizing:border-box;max-width:calc(var(--app-width) - 24px);max-height:
   .keyboardOpen .onlineRoom[data-menu=false] .onlineTabs,.keyboardOpen .onlineRoom .onlineSectionTitle,.keyboardOpen .onlineRoom .onlineReactions{display:none}
   .keyboardOpen #npcConversation{top:calc(var(--app-top) + 8px);bottom:auto;height:calc(var(--app-height) - 16px)}
 }
-@media(max-height:500px) and (orientation:landscape) and (max-width:900px),(max-height:500px) and (orientation:landscape) and (pointer:coarse){
+@media(max-height:500px) and (orientation:landscape) and (max-width:960px),(max-height:500px) and (orientation:landscape) and (pointer:coarse){
   .touchJoystick{width:100px;height:100px;flex-basis:100px}
   .touchActions{grid-template-columns:repeat(3,minmax(52px,68px))}
   #mobile.touchControls .touchActions button:first-child{grid-column:auto}
@@ -97,3 +97,51 @@ dialog{box-sizing:border-box;max-width:calc(var(--app-width) - 24px);max-height:
   .onlineAvatarPreviewStage{height:150px}
   #status{left:128px;right:230px;bottom:12px;max-width:calc(100vw - 358px);font-size:11px}
 }
+
+/* Compact HUD: existing controls are moved into one bar only on touch layouts. */
+.mobileGameBar[hidden]{display:none!important}
+.compactGameHud .mobileGameBar{position:fixed;left:var(--hud-bar-x);top:var(--hud-bar-y);width:var(--hud-bar-width);height:var(--hud-bar-height);display:flex;align-items:center;gap:6px;z-index:30;pointer-events:none;box-sizing:border-box}
+.compactGameHud .mobileGameBar>*{pointer-events:auto;min-width:0;box-sizing:border-box}
+.compactGameHud .mobileGameBar #cameraViewMode{position:static!important;inset:auto!important;flex:0 1 144px;width:144px;min-width:72px;max-width:144px!important;height:44px;min-height:44px;margin:0;padding:6px;font-size:12px!important}
+.compactGameHud .mobileGameBar .roomSocialVisibility{position:static;inset:auto;display:flex;flex:0 0 auto;gap:4px;margin:0 0 0 auto;max-width:none}
+.compactGameHud .mobileGameBar .roomSocialVisibility[hidden]{display:none!important}
+.compactGameHud .mobileGameBar .roomSocialVisibility button{width:52px;min-width:44px;height:44px;min-height:44px;padding:4px;font-size:11px;white-space:nowrap;border-radius:12px}
+.compactGameHud .mobileGameBar #showToolbar{position:static;inset:auto;flex:0 1 100px;min-width:44px;max-width:100px;min-height:44px;height:44px;padding:6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.compactGameHud .mobileGameBar #showToolbar[hidden]{display:none!important}
+.compactGameHud #mobile.touchControls:not([hidden]){display:block!important;inset:0;gap:0;width:auto;height:auto;pointer-events:none}
+.compactGameHud #mobile.touchControls[hidden],.compactGameHud body.landingActive #mobile.touchControls:not([hidden]),.compactGameHud.keyboardOpen #mobile.touchControls:not([hidden]){display:none!important}
+.compactGameHud .touchJoystick{position:absolute;left:var(--hud-joystick-x);top:var(--hud-joystick-y);width:var(--hud-joystick-width);height:var(--hud-joystick-height);box-sizing:border-box}
+.compactGameHud .touchStick{width:40px;height:40px;box-sizing:border-box}
+.compactGameHud .touchJoystickLabel{bottom:4px;font-size:10px}
+.compactGameHud .touchActions{position:absolute;left:var(--hud-actions-x);top:var(--hud-actions-y);width:var(--hud-actions-width);height:var(--hud-actions-height);grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:44px;gap:4px;box-sizing:border-box}
+.compactGameHud #mobile.touchControls .touchActions button{min-width:0;min-height:44px;height:44px;padding:4px;font-size:11px;border-radius:10px;box-sizing:border-box;line-height:1.15}
+.compactGameHud #mobile.touchControls .touchActions button:first-child{grid-column:1/-1}
+.compactGameHud[data-hud-orientation=landscape] .touchActions{grid-template-columns:repeat(3,minmax(0,1fr))}
+.compactGameHud[data-hud-orientation=landscape] #mobile.touchControls .touchActions button:first-child{grid-column:auto}
+.compactGameHud .onlineRoom,.compactGameHud .roomOnlineDock{position:fixed;left:var(--hud-panel-x);top:var(--hud-panel-y);right:auto;bottom:auto;width:var(--hud-panel-width);height:var(--hud-panel-height);max-width:var(--hud-panel-width);max-height:var(--hud-panel-height);transform:none;box-sizing:border-box;border-radius:14px;overflow:hidden;z-index:22;backdrop-filter:none}
+.compactGameHud .onlineRoom:not(.socialPanelHidden):not([hidden]){display:flex;flex-direction:column}
+.compactGameHud .onlineRoom[hidden],.compactGameHud .roomOnlineDock[hidden]{display:none!important}
+.compactGameHud .onlineRoom>summary{height:44px;min-height:44px;flex:0 0 44px;padding:0 10px;box-sizing:border-box;gap:8px}
+.compactGameHud .onlineRoom .onlineBody{display:flex;flex:1;flex-direction:column;min-height:0;overflow:auto;padding:0 8px 8px;gap:4px}
+.compactGameHud .onlineRoom .onlineTabPages{flex:1;min-height:0;max-height:none;overflow:auto}
+.compactGameHud .onlineRoom [data-page=chat],.compactGameHud .onlineRoom .onlineChatSlot,.compactGameHud .onlineRoom .onlineSocial{min-height:0;height:100%;box-sizing:border-box}
+.compactGameHud .onlineRoom .onlineSocial{display:flex;flex-direction:column}
+.compactGameHud .onlineRoom [data-chat]{flex:1;min-height:0;height:auto;max-height:none;margin:0 0 4px;padding:6px;font-size:12px;overflow:auto}
+.compactGameHud .onlineRoom [data-form]{position:static;flex:0 0 44px;gap:4px}
+.compactGameHud .onlineRoom[data-menu] [data-form]>button,.compactGameHud .onlineRoom[data-menu] [data-form]>.onlineOptions{flex:0 0 44px;width:44px;min-height:44px;height:44px}
+.compactGameHud .onlineRoom [data-message]{padding:5px 8px;height:36px}
+.compactGameHud .onlineRoom .spaceEmojiPicker{position:absolute;inset:44px 4px 56px;min-height:0;max-height:none;grid-template-columns:repeat(4,minmax(0,1fr));overflow:auto;box-sizing:border-box}
+.compactGameHud .onlineRoom .spaceEmojiPicker[hidden]{display:none!important}
+.compactGameHud .onlineRoom .spaceEmojiPicker button{min-height:44px;min-width:0}
+.compactGameHud .roomOnlineDock:not(.socialPanelHidden):not([hidden]){display:flex;flex-wrap:wrap;align-content:flex-start;align-items:center;padding:8px;gap:4px;overflow:auto}
+.compactGameHud .roomOnlineDock .roomOnlineTotal{position:static;display:block;flex:1 1 100%;width:auto;height:auto;max-width:none;min-height:20px;overflow:visible;clip-path:none;white-space:normal;font-size:11px}
+.compactGameHud .roomOnlineDock .roomOnlineSelf{display:block;flex:0 0 44px;min-width:44px}
+.compactGameHud .roomOnlineDock .roomOnlineMembers{flex:1;min-width:0;height:56px;overflow-x:auto;overflow-y:hidden}
+.compactGameHud .roomOnlineDock .roomOnlineMember,.compactGameHud .roomOnlineDock .roomOnlineMember.isSelf{min-width:44px;width:44px;flex-basis:44px;height:52px}
+.compactGameHud .roomOnlineDock .roomMemberArrow{flex:0 0 44px;min-width:44px;width:44px;padding:0;height:44px}
+.compactGameHud .roomOnlineDock>.nobleRanking{position:static;flex:1 1 100%;max-width:100%;margin-top:4px;box-sizing:border-box}
+.compactGameHud .roomOnlineDock>.nobleRanking>summary{display:flex;align-items:center;min-height:44px;padding:4px 8px;box-sizing:border-box}
+.compactGameHud .roomOnlineDock>.nobleRanking ol{max-height:100px;overflow:auto}
+.compactGameHud .roomOnlineDock .roomMemberCard{position:relative;inset:auto;max-width:100%;flex:1 1 100%;box-sizing:border-box;overflow-wrap:anywhere}
+.compactGameHud .roomPresenceNotices{position:fixed;left:var(--hud-notices-x);top:var(--hud-notices-y);right:auto;bottom:auto;transform:none;width:var(--hud-notices-width);max-width:var(--hud-notices-width);max-height:var(--hud-notices-height);overflow:hidden;box-sizing:border-box;z-index:21}
+.compactGameHud #status{position:fixed;left:var(--hud-status-x);top:var(--hud-status-y);right:auto;bottom:auto;width:var(--hud-status-width);max-width:var(--hud-status-width);max-height:var(--hud-status-height);margin:0;font-size:11px;overflow:hidden;box-sizing:border-box}

@@ -2991,7 +2991,10 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       }
       const closeCharacterMenu=document.createElement('button');closeCharacterMenu.type='button';closeCharacterMenu.className='characterMenuClose';closeCharacterMenu.setAttribute('aria-label','Fechar menu do personagem');closeCharacterMenu.innerHTML='&#10005;';closeCharacterMenu.onclick=()=>closeAvatarMenu();actionMenu.append(closeCharacterMenu);
       function closeAvatarMenu(){actionMenu.hidden=true;actionMenu.open=false;if(ownNobleTag)ownNobleTag.visible=true;}
+      addEventListener('game-social-panel-open',closeAvatarMenu);
+      addEventListener('pagehide',()=>removeEventListener('game-social-panel-open',closeAvatarMenu),{once:true});
       function openAvatarMenu(x=innerWidth/2,y=innerHeight/2){
+        window.dispatchEvent(new Event('game-hud-modal-open'));
         const name=sharedRoom?.getProfile()?.name||localStorage.getItem('homelab.name')||'Visitante';actionTitle.querySelector('strong').textContent=name;about.querySelector('[data-about-name]').textContent=name;selectCharacterCategory(null);
         actionMenu.hidden=false;keys.clear();walkTarget=null;walkPath=[];
         if(ownNobleTag)ownNobleTag.visible=false;
@@ -3065,6 +3068,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       }
       const toolbar = document.getElementById('toolbar'), showToolbar = document.getElementById('showToolbar');
       function setEditorVisible(visible) {
+        if(visible&&document.documentElement.classList.contains('compactGameHud')){closeAvatarMenu();window.dispatchEvent(new Event('game-hud-modal-open'));}
         if(!visible && edit)document.getElementById('edit').click();
         toolbar.hidden=!visible;toolbar.style.display=visible?'':'none';
         showToolbar.hidden=true;showToolbar.style.display='none';
@@ -4729,8 +4733,8 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         const modal=edit||!actionMenu.hidden||bookLibrary.isOpen||boardEditor.open||!conversation.hidden||document.getElementById('adminTerminal')?.hidden===false;
         const overlay=document.getElementById('dialog').style.display==='flex'||document.getElementById('screenView').style.display==='flex';
         const editing=document.querySelector('dialog[open],input:focus,textarea:focus,[contenteditable=true]:focus');
-        const mobileChat=(isMobile||innerWidth<=900)&&document.querySelector('.onlineRoom[data-history=open]:not([hidden]):not(.socialPanelHidden),.onlineRoom[data-menu=true]:not([hidden]):not(.socialPanelHidden)');
-        return !!(modal||overlay||editing||mobileChat);
+        const mobileEditor=document.documentElement.classList.contains('compactGameHud')&&!toolbar.hidden;
+        return !!(modal||overlay||editing||mobileEditor);
       }
       addEventListener('keydown', e => {
         if (e.target?.matches?.('input, textarea, select')) return;
@@ -4952,7 +4956,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         updateNpcChats(dt);
         performanceMonitor.end(t);
       }
-      const { createSharedRoom } = await import('./shared-room.mjs?v=equipment-37');
+      const { createSharedRoom } = await import('./shared-room.mjs?v=mobile-hud-2');
       const networkScreens=[...playableScreens.values()];
       networkScreens.forEach((monitor,index)=>monitor.networkScreen=`screen-${index}`);
       document.querySelector('.monitorUploadHint').textContent='Compartilhado com a sala · até 100 MB';

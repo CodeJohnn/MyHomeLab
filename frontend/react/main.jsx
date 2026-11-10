@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {flushSync} from 'react-dom';
 import LandingPage from './LandingPage.jsx';
-import {initializeLanding} from '../js/landing.mjs?v=react-1';
+import {initializeLanding} from '../js/landing.mjs?v=mobile-hud-2';
 
 const viewport=trackMobileViewport();
 const stopViewport=event=>{if(!event.persisted){viewport.dispose();removeEventListener('pagehide',stopViewport);}};
