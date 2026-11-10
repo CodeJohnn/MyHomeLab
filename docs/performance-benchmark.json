@@ -1,0 +1,74 @@
+{
+  "baselineRef": "b643598",
+  "node": "v24.18.0",
+  "platform": "win32",
+  "mode": "CPU-only Node microbenchmark; no WebGL rendering",
+  "npcTyping": {
+    "characters": 5,
+    "framesPerTrial": 2000,
+    "trials": 9,
+    "beforeMedianMs": 11.605899999999991,
+    "afterMedianMs": 6.885899999999992,
+    "speedup": 1.6854586909481701
+  },
+  "exterior": {
+    "before": {
+      "meshSubmissionsIfAllVisible": 709,
+      "triangles": 88336,
+      "uniqueGeometries": 709,
+      "uniqueMaterials": 91,
+      "geometryAndInstanceBufferBytes": 6332600,
+      "buildMedianMs": 65.06169999999997,
+      "pool": null,
+      "batching": {
+        "batches": 0,
+        "removed": 0
+      }
+    },
+    "after": {
+      "meshSubmissionsIfAllVisible": 639,
+      "triangles": 88336,
+      "uniqueGeometries": 75,
+      "uniqueMaterials": 91,
+      "geometryAndInstanceBufferBytes": 613440,
+      "buildMedianMs": 12.337200000000053,
+      "pool": {
+        "hits": 634,
+        "misses": 54,
+        "cached": 54
+      },
+      "batching": {
+        "batches": 15,
+        "removed": 70
+      }
+    }
+  },
+  "collision": {
+    "queries": 20000,
+    "boxes": 278,
+    "identicalHits": 1912,
+    "beforeMedianMs": 19.873500000000035,
+    "afterMedianMs": 2.0282999999999447,
+    "speedup": 9.798106788936833
+  },
+  "stability": {
+    "warmupBuildDisposeCycles": 12,
+    "measuredBuildDisposeCycles": 48,
+    "explicitGc": true,
+    "heapBeforeBytes": 11606552,
+    "heapAfterBytes": 11919888,
+    "heapDeltaBytes": 313336,
+    "postGcHeapSamples": [
+      11622528,
+      11741456,
+      11689288,
+      11919888
+    ]
+  },
+  "browser": {
+    "fps": null,
+    "gpuMs": null,
+    "vramBytes": null,
+    "note": "Browser unavailable; mesh submissions are theoretical and buffer bytes are CPU typed arrays, not measured draw calls or VRAM."
+  }
+}

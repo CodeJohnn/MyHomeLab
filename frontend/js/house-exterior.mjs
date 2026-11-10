@@ -1,5 +1,6 @@
+import {instanceStaticDecoration} from './repeated-meshes.mjs';
 // Somente elementos externos: nao altera pisos, paredes ou objetos dos comodos.
-export function createHouseExterior({THREE,scene,box,cyl,sphere,M}) {
+export function createHouseExterior({THREE,scene,box,cyl,sphere,M,optimizeDecoration=true}) {
   const garden=new THREE.Group();garden.name='Exterior da casa';scene.add(garden);
   const lawn=M('#70945b'),paving=M('#c9bda7'),stone=M('#a19887'),fence=M('#ddd5c3');
   const soil=M('#705640'),trunk=M('#73513a'),leaves=M('#487344'),shrub=M('#64864c');
@@ -138,6 +139,7 @@ export function createHouseExterior({THREE,scene,box,cyl,sphere,M}) {
     if(bounds.min.y<1.8&&bounds.max.y>.08)colliders.push(bounds);
   });
   // O entorno fixo nao precisa recalcular suas matrizes a cada quadro.
+  const batching=optimizeDecoration?instanceStaticDecoration(THREE,garden):{batches:0,removed:0};
   garden.traverse(object=>{object.updateMatrix();object.matrixAutoUpdate=false;});
   // Trafego decorativo em faixas separadas, fora da area de caminhada.
   const traffic=new THREE.Group();traffic.name='Carros nas ruas';scene.add(traffic);
@@ -174,5 +176,5 @@ export function createHouseExterior({THREE,scene,box,cyl,sphere,M}) {
       for(const wheel of wheels)wheel.rotation.z-=speed*dt/.29;
     }
   }
-  return {roof,colliders,updateTraffic,internetEntry:new THREE.Vector3(11.1,2.2,-3.3),powerEntry:new THREE.Vector3(11.7,1.45,-3.3)};
+  return {roof,colliders,updateTraffic,batching,internetEntry:new THREE.Vector3(11.1,2.2,-3.3),powerEntry:new THREE.Vector3(11.7,1.45,-3.3)};
 }

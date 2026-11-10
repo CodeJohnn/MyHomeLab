@@ -3,6 +3,9 @@
     import {updateRoomLoading} from './room-loading.mjs';
     import {createPerformanceMonitor} from './performance-monitor.mjs';
     import {instanceMeshes} from './repeated-meshes.mjs';
+    import {createPrimitivePool,disposePrivateGeometry} from './primitive-pool.mjs';
+    import {createTypingPoseSolver} from './npc-typing-pose.mjs';
+    import {createColliderIndex} from './collider-index.mjs';
     import {paintPlayerNameplate} from './player-nameplate.mjs';
     import {createScreenDepth} from './screen-depth.mjs';
     import {paintSpeechBubble} from './speech-bubble.mjs';
@@ -51,7 +54,9 @@
       let firstPerson=false,eyeYaw=0,eyePitch=0,viewMode='overview',followOrbit=0,followPitch=.28,followDistance=3.2,followBoom=3.2,lastFollowUpdate=0;
       const skyLight=new THREE.HemisphereLight(0xe3f4ff,0x6c554b,2.3);scene.add(skyLight); const sun = new THREE.DirectionalLight(0xfff3dc, 3.3); sun.position.set(-4, 11, 7); sun.castShadow = true; sun.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(sun);
       const M = (c, metalness = 0, roughness = .72) => new THREE.MeshStandardMaterial({ color: c, metalness, roughness }); const wood = M('#a97b58'), woodLight = M('#c49b75'), black = M('#151d25', .2, .42), metal = M('#39434b', .65, .35), wall = M('#bdc1c5'), tile = M('#98765c'), white = M('#dce5e7'), blue = M('#2daaff'), glass = new THREE.MeshPhysicalMaterial({ color: '#294b62', metalness: .12, roughness: .14, transparent: true, opacity: .7 }); const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
-      function box(g, w, h, d, m, x = 0, y = 0, z = 0, r = 0) { const geo = r ? new RoundedBoxGeometry(w, h, d, 2, Math.min(r, w / 2 - .001, h / 2 - .001, d / 2 - .001)) : new THREE.BoxGeometry(w, h, d); const a = new THREE.Mesh(geo, m); a.position.set(x, y, z); a.castShadow = true; a.receiveShadow = true; g.add(a); return a } function cyl(g, r, h, m, x, y, z, segments = 24) { const a = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, segments), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a } function sphere(g, r, m, x, y, z) { const a = new THREE.Mesh(new THREE.SphereGeometry(r, isMobile ? 16 : 18, 12), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a }
+      const primitivePool=createPrimitivePool(THREE,RoundedBoxGeometry);
+      addEventListener('pagehide',()=>primitivePool.dispose(),{once:true});
+      function box(g, w, h, d, m, x = 0, y = 0, z = 0, r = 0) { const a = new THREE.Mesh(primitivePool.box(w,h,d,r), m); a.position.set(x, y, z); a.castShadow = true; a.receiveShadow = true; g.add(a); return a } function cyl(g, r, h, m, x, y, z, segments = 24) { const a = new THREE.Mesh(primitivePool.cylinder(r,h,segments), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a } function sphere(g, r, m, x, y, z) { const a = new THREE.Mesh(primitivePool.sphere(r,isMobile?16:18), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a }
       scene.background = new THREE.Color('#bdd9e6');
       const {createHouseExterior}=await import('./house-exterior.mjs?v=static-transforms-9');
       const houseExterior=createHouseExterior({THREE,scene,box,cyl,sphere,M});
@@ -1730,7 +1735,7 @@
         const span=panel.geometry.parameters.width,hx=x-panel.position.x,hy=y-panel.position.y;
         const shape=new THREE.Shape();shape.moveTo(-span/2,-WALL_HEIGHT/2);shape.lineTo(span/2,-WALL_HEIGHT/2);shape.lineTo(span/2,WALL_HEIGHT/2);shape.lineTo(-span/2,WALL_HEIGHT/2);shape.closePath();
         const hole=new THREE.Path();hole.moveTo(hx-width/2,hy-height/2);hole.lineTo(hx-width/2,hy+height/2);hole.lineTo(hx+width/2,hy+height/2);hole.lineTo(hx+width/2,hy-height/2);hole.closePath();shape.holes.push(hole);
-        const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.translate(0,0,-.07);panel.geometry.dispose();panel.geometry=geometry;
+        const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.translate(0,0,-.07);disposePrivateGeometry(panel.geometry);panel.geometry=geometry;
         const frame=new THREE.Group();frame.position.set(x,y,z);frame.userData.wallAttachment=true;parent.add(frame);
         const aluminum=M('#34454b',.65,.35),sill=M('#e0d8c8');
         for(const xx of [-width/2,0,width/2])box(frame,.055,height+.08,.19,aluminum,xx,0,0,.004);
@@ -2100,7 +2105,7 @@
         const shape=new THREE.Shape();shape.moveTo(-span/2,-WALL_HEIGHT/2);shape.lineTo(span/2,-WALL_HEIGHT/2);shape.lineTo(span/2,WALL_HEIGHT/2);shape.lineTo(-span/2,WALL_HEIGHT/2);shape.closePath();
         const hx=-(z-wallMesh.position.z),hy=centerY-WALL_HEIGHT/2;
         const hole=new THREE.Path();hole.moveTo(hx-width/2,hy-height/2);hole.lineTo(hx-width/2,hy+height/2);hole.lineTo(hx+width/2,hy+height/2);hole.lineTo(hx+width/2,hy-height/2);hole.closePath();shape.holes.push(hole);
-        const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.rotateY(Math.PI/2);geometry.translate(-.07,0,0);wallMesh.geometry.dispose();wallMesh.geometry=geometry;
+        const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.rotateY(Math.PI/2);geometry.translate(-.07,0,0);disposePrivateGeometry(wallMesh.geometry);wallMesh.geometry=geometry;
         const frame=new THREE.Group();frame.userData.wallAttachment=true;frame.position.set(x,centerY,z);frame.rotation.y=side==='left'?Math.PI/2:-Math.PI/2;parent.add(frame);
         const aluminum=M('#293d47',.7,.3), sill=M('#d6d9d3');
         for(const xx of [-width/2,width/2])box(frame,.055,height+.1,.2,aluminum,xx,0,0,.005);
@@ -2697,7 +2702,7 @@
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
       const avatarTemplate=avatar.clone(true);
       const {disposeEquipment}=await import('./avatar-equipment.mjs');
-      const {applyAvatarAppearance}=await import('./avatar-appearance.mjs?v=equipment-24');
+      const {applyAvatarAppearance,disposeAvatarAppearance}=await import('./avatar-appearance.mjs?v=equipment-24');
       const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=equipment-9');
       const npcs = [];
       const npcMind=createNpcMind();
@@ -2716,7 +2721,7 @@
         const torso=new THREE.Mesh(new THREE.LatheGeometry(bodyProfile,20),outfit);torso.position.y=.8;torso.scale.z=.69;torso.castShadow=true;root.add(torso);
         const isSuit=false;
         function softLimb(parent,width,length,depth,material,x,y,z) {
-          const mesh=new THREE.Mesh(new THREE.CapsuleGeometry(1,6,4,10),material);
+          const mesh=new THREE.Mesh(primitivePool.capsule(1,6,4,10),material);
           mesh.scale.set(width/2,length/8,depth/2);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
         }
         const coatLayer=new THREE.Group();coatLayer.name='npcCoat';coatLayer.scale.x=.88;root.add(coatLayer);
@@ -3196,7 +3201,7 @@
         camera.position.set(cameraCenter.x+Math.sin(viewYaw)*16*Math.cos(viewPitch),cameraCenter.y+16*Math.sin(viewPitch),cameraCenter.z+Math.cos(viewYaw)*16*Math.cos(viewPitch));camera.lookAt(cameraCenter);
         // A visibilidade fica em updateActiveRoomWalls, junto com as oclusoes.
         // Alterar aqui restaurava paredes ocultadas entre duas atualizacoes.
-      } cameraUpdate(); addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); cameraUpdate() });
+      } cameraUpdate(); addEventListener('resize', () => { renderer.setPixelRatio(Math.min(devicePixelRatio,isMobile?1.6:1.5));renderer.setSize(innerWidth, innerHeight); cameraUpdate() });
       const viewButton=document.getElementById('toggleFirstPerson');
       const viewSelect=document.createElement('select');viewSelect.id='cameraViewMode';viewSelect.setAttribute('aria-label','Modo de camera');
       viewSelect.style.cssText='position:fixed;left:14px;top:58px;z-index:6;padding:9px;border-radius:8px;background:#14212b;color:#e7eff4;border:1px solid #77918d;max-width:190px';
@@ -3329,13 +3334,14 @@
             .map(bounds=>bounds.applyMatrix4(o.g.matrixWorld));
         }).filter(b => b.min.y < 1.95 && b.max.y > .08).concat([...apartmentWalls,leftWall,rightWall].map(mesh => new THREE.Box3().setFromObject(mesh)).filter(b => b.min.y < 1.95),houseExterior.colliders,bathroom.boundaries);
       }
-      let doorColliderSignature='',doorColliders=[];
+      const doorColliderSources=[{root:restrictedDoor,leaf:restrictedDoorLeaf},{root:entranceDoor,leaf:entranceLeaf},{root:bathroom.door,leaf:bathroom.leaf}];
+      const doorColliderAngles=new Float64Array(3).fill(NaN),doorColliders=doorColliderSources.map(()=>new THREE.Box3());
+      let indexedColliders=null,roomColliderIndex=null;
       function refreshDoorColliders() {
-        const signature=restrictedDoor.rotation.y.toFixed(3)+':'+entranceDoor.rotation.y.toFixed(3)+':'+bathroom.door.rotation.y.toFixed(3);
-        if(signature===doorColliderSignature)return;
-        doorColliderSignature=signature;
-        restrictedDoor.updateWorldMatrix(true,true);entranceDoor.updateWorldMatrix(true,true);bathroom.door.updateWorldMatrix(true,true);
-        doorColliders=[restrictedDoorLeaf,entranceLeaf,bathroom.leaf].map(mesh=>new THREE.Box3().setFromObject(mesh));
+        for(let i=0;i<doorColliderSources.length;i++){
+          const source=doorColliderSources[i],angle=source.root.rotation.y;if(doorColliderAngles[i]===angle)continue;
+          doorColliderAngles[i]=angle;source.root.updateWorldMatrix(true,true);doorColliders[i].setFromObject(source.leaf);
+        }
       }
       function roomBlocked(x, z, radius = .23, outdoors=false) {
         const area=outdoors?WALK_AREA:ROOM;
@@ -3346,12 +3352,8 @@
           if((x-cx)**2+(z-cz)**2<radius**2)return true;
         }
         if (!roomColliders) refreshRoomColliders();
-        for (const b of roomColliders) {
-          const cx = Math.max(b.min.x, Math.min(x, b.max.x));
-          const cz = Math.max(b.min.z, Math.min(z, b.max.z));
-          if ((x - cx) ** 2 + (z - cz) ** 2 < radius ** 2) return true;
-        }
-        return false;
+        if(indexedColliders!==roomColliders){indexedColliders=roomColliders;roomColliderIndex=createColliderIndex(roomColliders);}
+        return roomColliderIndex.blocked(x,z,radius);
       }
       function avatarBlocked(x, z) {
         return roomBlocked(x, z, .23, true) || npcs.some(npc => Math.hypot(x - npc.root.position.x, z - npc.root.position.z) < .46);
@@ -3403,7 +3405,7 @@
       }
       function solderWorkPosition() {
         const bench=byId.mesaL.g;
-        bench.updateWorldMatrix(true,true);
+        bench.updateWorldMatrix(true,false);
         const candidates=[{x:-.18,z:.84,tx:-.18,tz:.30,angle:Math.PI},{x:-.12,z:-.82,tx:-.12,tz:-.27,angle:0},
           {x:-1.55,z:.02,tx:-1,tz:.02,angle:Math.PI/2},
           {x:1.54,z:1.1,tx:1.04,tz:1.1,angle:-Math.PI/2},
@@ -3743,26 +3745,7 @@
         npc.head.rotation.z=Math.sin(t*.0015)*.035;
         return true;
       }
-      function poseNpcTyping(npc,station,time) {
-        const keyboard=station.userData.keyboard;if(!keyboard)return;
-        // IK reads only these two world transforms, not every descendant mesh/bone.
-        npc.root.updateWorldMatrix(true,false);keyboard.updateWorldMatrix(true,false);
-        const down=new THREE.Vector3(0,-1,0),upperLength=npc.upperLength||.22,lowerLength=npc.lowerLength||.27;
-        npc.arms.forEach((arm,i)=>{
-          const side=i===0?-1:1;
-          const target=keyboard.localToWorld(new THREE.Vector3(-side*.145,.063+Math.sin(time*.015+i*Math.PI)*.004,.02));
-          npc.root.worldToLocal(target);
-          const shoulder=arm.position.clone(),delta=target.clone().sub(shoulder);
-          const distance=THREE.MathUtils.clamp(delta.length(),.025,upperLength+lowerLength-.002),direction=delta.normalize();
-          const along=(upperLength*upperLength-lowerLength*lowerLength+distance*distance)/(2*distance);
-          const outward=new THREE.Vector3(side*.4,-1,0).normalize();
-          const bend=outward.addScaledVector(direction,-outward.dot(direction)).normalize();
-          const elbowPoint=shoulder.clone().addScaledVector(direction,along).addScaledVector(bend,Math.sqrt(Math.max(0,upperLength*upperLength-along*along)));
-          arm.quaternion.setFromUnitVectors(down,elbowPoint.clone().sub(shoulder).normalize());
-          const lowerDirection=target.sub(elbowPoint).normalize().applyQuaternion(arm.quaternion.clone().invert());
-          npc.forearms[i].quaternion.setFromUnitVectors(down,lowerDirection);
-        });
-      }
+      const poseNpcTyping=createTypingPoseSolver(THREE);
       function updateNpcs(dt, t) {
         if (edit) return;
         if(t>=nextNpcThink&&!document.hidden){
@@ -4837,17 +4820,7 @@
           }
         };
       }
-      let mobilePixelRatio=Math.min(devicePixelRatio,isMobile?1.6:1.5),qualityStart=0,qualityFrames=0,lastQualityChange=0;
-      function updateMobileQuality(time){
-        if(!qualityStart)qualityStart=time;
-        qualityFrames++;
-        if(time-qualityStart<4000)return;
-        const fps=qualityFrames*1000/(time-qualityStart);qualityFrames=0;qualityStart=time;
-        if(time-lastQualityChange<12000)return;
-        const slow=isMobile?23:42,fast=isMobile?28:56;
-        const next=fps<slow?Math.max(Math.min(devicePixelRatio,1),mobilePixelRatio-.1):fps>fast?Math.min(devicePixelRatio,isMobile?1.6:1.5,mobilePixelRatio+.1):mobilePixelRatio;
-        if(Math.abs(next-mobilePixelRatio)>.01){mobilePixelRatio=next;renderer.setPixelRatio(next);renderer.setSize(innerWidth,innerHeight);lastQualityChange=time;}
-      }
+      // Preserve the initial pixel ratio: optimization must not reduce visual quality.
       // Budget local lights by proximity; distant fixtures keep their emissive surfaces.
       const localLightPools={point:[],spot:[]};
       scene.traverse(node=>{if(node.isSpotLight)localLightPools.spot.push(node);else if(node.isPointLight)localLightPools.point.push(node);});
@@ -4868,7 +4841,7 @@
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
-        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();frameClock.reset(t);qualityStart=0;qualityFrames=0;return;}
+        if(document.hidden||document.querySelector('.onlineProfileDialog[open]')){performanceMonitor.pause();frameClock.reset(t);return;}
         const dt=frameClock.next(t);
         if(dt===null)return;
         performanceMonitor.begin();
@@ -5017,7 +4990,6 @@
         if(viewMode!=='overview')cameraUpdate();
         updateActiveRoomWalls();
         updateMobileContactShadows(t);
-        updateMobileQuality(t);
         updateLightBudget(t);
         updateGuests(dt,t);
         updateEquipment(avatar,t,{suspended:!!interactionPose});
@@ -5170,7 +5142,7 @@
         getPose: () => ({x:avatar.position.x,y:avatar.position.y,z:avatar.position.z,r:avatar.rotation.y,joints:networkJoints.map(j=>[j.rotation.x,j.rotation.y,j.rotation.z]),equipmentActive:!interactionPose,pitch:avatar.rotation.x,roll:avatar.rotation.z,action:interactionPose?.startsWith('emote:')?interactionPose.slice(6):null,actionTime:interactionPose?.startsWith('emote:')?soloElapsed():Math.min(3600,interactionTime),actionBaseY:avatarActionBaseY}),
         onMembers: members => {
           if(!members.length)socialActionsUI.update([],[]);
-          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeEquipment(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
+          for(const [id,guest] of guests)if(!members.some(m=>m.id===id)){disposeEquipment(guest);disposeAvatarAppearance(guest);disposeTag(guest.userData.tag);if(guest.userData.bubble)disposeTag(guest.userData.bubble);if(guest.userData.typingSprite)disposeTag(guest.userData.typingSprite);clearCharacterReaction(guest);scene.remove(guest);guests.delete(id);}
           for(const member of members){
             let guest=guests.get(member.id);
             if(!guest){guest=avatarTemplate.clone(true);guest.visible=true;guest.rotation.set(0,0,0);guest.userData={tag:nameTag(member.name)};guest.add(guest.userData.tag);scene.add(guest);guests.set(member.id,guest);if(member.pose)guest.position.set(member.pose.x,member.pose.y,member.pose.z);}

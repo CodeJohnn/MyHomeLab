@@ -42,7 +42,7 @@ export function createUserHome({host,onPlay,onRequireLogin}){
         const [THREE,{RoundedBoxGeometry},{createPlayerAvatar},{applyAvatarAppearance},{createAvatarEditorPreview}]=await Promise.all([import('three'),import('three/addons/geometries/RoundedBoxGeometry.js'),import('./player-avatar.mjs?v=equipment-6'),import('./avatar-appearance.mjs?v=equipment-24'),import('./avatar-editor-preview.mjs?v=equipment-9')]);
         if(disposed)return;
         const {avatar}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile:matchMedia('(max-width:700px)').matches});
-        stage.replaceChildren();avatarPreview=createAvatarEditorPreview({container:stage,THREE,template:avatar,applyAppearance:applyAvatarAppearance});
+        stage.replaceChildren();avatarPreview=createAvatarEditorPreview({container:stage,THREE,template:avatar,applyAppearance:applyAvatarAppearance,ownsTemplate:true});
         avatarPreview.update(read());avatarPreview.setVisible(!page.hidden);
       }catch{stage.textContent='Nao foi possivel carregar a previa 3D.';}
       finally{previewLoading=null;}

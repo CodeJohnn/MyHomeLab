@@ -1,3 +1,4 @@
+import {disposePrivateGeometry} from './primitive-pool.mjs';
 export function createBathroom({THREE,Reflector,scene,item,box,cyl,sphere,M,partition,backWall,wallHeight,isMobile}){
   const walls=new THREE.Group();walls.name='Banheiro dos fundos';scene.add(walls);
   const tile=M('#dedbd1',0,.85),wood=M('#a78361'),white=M('#f0f1eb',0,.28),chrome=M('#aebfc1',.85,.22),dark=M('#34484a');
@@ -8,7 +9,7 @@ export function createBathroom({THREE,Reflector,scene,item,box,cyl,sphere,M,part
   // Porta e um recorte aberto no contorno, nao um furo encostado na borda.
   const bottom=-wallHeight/2,top=wallHeight/2,lintel=2.7-wallHeight/2;
   const shape=new THREE.Shape();shape.moveTo(-4.5,bottom);shape.lineTo(2.6,bottom);shape.lineTo(2.6,lintel);shape.lineTo(4,lintel);shape.lineTo(4,bottom);shape.lineTo(4.5,bottom);shape.lineTo(4.5,top);shape.lineTo(-4.5,top);shape.closePath();
-  const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.translate(0,0,-.07);backWall.geometry.dispose();backWall.geometry=geometry;
+  const geometry=new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false});geometry.translate(0,0,-.07);disposePrivateGeometry(backWall.geometry);backWall.geometry=geometry;
   const door=new THREE.Group();door.position.set(4,0,-3.5);door.userData.wallAttachment=true;backWall.parent.add(door);
   const leaf=box(door,1.4,2.7,.065,wood,-.7,1.35,0);
   sphere(door,.045,chrome,-1.2,1.15,.065);sphere(door,.045,chrome,-1.2,1.15,-.065);
