@@ -4,8 +4,8 @@
 .nobleIdentity img{animation:nobleCrestFloat 4s ease-in-out infinite;transition:scale .25s ease-out;transform-origin:center}
 .nobleIdentity:hover img{scale:1.08}
 @keyframes nobleCrestFloat{
-  0%,100%{transform:translateY(0) rotate(-2deg);filter:drop-shadow(0 0 2px var(--noble-color))}
-  50%{transform:translateY(-3px) rotate(2deg);filter:drop-shadow(0 0 5px var(--noble-color))}
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-3px) rotate(2deg)}
 }
 .roomOnlineMember{flex-basis:118px}.roomOnlineMember>.nobleIdentity{font-size:9px;white-space:normal;text-align:center;max-width:118px}.roomOnlineMember .nobleIdentity img{width:24px;height:24px}.roomOnlineMember>span:last-child{max-width:118px;white-space:normal;overflow:visible}
 .nobleRanking{border-top:1px solid #ffffff20}.nobleRanking>summary{font-size:11px}.nobleRanking ol{max-height:220px;overflow:auto;margin:0;padding:0 16px 12px 38px}.nobleRanking li{padding:7px 0}.nobleRanking li strong{display:block;font-size:12px}.nobleRanking .nobleIdentity{font-size:11px}.nobleRanking img{width:28px;height:28px}

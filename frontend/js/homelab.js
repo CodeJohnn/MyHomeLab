@@ -1,3 +1,5 @@
+import {createNobleSpriteEffects} from './nobility-sprite-effects.mjs';
+import {nobleCrestUrl} from './nobility-effects.mjs';
     import {createLightBudget} from './light-budget.mjs';
     import {createMobileContactShadows} from './mobile-contact-shadows.mjs';
     import {createTerminalScreen} from './terminal-screen.mjs';
@@ -2968,7 +2970,7 @@
       function updateRankPanel(){
         const profile=sharedRoom?.getProfile(),level=profile?.level||1,title=nobleTitle(level);
         const heading=document.createElement('strong');heading.textContent='Seu posto';
-        const crest=document.createElement('img');crest.src=new URL(`../assets/nobility/${title.id}.svg`,import.meta.url).href;crest.alt='Insígnia de '+title.name;
+        const crest=document.createElement('img');crest.src=nobleCrestUrl(title.id);crest.alt='Insígnia de '+title.name;
         const label=document.createElement('p');label.textContent=nobleLabel(level);
         const xp=document.createElement('small');xp.textContent=(profile?.progression?.xp||0)+' XP';rankPanel.replaceChildren(heading,crest,label,xp);
       }
@@ -4755,6 +4757,8 @@
       const mobileContactShadows=isMobile?createMobileContactShadows({THREE,scene,objects}):null;
       addEventListener('pagehide',()=>mobileContactShadows?.dispose(),{once:true});
       const lightBudget=createLightBudget({THREE,scene,isMobile});
+      const nobleSpriteEffects=createNobleSpriteEffects({THREE,isMobile});
+      addEventListener('pagehide',()=>nobleSpriteEffects.dispose(),{once:true});
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
@@ -4762,6 +4766,7 @@
         const dt=frameClock.next(t);
         if(dt===null)return;
         performanceMonitor.begin();
+        nobleSpriteEffects.update(t);
         houseExterior.updateTraffic(dt);
         powerOutlets.update(t);
         const cameraBlend=1-Math.exp(-16*dt);
@@ -4991,6 +4996,7 @@
         const material=new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false,toneMapped:false});
         const sprite=new THREE.Sprite(material);
         if(!bubble)paintPlayerNameplate(canvas,text,level,{onUpdate:()=>{texture.needsUpdate=true;},isDisposed:()=>sprite.userData.disposed});
+        if(!bubble)nobleSpriteEffects.attach(material,level,canvas.width);
         const width=bubble?canvas.width/320:1.65*canvas.width/768;
         const height=width*canvas.height/canvas.width;
         sprite.position.y=bubble?2.42+height/2:2.1;sprite.scale.set(width,height,1);sprite.renderOrder=100;return sprite;

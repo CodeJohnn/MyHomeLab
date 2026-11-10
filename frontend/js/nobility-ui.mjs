@@ -1,4 +1,5 @@
 import {nobleTitle,nobleLabel,noblePromotion} from './nobility.mjs';
+import {nobleCrestUrl} from './nobility-effects.mjs';
 import {apiUrl} from './config.mjs';
 let configuration;
 export async function progressionAccountHeaders(){
@@ -10,7 +11,7 @@ export async function progressionAccountHeaders(){
 export function renderNobility(container,progression={level:1}){
   const title=nobleTitle(progression.level);container.classList.add('nobleIdentity');
   container.style.setProperty('--noble-color',title.color);container.style.setProperty('--noble-border',title.border);
-  const crest=document.createElement('img');crest.src=new URL(`../assets/nobility/${title.id}.svg`,import.meta.url).href;crest.alt='';
+  const crest=document.createElement('img');crest.src=nobleCrestUrl(title.id);crest.alt='';
   const text=document.createElement('span');text.textContent=nobleLabel(progression.level);container.replaceChildren(crest,text);
 }
 export function showNoblePromotion(previous,next){

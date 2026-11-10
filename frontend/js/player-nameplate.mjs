@@ -1,4 +1,5 @@
 import {nobleTitle} from './nobility.mjs';
+import {nobleCrestUrl} from './nobility-effects.mjs';
 
 const crests=new Map();
 function loadCrest(title){
@@ -7,7 +8,7 @@ function loadCrest(title){
       const image=new Image();
       image.onload=()=>resolve(image);
       image.onerror=()=>{crests.delete(title.id);resolve(null);};
-      image.src=new URL(`../assets/nobility/${title.id}.svg`,import.meta.url).href;
+      image.src=nobleCrestUrl(title.id);
     }));
   }
   return crests.get(title.id);

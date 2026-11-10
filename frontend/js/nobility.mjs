@@ -1,3 +1,4 @@
+import {animateNobleSvg} from './nobility-effects.mjs';
 const rows=[
   ['campones','Camponês',1,'#a5a8ae','medal','solid'],
   ['escudeiro','Escudeiro',10,'#bb8556','lily','double'],
@@ -33,7 +34,7 @@ const motifs={
   imperial:crown+'<path d="M33 49q0-28 27-24 27-4 27 24M45 48q-4-30 15-23 19-7 15 23" fill="none" stroke="currentColor" stroke-width="4"/><path d="M57 10h6v18h-6zM51 16h18v5H51z"/><circle cx="60" cy="62" r="6" fill="#fff"/>'
 };
 // Trusted vector paths only. No input names or user text are interpolated into SVG.
-export function nobleCrestSvg(level){
+export function nobleCrestSvg(level,{animated=true}={}){
   const title=nobleTitle(level),i=title.index;
   const outlines=[
     'M60 16a43 43 0 1 1 0 86 43 43 0 1 1 0-86',
@@ -49,5 +50,6 @@ export function nobleCrestSvg(level){
     'M60 5 78 18 105 12 111 44 102 77 83 97 60 110 37 97 18 77 9 44 15 12 42 18Z'
   ];
   const ornament=i>=3?`<path d="M15 77Q0 55 12 28M105 77q15-22 3-49M26 91l-10 5m78-5 10 5" fill="none" stroke="${title.color}" stroke-width="3"/>`:'';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 116" role="img" aria-label="Brasão ${title.name}"><defs><linearGradient id="noble-${title.id}" x2="1" y2="1"><stop stop-color="${title.color}"/><stop offset="1" stop-color="#272432"/></linearGradient></defs>${ornament}<path d="${outlines[i]}" fill="url(#noble-${title.id})" stroke="${title.color}" stroke-width="${i>=7?3:2}"/><path d="M60 23 88 34 84 71Q75 88 60 96 45 88 36 71L32 34Z" fill="#161925" stroke="${title.color}" stroke-width="1" ${i===0?'stroke-dasharray="3 3"':''}/><g fill="${title.color}" color="${title.color}">${motifs[title.symbol]}</g>${i>=4?`<circle cx="24" cy="29" r="3" fill="#fff"/><circle cx="96" cy="29" r="3" fill="#fff"/>`:''}</svg>`;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 116" role="img" aria-label="Brasão ${title.name}"><defs><linearGradient id="noble-${title.id}" x2="1" y2="1"><stop stop-color="${title.color}"/><stop offset="1" stop-color="#272432"/></linearGradient></defs>${ornament}<path d="${outlines[i]}" fill="url(#noble-${title.id})" stroke="${title.color}" stroke-width="${i>=7?3:2}"/><path d="M60 23 88 34 84 71Q75 88 60 96 45 88 36 71L32 34Z" fill="#161925" stroke="${title.color}" stroke-width="1" ${i===0?'stroke-dasharray="3 3"':''}/><g fill="${title.color}" color="${title.color}">${motifs[title.symbol]}</g>${i>=4?`<circle cx="24" cy="29" r="3" fill="#fff"/><circle cx="96" cy="29" r="3" fill="#fff"/>`:''}</svg>`;
+  return animated?animateNobleSvg(svg,title.id):svg;
 }

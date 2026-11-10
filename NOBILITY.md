@@ -1,3 +1,8 @@
+## Insígnias animadas
+
+Os onze SVGs e os brasões acima dos jogadores têm efeitos graduais por título.
+Configuração, integração e limites de validação: [docs/nobility-animation.md](docs/nobility-animation.md).
+
 ## Atualização: XP diário
 
 O sistema de XP diário foi implementado em uma migração PostgreSQL. Consulte DAILY-REWARDS.md para ativar. Após a migração, a tabela player_progression substitui os metadados administrativos como fonte de progressão. O texto abaixo registra a arquitetura anterior.
