@@ -1,7 +1,7 @@
 // Dependency-free orthographic CPU preview of the actual procedural vertex buffers.
 // This checks geometry/coverage, not the browser's WebGL material or animation pipeline.
 import {mkdir,writeFile} from 'node:fs/promises';
-import {deflateSync} from 'node:zlib';
+import {encodeRgbaPng} from './lib/png.mjs';
 import {buildHairGeometry,hairStyles} from '../frontend/js/hair-geometry.mjs';
 
 const views=[['FRONT',0,.12],['THREE QUARTER',-.7,.3],['BACK',Math.PI,.16],['TOP',0,1.48]];
@@ -53,10 +53,6 @@ for(let row=0;row<views.length;row++)for(let col=0;col<hairStyles.length;col++){
   for(const mesh of head)render(mesh,col,row,yaw,pitch);
   render(buildHairGeometry(style),col,row,yaw,pitch);label(style,col*tileW+10,row*tileH+8);label(view,col*tileW+10,row*tileH+244);
 }
-function crc32(bytes){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let k=0;k<8;k++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
-function chunk(type,bytes){const name=Buffer.from(type),size=Buffer.alloc(4),crc=Buffer.alloc(4);size.writeUInt32BE(bytes.length);crc.writeUInt32BE(crc32(Buffer.concat([name,bytes])));return Buffer.concat([size,name,bytes,crc]);}
-const header=Buffer.alloc(13);header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=6;
-const scanlines=Buffer.alloc((width*4+1)*height);for(let y=0;y<height;y++)pixels.copy(scanlines,y*(width*4+1)+1,y*width*4,(y+1)*width*4);
-const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(scanlines)),chunk('IEND',Buffer.alloc(0))]);
+const png=encodeRgbaPng(width,height,pixels);
 await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});await writeFile(new URL('../artifacts/hair-preview.png',import.meta.url),png);
 console.log('artifacts/hair-preview.png — actual geometry, CPU preview; browser validation still required.');

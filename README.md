@@ -1,13 +1,14 @@
 ﻿# Home Lab — sala compartilhada
 
-Requer Node.js 22 ou superior. Sem dependências externas.
+Requer Node.js 22 ou superior. O backend usa APIs nativas do Node; a interface React/JSX precisa das dependências de compilação.
 
 Estrutura: `index.html` é a entrada na raiz; `frontend/` contém scripts, estilos, assets e `ambiente.json`; `api/rooms.mjs` implementa as rotas de salas e sincronização; `backend/` contém o servidor HTTP e a lógica do mundo; `tests/` reúne os testes automatizados. Para publicar alterações do editor, substitua `frontend/ambiente.json` pelo arquivo exportado.
 
 Para hospedar sem depender do seu computador, consulte [Hospedar no Render gratuito](RENDER.md). O projeto inclui `render.yaml` para criar o serviço no plano Free e instruções para suspendê-lo e retomá-lo pelo painel.
 
 ```powershell
-node backend/server.mjs
+npm.cmd ci
+npm.cmd start
 ```
 
 Abra http://localhost:3000. O painel **Mundo online** conecta automaticamente ao ambiente comum, com até 12 pessoas. Quem abrir o mesmo servidor entra nesse ambiente, com posições iniciais diferentes, nomes sobre os personagens, movimentos e poses sincronizados. Use WASD ou as setas para andar; as interações locais de sentar e digitar também são visíveis aos outros. O chat permite conversar, acenar e enviar corações, com mensagens sobre o personagem. As falhas dos servidores, seus reparos, as portas da sala restrita e da entrada e os interruptores são compartilhados em tempo real. O backend decide quando ocorre uma falha; todos recebem o mesmo incidente e desafio, inclusive ao entrar ou reconectar. NPCs, geladeira e alterações do editor ainda têm simulações locais.
@@ -24,4 +25,6 @@ Na transmissao direta nao ha limite fixo de 100 MB: o navegador precisa consegui
 
 Os personagens dos participantes compartilham posição e direção. Salas, participantes e vídeos são temporários e se perdem ao reiniciar o servidor. Um participante desconectado libera sua vaga após cerca de 45–60 segundos; salas vazias expiram após 10 minutos. O link da sala permite entrar e deve ser enviado apenas a quem você quer convidar. Esta versão é para uso pessoal: limita a 100 salas e mantém um vídeo por sala em RAM; hospedagem pública ampla requer autenticação, cotas globais de armazenamento e limites de requisições.
 
-Execute `npm.cmd test` para verificar o fluxo de sala e sincronização.
+Execute `npm.cmd test` para verificar o fluxo de sala e sincronização e `npm.cmd run audit:code` para auditar imports, referências e código sem uso. A interface JSX é compilada por `npm.cmd run build` e automaticamente antes de iniciar o servidor local. Com `SERVE_FRONTEND=false`, o serviço de API inicia sem compilar React.
+
+O relatório da limpeza conservadora está em [docs/code-cleanup.md](docs/code-cleanup.md).

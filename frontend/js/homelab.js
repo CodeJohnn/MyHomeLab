@@ -1,3 +1,6 @@
+    import {createLightBudget} from './light-budget.mjs';
+    import {createMobileContactShadows} from './mobile-contact-shadows.mjs';
+    import {createTerminalScreen} from './terminal-screen.mjs';
     import {nobleLabel,nobleTitle} from './nobility.mjs';
     import {trackWorldAssets} from './world-loading.mjs';
     import {updateRoomLoading} from './room-loading.mjs';
@@ -53,7 +56,7 @@
       const eyeCamera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.04,120);
       let firstPerson=false,eyeYaw=0,eyePitch=0,viewMode='overview',followOrbit=0,followPitch=.28,followDistance=3.2,followBoom=3.2,lastFollowUpdate=0;
       const skyLight=new THREE.HemisphereLight(0xe3f4ff,0x6c554b,2.3);scene.add(skyLight); const sun = new THREE.DirectionalLight(0xfff3dc, 3.3); sun.position.set(-4, 11, 7); sun.castShadow = true; sun.shadow.mapSize.set(isMobile ? 512 : 1024, isMobile ? 512 : 1024); Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12 }); scene.add(sun);
-      const M = (c, metalness = 0, roughness = .72) => new THREE.MeshStandardMaterial({ color: c, metalness, roughness }); const wood = M('#a97b58'), woodLight = M('#c49b75'), black = M('#151d25', .2, .42), metal = M('#39434b', .65, .35), wall = M('#bdc1c5'), tile = M('#98765c'), white = M('#dce5e7'), blue = M('#2daaff'), glass = new THREE.MeshPhysicalMaterial({ color: '#294b62', metalness: .12, roughness: .14, transparent: true, opacity: .7 }); const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
+      const M = (c, metalness = 0, roughness = .72) => new THREE.MeshStandardMaterial({ color: c, metalness, roughness }); const woodLight = M('#c49b75'), black = M('#151d25', .2, .42), metal = M('#39434b', .65, .35), wall = M('#bdc1c5'), tile = M('#98765c'), white = M('#dce5e7'); const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
       const primitivePool=createPrimitivePool(THREE,RoundedBoxGeometry);
       addEventListener('pagehide',()=>primitivePool.dispose(),{once:true});
       function box(g, w, h, d, m, x = 0, y = 0, z = 0, r = 0) { const a = new THREE.Mesh(primitivePool.box(w,h,d,r), m); a.position.set(x, y, z); a.castShadow = true; a.receiveShadow = true; g.add(a); return a } function cyl(g, r, h, m, x, y, z, segments = 24) { const a = new THREE.Mesh(primitivePool.cylinder(r,h,segments), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a } function sphere(g, r, m, x, y, z) { const a = new THREE.Mesh(primitivePool.sphere(r,isMobile?16:18), m); a.position.set(x, y, z); a.castShadow = true; g.add(a); return a }
@@ -152,7 +155,6 @@
       const buildingEdge = M('#c4c2b5', .05, .8);
       box(buildingBase, 9.35, .2, 7.35, buildingEdge, 0, -.32, 0, .025);
       box(scene, 9, .24, 7, tile, 0, -.13, 0);
-      const grout = M('#775b48');
       const WALL_HEIGHT=4, WALL_RAISE=WALL_HEIGHT-3.3;
       houseExterior.roof.position.y=WALL_RAISE;
       const roomWalls = {};
@@ -672,7 +674,7 @@
         const ring = new THREE.Mesh(new THREE.TorusGeometry(r, .014, 8, 36), cyan); ring.userData.fanAccent=true;mount.add(ring);
         const rotor = new THREE.Group(); rotor.userData.isPcFan = true; mount.add(rotor);
         for (let k = 0; k < 7; k++) { const blade = box(rotor, r * .70, r * .28, .018, M('#d6eaf0', .3, .34), r * .38, 0, 0, .008); blade.rotation.z = .5; const pivot = new THREE.Group(); pivot.rotation.z = k * Math.PI * 2 / 7; rotor.remove(blade); pivot.add(blade); rotor.add(pivot) }
-        const hub = sphere(rotor, r * .18, silver, 0, 0, 0); animatedPcFans.push(rotor);
+        sphere(rotor, r * .18, silver, 0, 0, 0); animatedPcFans.push(rotor);
       }
       // Duas ventoinhas na face inferior, voltadas para o piso do gabinete.
       for (const z of [-.23, .13]) { const fan = new THREE.Group(); fan.position.set(.04, .405, z); fan.rotation.x = Math.PI / 2; gpuVertical.add(fan); pcFan(fan, 0, 0, 0, .135); }
@@ -681,7 +683,7 @@
       for (let i = 0; i < 12; i++)box(pc, .63, .004, .012, silver, 0, 1.04, -.30 + i * .026);
       for (const x of [-.18, .18]) pcFan(pc, x, 1.01, -.14, .14, 'y');
       // Bomba de water cooler com visor digital e mangueiras curvas.
-      const pump = box(pc, .105, .20, .20, chassis, -.24, .83, -.11, .035);
+      box(pc, .105, .20, .20, chassis, -.24, .83, -.11, .035);
       box(pc, .012, .13, .13, cyan, -.175, .83, -.11, .015);
       function tube(points) { const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p))); const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 30, .018, 8, false), M('#1b222c', .28, .38)); pc.add(mesh) }
       tube([[-.22, .89, -.06], [-.04, 1.00, -.02], [.20, 1.10, -.05], [.21, 1.09, -.16]]);
@@ -921,22 +923,6 @@
       boardFace.position.z=.04; g.add(boardFace);
       box(g,.65,.025,.12,metal,0,-.53,.06,.005);
       box(g,.18,.025,.03,solderBlue,-.18,-.5,.1,.005);
-      // Cabos de rede acompanham a visibilidade de cada parede.
-      const ethernetBlue = M('#147af3', .08, .5), cableClip = M('#d2d8df');
-      function ethernetCable(side, points) {
-        const parent = roomWalls[side].group;
-        const path = new THREE.CurvePath();
-        for (let i = 1; i < points.length; i++) {
-          path.add(new THREE.LineCurve3(new THREE.Vector3(...points[i - 1]), new THREE.Vector3(...points[i])));
-        }
-        const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, points.length * 8, .017, 6, false), ethernetBlue);
-        mesh.castShadow = false;
-        parent.add(mesh);
-        for (const [x, y, z] of points) {
-          const clip = box(parent, side === 'back' ? .055 : .026, .06, side === 'back' ? .026 : .055, cableClip, x, y, z, .004);
-          clip.castShadow = false;
-        }
-      }
       g = item('modemWifi', 'Modem Wi-Fi', 'wallBack', 1.9, 2.7, -3.29, 'Modem Wi-Fi com duas antenas, portas Ethernet e cabos azuis distribuindo a rede pelo laboratorio.');
       const routerShell = M('#e7ebed'), routerDark = M('#232c35');
       box(g, .56, .27, .15, routerShell, 0, 0, 0, .03);
@@ -1042,10 +1028,11 @@
       g = item('mousepad', 'Mousepad preto', 'desk', .3, 1.115, -2.43, 'Mousepad preto para teclado e mouse.'); const mousepadMaterial = M('#080a0d', .02, .92), mousepadStitching = M('#34383d', .05, .82); box(g, 1.8, .008, .56, mousepadMaterial, 0, .004, 0, .003); for (const x of [-.875, .875]) box(g, .008, .002, .50, mousepadStitching, x, .0085, 0, .001); for (const z of [-.27, .27]) box(g, 1.75, .002, .008, mousepadStitching, 0, .0085, z, .001);
       g = item('teclado', 'Teclado RGB', 'desk', -.15, 1.11715, -2.43, 'Teclado mecânico RGB com teclas individuais e keycaps legendadas.'); createKeyboard(g, .87, .24, .035); g.scale.y = .45;
       g = item('mouse', 'Mouse', 'desk', .85, 1.121, -2.43, 'Mouse do setup sobre o mousepad preto.'); box(g, .14, .075, .22, black, 0, .04, 0, .05);
-      // Telas dinâmicas: canvas Matrix e terminal. Não depende de vídeo externo.
+      // Tela padrão do terminal; vídeos e sites usam materiais próprios.
       function animatedCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return { canvas: c, ctx: c.getContext('2d') } }
-      const matrix = animatedCanvas(1024, 576), terminal = animatedCanvas(900, 510);
-      const matrixTex = new THREE.CanvasTexture(matrix.canvas), terminalTex = new THREE.CanvasTexture(terminal.canvas);
+      const terminalScreen=createTerminalScreen({THREE,isMobile});
+      const {material:terminalMat,paint:paintScreens}=terminalScreen;
+      addEventListener('pagehide',()=>terminalScreen.dispose(),{once:true});
       const websitePages = {
         monitor1: animatedCanvas(1170, 600),
         monitor2: animatedCanvas(1740, 600)
@@ -1055,21 +1042,7 @@
         monitor2: new THREE.CanvasTexture(websitePages.monitor2.canvas)
       };
       for (const texture of Object.values(websiteTextures)) texture.colorSpace = THREE.SRGBColorSpace;
-      matrixTex.colorSpace = terminalTex.colorSpace = THREE.SRGBColorSpace;
       const textureMat = t => new THREE.MeshBasicMaterial({ map: t, toneMapped: false, side: THREE.DoubleSide });
-      const matrixMat = textureMat(matrixTex), terminalMat = textureMat(terminalTex);
-      const websiteMaterials = {
-        monitor1: textureMat(websiteTextures.monitor1),
-        monitor2: textureMat(websiteTextures.monitor2)
-      };
-      const drops = Array.from({ length: 65 }, () => Math.random() * 576 / 16);
-      let frame = 0,lastScreenPaint=-Infinity;
-      function paintScreens(time) {
-        if(time-lastScreenPaint<(isMobile?100:50))return;
-        lastScreenPaint=time;frame+=3;
-        const { ctx: m, canvas: mc } = matrix; m.fillStyle = 'rgba(0,6,4,.14)'; m.fillRect(0, 0, mc.width, mc.height); m.font = '18px monospace'; for (let i = 0; i < drops.length; i++) { const ch = '01アイウエカキクケコサシスセソ'; m.fillStyle = Math.random() > .96 ? '#d8ffe9' : '#16c46b'; m.fillText(ch[Math.floor(Math.random() * ch.length)], i * 16, drops[i] * 16); if (drops[i] * 16 > mc.height && Math.random() > .975) drops[i] = 0; drops[i] += .65; } matrixTex.needsUpdate = true;
-        const { ctx: t, canvas: tc } = terminal; t.fillStyle = '#07120f'; t.fillRect(0, 0, tc.width, tc.height); t.fillStyle = '#173f2d'; t.fillRect(0, 0, tc.width, 43); t.fillStyle = '#b9ffda'; t.font = 'bold 21px monospace'; t.fillText('●  ●  ●   ubuntu@bibliotecadealexandria: ~', 18, 29); t.font = '20px monospace'; const lines = ['// GuedesSEC - development', 'const lab = await connect();', 'async function deploy(service) {', '  const build = await compile(service);', '  if (build.ok) return lab.run(build);', '}', 'const status = await lab.health();', 'console.log(status);', '// watching changes...', '$ npm run dev', '$ git status', '// tests: passed', '$ _']; /* previous terminal: ['$ fastfetch', '  CodeJOHN • HOME LAB', '  OS: Ubuntu Server', '  Shell: bash', '  Services: Docker • Samba • Jellyfin', '  Network: LAN connected', '', '$ docker ps', '  casaos     running', '  jellyfin   running', '', '$ uptime', '  system online', '', '$ _']; */ lines.forEach((line, i) => { t.fillStyle = line.startsWith('$') ? '#70ffad' : '#b2c9c1'; t.fillText(line, 24, 83 + i * 30) }); t.fillStyle = '#42e29a'; t.fillRect(24, tc.height - 10, (frame * 2) % tc.width, 3); terminalTex.needsUpdate = true;
-      }
       const defaultWebsiteUrl = 'https://guedessec.online/';
       const monitorVideos = {
         monitor1: { id: 'monitor1', video: document.createElement('video'), url: null, texture: null, websiteUrl: defaultWebsiteUrl, contentKind: 'website', status: document.getElementById('videoStatusLeft'), playButton: document.getElementById('playVideoLeft'), fileInput: document.getElementById('videoFileLeft'), websiteInput: document.getElementById('websiteUrlLeft'), websiteButton: document.getElementById('openWebsiteLeft'), websiteStatus: document.getElementById('websiteStatusLeft'), label: 'Monitor esquerdo', mesh: screenMeshes.monitor1, defaultMaterial: terminalMat, defaultLabel: 'Site GuedesSEC' },
@@ -1323,7 +1296,6 @@
       });
 
       const screenViewMessage = document.getElementById('screenViewMessage');
-      let previewMonitorId = null;
       function showMonitorPreview(id) {
         const monitor=monitorVideos[id];if(monitor)openAnyScreen(monitor);
       }
@@ -1364,14 +1336,6 @@
       }
       monitorVideos.monitor1.websiteButton.onclick = () => configureWebsite('monitor1');
       monitorVideos.monitor2.websiteButton.onclick = () => configureWebsite('monitor2');
-      function setMatrix() {
-        for (const monitor of Object.values(monitorVideos)) {
-          monitor.video.pause();
-          monitor.contentKind = 'default';
-          monitor.mesh.material = monitor.defaultMaterial;
-          monitor.status.textContent = monitor.defaultLabel;
-        }
-      }
       document.getElementById('matrixMode').onclick = () => { for(const monitor of playableScreens.values()) { monitor.video.pause();monitor.contentKind='default';monitor.mesh.material=monitor.defaultMaterial; } };
       document.getElementById('playBothMonitors').onclick = () => {
         // Inicia ambos diretamente no clique para liberar ?udio nos dois vídeos.
@@ -1424,7 +1388,7 @@
         if(expand)openAnyScreen(monitor);
         else monitor.video.play().catch(error=>reportLocalVideoError(monitor,error.name==='NotAllowedError'?'Clique em Reproduzir para iniciar com som.':localVideoError(monitor.video)));
       }
-      for (const [id, monitor] of Object.entries(monitorVideos)) {
+      for (const monitor of Object.values(monitorVideos)) {
         monitor.fileInput.addEventListener('change',e=>{
           const file=e.target.files?.[0];e.target.value='';if(!file)return;
           loadLocalFilm(monitor,file,activeScreen===monitor && document.getElementById('screenView').style.display==='flex');
@@ -2696,7 +2660,7 @@
       }
       // Avatar.
       const {createPlayerAvatar}=await import('./player-avatar.mjs?v=equipment-6');
-      const {avatar,skin,shirt,shirtLight,pants,hair,shoeMat,eyeMat,studs,naturalHair,legs,knees,arms,elbows,johnLimb,addBlackLabCoat,johnCartoonHead,johnTorso}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile,anisotropy:renderer.capabilities.getMaxAnisotropy()});
+      const {avatar,skin,eyeMat,legs,knees,arms,elbows,addBlackLabCoat}=createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile,anisotropy:renderer.capabilities.getMaxAnisotropy()});
       scene.add(avatar);
       const networkJoints=[...legs,...knees,...arms,...elbows];
       networkJoints.forEach((joint,i)=>joint.name=`networkJoint${i}`);
@@ -2719,7 +2683,6 @@
         skinMat.roughness=.78;outfit.roughness=.89;trousers.roughness=.94;darkHair.roughness=.87;boots.roughness=.7;
         const bodyProfile=[[.145,0],[.153,.018],[.155,.04],[.153,.075],[.16,.18],[.174,.27],[.185,.34],[.175,.4],[.09,.47]].map(([r,y])=>new THREE.Vector2(r,y));
         const torso=new THREE.Mesh(new THREE.LatheGeometry(bodyProfile,20),outfit);torso.position.y=.8;torso.scale.z=.69;torso.castShadow=true;root.add(torso);
-        const isSuit=false;
         function softLimb(parent,width,length,depth,material,x,y,z) {
           const mesh=new THREE.Mesh(primitivePool.capsule(1,6,4,10),material);
           mesh.scale.set(width/2,length/8,depth/2);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
@@ -2884,7 +2847,7 @@
       box(assemblyPc,.065,.026,.065,M('#adb4bd',.7,.3),-.04,1.125,0);
       for(const x of [.035,.065])box(assemblyPc,.012,.04,.13,assemblyComponents,x,1.13,0);
       box(assemblyPc,.075,.07,.09,assemblyChassis,.13,1.14,.055);
-      const assemblyFan=cyl(assemblyPc,.036,.022,assemblyComponents,-.10,1.13,-.065);
+      cyl(assemblyPc,.036,.022,assemblyComponents,-.10,1.13,-.065);
       for(let blade=0;blade<4;blade++){
         const fin=box(assemblyPc,.046,.009,.012,M('#626c79'),-.10,1.145,-.065);fin.rotation.y=blade*Math.PI/2;
       }
@@ -3246,7 +3209,6 @@
       const ROOM = { minX: -4.42, maxX: 12.42, minZ: -8.42, maxZ: 10.42 };
       const WALK_AREA={minX:-10.1,maxX:18.1,minZ:-9.5,maxZ:14.6};
       function insideHouse(x,z){return x>=ROOM.minX&&x<=ROOM.maxX&&z>=ROOM.minZ&&z<=ROOM.maxZ&&(z>=-3.42||x<=4.42);}
-      const colliderBox = new THREE.Box3();
       function footprint(o) {
         o.g.updateWorldMatrix(true, true);
         const b = new THREE.Box3().setFromObject(o.g);
@@ -3651,8 +3613,6 @@
       document.getElementById('npcConversationClose').onclick = () => { conversation.hidden = true; npcVoices.stop(); if(talkingNpc) talkingNpc.wait = 2; talkingNpc = null; renderer.domElement.focus(); };
       document.getElementById('npcConversationForm').onsubmit = e => { e.preventDefault(); const input = document.getElementById('npcMessage'); if(input.value.trim()) answerNpc(input.value.trim()); input.value = ''; };
       document.querySelectorAll('#npcTopics button').forEach(button => button.onclick = () => {answerNpc(button.textContent);conversation.querySelector('.npcChatSuggestions').open=false;document.getElementById('npcMessage').focus();});
-      const recentNpcConversations=[];
-      let chatWait = 0, chatIndex = -1, chatTurn = 0, chatLead = 0;
       const chatPoint = new THREE.Vector3();
       function updateNpcChats(dt) {
         // Conversas surgem apenas por interacao ou por eventos do ambiente.
@@ -4792,52 +4752,9 @@
       addEventListener('pagehide',()=>performanceMonitor.dispose(),{once:true});
       const audioPositions={speaker:new THREE.Vector3(),ac:new THREE.Vector3()};
       const interactionStatus=document.getElementById('status');
-      // Sombras de contato leves: acabamento no piso sem um mapa de sombras extra.
-      let updateMobileContactShadows=()=>{};
-      if(isMobile){
-        const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
-        const ctx=canvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,8,64,64,64);
-        gradient.addColorStop(0,'rgba(0,0,0,.26)');gradient.addColorStop(.5,'rgba(0,0,0,.12)');gradient.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
-        const texture=new THREE.CanvasTexture(canvas);
-        const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1});
-        const geometry=new THREE.PlaneGeometry(1,1);
-        const contacts=objects.filter(o=>o.kind==='floor').map(o=>{
-          const mesh=new THREE.Mesh(geometry,material);mesh.rotation.x=-Math.PI/2;mesh.renderOrder=1;scene.add(mesh);return {o,mesh,signature:null};
-        });
-        let lastUpdate=-Infinity;
-        updateMobileContactShadows=time=>{
-          if(time-lastUpdate<200)return;lastUpdate=time;
-          for(const contact of contacts){
-            const {o,mesh}=contact;
-            const signature=o.g.position.toArray().concat(o.g.rotation.toArray(),o.g.scale.toArray()).join(',');
-            if(contact.signature===signature)continue;contact.signature=signature;
-            const world=o.g.getWorldPosition(new THREE.Vector3());mesh.visible=world.y<.25;
-            if(!mesh.visible)continue;
-            const bounds=new THREE.Box3().setFromObject(o.g),center=bounds.getCenter(new THREE.Vector3());
-            mesh.position.set(center.x,.038,center.z);
-            mesh.scale.set(Math.min(5,bounds.max.x-bounds.min.x+.35),Math.min(3,bounds.max.z-bounds.min.z+.35),1);
-          }
-        };
-      }
-      // Preserve the initial pixel ratio: optimization must not reduce visual quality.
-      // Budget local lights by proximity; distant fixtures keep their emissive surfaces.
-      const localLightPools={point:[],spot:[]};
-      scene.traverse(node=>{if(node.isSpotLight)localLightPools.spot.push(node);else if(node.isPointLight)localLightPools.point.push(node);});
-      let lastLightBudget=-Infinity;
-      function updateLightBudget(time) {
-        if(time-lastLightBudget<250)return;lastLightBudget=time;
-        const focus=firstPerson?avatar.position:cameraGoal;
-        const position=new THREE.Vector3();
-        for(const [type,pool] of Object.entries(localLightPools)) {
-          const limit=type==='spot'?8:(isMobile?2:4);
-          const ranked=pool.map(light=>{
-            light.getWorldPosition(position);
-            return {light,score:light.intensity/(1+position.distanceToSquared(focus))};
-          }).sort((a,b)=>b.score-a.score);
-          ranked.forEach(({light},index)=>{light.visible=index<limit;});
-        }
-      }
+      const mobileContactShadows=isMobile?createMobileContactShadows({THREE,scene,objects}):null;
+      addEventListener('pagehide',()=>mobileContactShadows?.dispose(),{once:true});
+      const lightBudget=createLightBudget({THREE,scene,isMobile});
       function loop(t) {
         requestAnimationFrame(loop);
         sceneReady=true;
@@ -4989,8 +4906,8 @@
         });
         if(viewMode!=='overview')cameraUpdate();
         updateActiveRoomWalls();
-        updateMobileContactShadows(t);
-        updateLightBudget(t);
+        mobileContactShadows?.update(t);
+        lightBudget.update(t,firstPerson?avatar.position:cameraGoal);
         updateGuests(dt,t);
         updateEquipment(avatar,t,{suspended:!!interactionPose});
         for(const guest of guests.values())updateEquipment(guest,t,{pose:false,suspended:guest.userData.networkPose?.equipmentActive===false});

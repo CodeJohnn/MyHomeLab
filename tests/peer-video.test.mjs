@@ -1,6 +1,18 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {getEventListeners} from 'node:events';
 import {createPeerVideo} from '../frontend/js/peer-video.mjs';
+
+test('fechar controlador remove o listener de fim do vídeo antes de reutilizar o elemento',()=>{
+  let removed=0;
+  const video=Object.assign(new EventTarget(),{dataset:{},pause(){},load(){},removeAttribute(){}});
+  const remove=video.removeEventListener.bind(video);
+  video.removeEventListener=(type,callback)=>{if(type==='ended')removed++;remove(type,callback);};
+  const player=createPeerVideo({video,api:async()=>({}),getSelfId:()=> 'host',onDisplay(){},onStatus(){},onResume(){}});
+  assert.equal(getEventListeners(video,'ended').length,1);
+  player.close();
+  assert.equal(removed,1);assert.equal(player.active,false);assert.equal(getEventListeners(video,'ended').length,0);
+});
 
 test('arquivo grande permanece local e inicia negociacao de midia sem upload',async()=>{
   const original=globalThis.RTCPeerConnection;

@@ -2,8 +2,8 @@ import {nobleLabel} from './nobility.mjs';
 export function createCharacterHover({THREE,canvas,getCamera,getCharacters,getBlockers,isEnabled}){
   const card=document.createElement('aside');card.className='characterHoverCard';card.hidden=true;card.setAttribute('role','tooltip');
   card.innerHTML='<header><span class="hoverAvatar"></span><div><small data-kind></small><strong data-name></strong></div><span class="hoverLevel"></span></header><div class="hoverFacts"><span data-level></span><span data-status></span></div><p data-description></p><footer>HomeLab &middot; GuedesSEC</footer>';document.body.append(card);
-  const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let timer=null,lastEvent=null,active=null;
-  function hide(){card.hidden=true;active=null;}
+  const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();let timer=null,lastEvent=null;
+  function hide(){clearTimeout(timer);timer=null;lastEvent=null;card.hidden=true;}
   function inspect(){
     timer=null;const event=lastEvent;if(!event||!isEnabled()){hide();return;}
     const rect=canvas.getBoundingClientRect();pointer.set((event.x-rect.left)/rect.width*2-1,-(event.y-rect.top)/rect.height*2+1);ray.setFromCamera(pointer,getCamera());
@@ -13,7 +13,6 @@ export function createCharacterHover({THREE,canvas,getCamera,getCharacters,getBl
     const blocker=ray.intersectObjects(getBlockers(),true).find(h=>{for(let n=h.object;n;n=n.parent)if(!n.visible)return false;return true;});
     if(blocker&&blocker.distance<hit.distance-.02){hide();return;}
     const character=characters.find(c=>{for(let n=hit.object;n;n=n.parent)if(n===c.root)return true;return false;});if(!character){hide();return;}
-    active=character.root;
     card.querySelector('[data-name]').textContent=character.name;card.querySelector('[data-kind]').textContent=character.kind;
     card.querySelector('.hoverAvatar').textContent=character.name.trim().slice(0,2).toLocaleUpperCase('pt-BR');
     card.querySelector('.hoverLevel').textContent=character.npc?'NPC':String(character.root.userData.nobleLevel||1);

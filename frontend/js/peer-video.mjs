@@ -122,6 +122,7 @@ export function createPeerVideo({video,api,getSelfId,onDisplay,onStatus,onResume
     clear();
   }
   const timer=setInterval(()=>ready(),6000);
-  video.addEventListener('ended',()=>{if(isHost())stop().catch(error=>onStatus(error.message));});
-  return {start,stop,update,signal,isHost,get active(){return media?.kind==='peer';},close(){closed=true;clear();clearInterval(timer);}};
+  const onEnded=()=>{if(isHost())stop().catch(error=>onStatus(error.message));};
+  video.addEventListener('ended',onEnded);
+  return {start,stop,update,signal,isHost,get active(){return media?.kind==='peer';},close(){closed=true;video.removeEventListener('ended',onEnded);clear();clearInterval(timer);}};
 }

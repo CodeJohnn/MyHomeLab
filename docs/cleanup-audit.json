@@ -1,0 +1,2345 @@
+{
+  "sourceFiles": 134,
+  "assetFiles": 43,
+  "imports": [
+    {
+      "file": "frontend/js/accessory-inventory.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./accessory-catalog.mjs"
+    },
+    {
+      "file": "frontend/js/account-auth.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./config.mjs"
+    },
+    {
+      "file": "frontend/js/account-auth.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./auth-errors.mjs"
+    },
+    {
+      "file": "frontend/js/account-auth.mjs",
+      "line": 10,
+      "kind": "dynamic-import",
+      "specifier": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    },
+    {
+      "file": "frontend/js/account-auth.mjs",
+      "line": 51,
+      "kind": "dynamic-import",
+      "specifier": "./daily-rewards.mjs?v=auth-2"
+    },
+    {
+      "file": "frontend/js/accessory-models.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "three/addons/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "frontend/js/accessory-models.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "three/addons/utils/BufferGeometryUtils.js"
+    },
+    {
+      "file": "frontend/js/accessory-models.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./accessory-catalog.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-appearance.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./avatar-body.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-appearance.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./avatar-hair.mjs?v=equipment-3"
+    },
+    {
+      "file": "frontend/js/avatar-appearance.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./avatar-equipment.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-appearance.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./avatar-cloth.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-appearance.mjs",
+      "line": 7,
+      "kind": "asset-url",
+      "specifier": "../assets/guedessec.png"
+    },
+    {
+      "file": "frontend/js/avatar-appearance.mjs",
+      "line": 35,
+      "kind": "asset-url",
+      "specifier": "../assets/lula-rosto.jpg"
+    },
+    {
+      "file": "frontend/js/avatar-actions.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./social-action-catalog.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-editor-preview.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./avatar-equipment.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-editor-preview.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./avatar-appearance.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-equipment.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./accessory-catalog.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-equipment.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./accessory-models.mjs"
+    },
+    {
+      "file": "frontend/js/bathroom.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./primitive-pool.mjs"
+    },
+    {
+      "file": "frontend/js/avatar-hair.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./hair-geometry.mjs"
+    },
+    {
+      "file": "frontend/js/billiards-board.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./billiards-audio.mjs"
+    },
+    {
+      "file": "frontend/js/daily-rewards.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./config.mjs"
+    },
+    {
+      "file": "frontend/js/daily-rewards.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./nobility-ui.mjs?v=auth-2"
+    },
+    {
+      "file": "frontend/js/daily-rewards.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./room-loading.mjs"
+    },
+    {
+      "file": "frontend/js/hair-geometry.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./hair-profile.mjs"
+    },
+    {
+      "file": "frontend/js/character-hover.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./nobility.mjs"
+    },
+    {
+      "file": "frontend/js/house-exterior.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./repeated-meshes.mjs"
+    },
+    {
+      "file": "frontend/js/landing.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./landing-matrix.mjs?v=color-3"
+    },
+    {
+      "file": "frontend/js/landing.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./room-loading.mjs"
+    },
+    {
+      "file": "frontend/js/landing.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./user-home.mjs?v=equipment-26"
+    },
+    {
+      "file": "frontend/js/landing.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./account-auth.mjs?v=errors-3"
+    },
+    {
+      "file": "frontend/js/landing.mjs",
+      "line": 13,
+      "kind": "dynamic-import",
+      "specifier": "./homelab.js?v=equipment-307"
+    },
+    {
+      "file": "frontend/js/npc-dialogue.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./guedessec-dialogue.mjs"
+    },
+    {
+      "file": "frontend/js/npc-dialogue.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./npc-extra-dialogue.mjs?v=2"
+    },
+    {
+      "file": "frontend/js/npc-dialogue.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./npc-mind.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./light-budget.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./mobile-contact-shadows.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./terminal-screen.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./nobility.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 5,
+      "kind": "import",
+      "specifier": "./world-loading.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 6,
+      "kind": "import",
+      "specifier": "./room-loading.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 7,
+      "kind": "import",
+      "specifier": "./performance-monitor.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 8,
+      "kind": "import",
+      "specifier": "./repeated-meshes.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 9,
+      "kind": "import",
+      "specifier": "./primitive-pool.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 10,
+      "kind": "import",
+      "specifier": "./npc-typing-pose.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 11,
+      "kind": "import",
+      "specifier": "./collider-index.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 12,
+      "kind": "import",
+      "specifier": "./player-nameplate.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 13,
+      "kind": "import",
+      "specifier": "./screen-depth.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 14,
+      "kind": "import",
+      "specifier": "./speech-bubble.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 15,
+      "kind": "import",
+      "specifier": "./frame-clock.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 16,
+      "kind": "import",
+      "specifier": "./interaction-picking.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 17,
+      "kind": "import",
+      "specifier": "./avatar-portraits.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 18,
+      "kind": "import",
+      "specifier": "./reaction-assets.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 19,
+      "kind": "import",
+      "specifier": "./avatar-equipment.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 20,
+      "kind": "import",
+      "specifier": "./npc-visuals.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 21,
+      "kind": "import",
+      "specifier": "./npc-mind.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 22,
+      "kind": "import",
+      "specifier": "./social-action-catalog.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 23,
+      "kind": "import",
+      "specifier": "./social-actions-ui.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 35,
+      "kind": "dynamic-import",
+      "specifier": "./interaction-audio.mjs?v=actions-5"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 37,
+      "kind": "dynamic-import",
+      "specifier": "./guedessec-dialogue.mjs?v=2"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 38,
+      "kind": "dynamic-import",
+      "specifier": "./npc-portuguese.mjs?v=1"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 39,
+      "kind": "dynamic-import",
+      "specifier": "./daylight.mjs?v=1"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 40,
+      "kind": "dynamic-import",
+      "specifier": "./npc-voices.mjs?v=10"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 41,
+      "kind": "dynamic-import",
+      "specifier": "./logic-ide.mjs?v=3"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 42,
+      "kind": "dynamic-import",
+      "specifier": "./room-audio.mjs?v=8"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 43,
+      "kind": "dynamic-import",
+      "specifier": "./admin-terminal.mjs?v=3"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 44,
+      "kind": "dynamic-import",
+      "specifier": "./monitor-urls.mjs?v=3"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 45,
+      "kind": "dynamic-import",
+      "specifier": "./emotion-reactions.mjs?v=audio-3"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 46,
+      "kind": "dynamic-import",
+      "specifier": "./npc-dialogue.mjs?v=5"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 47,
+      "kind": "dynamic-import",
+      "specifier": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 49,
+      "kind": "dynamic-import",
+      "specifier": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 50,
+      "kind": "dynamic-import",
+      "specifier": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/renderers/CSS3DRenderer.js"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 64,
+      "kind": "dynamic-import",
+      "specifier": "./house-exterior.mjs?v=static-transforms-9"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 264,
+      "kind": "dynamic-import",
+      "specifier": "./billiards-table.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 290,
+      "kind": "dynamic-import",
+      "specifier": "./billiards-engine.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 291,
+      "kind": "dynamic-import",
+      "specifier": "./billiards-board.mjs?v=detail-5"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 791,
+      "kind": "dynamic-import",
+      "specifier": "./books.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 966,
+      "kind": "asset-url",
+      "specifier": "../assets/quadro 1.jpg"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 967,
+      "kind": "asset-url",
+      "specifier": "../assets/quadro 3.jpg"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 968,
+      "kind": "asset-url",
+      "specifier": "../assets/quadro 4.jpg"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 1013,
+      "kind": "asset-url",
+      "specifier": "../assets/guedessec.png?v=a55204d9b63d"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 1438,
+      "kind": "dynamic-import",
+      "specifier": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/objects/Reflector.js"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 1439,
+      "kind": "dynamic-import",
+      "specifier": "./bathroom.mjs?v=door-clearance-4"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2324,
+      "kind": "asset-url",
+      "specifier": "../assets/rostos/codejohn.png"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2662,
+      "kind": "dynamic-import",
+      "specifier": "./player-avatar.mjs?v=equipment-6"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2668,
+      "kind": "dynamic-import",
+      "specifier": "./avatar-equipment.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2669,
+      "kind": "dynamic-import",
+      "specifier": "./avatar-appearance.mjs?v=equipment-24"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2670,
+      "kind": "dynamic-import",
+      "specifier": "./avatar-editor-preview.mjs?v=equipment-9"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2868,
+      "kind": "dynamic-import",
+      "specifier": "./seating.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2935,
+      "kind": "dynamic-import",
+      "specifier": "./avatar-actions.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 3914,
+      "kind": "dynamic-import",
+      "specifier": "./power-outlets.mjs"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 4555,
+      "kind": "asset-url",
+      "specifier": "../ambiente.json"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 4921,
+      "kind": "dynamic-import",
+      "specifier": "./shared-room.mjs?v=equipment-37"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 4930,
+      "kind": "dynamic-import",
+      "specifier": "./character-hover.mjs"
+    },
+    {
+      "file": "frontend/js/nobility-ui.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./nobility.mjs"
+    },
+    {
+      "file": "frontend/js/nobility-ui.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./config.mjs"
+    },
+    {
+      "file": "frontend/js/nobility-ui.mjs",
+      "line": 8,
+      "kind": "dynamic-import",
+      "specifier": "./account-auth.mjs?v=errors-3"
+    },
+    {
+      "file": "frontend/js/nobility-ui.mjs",
+      "line": 27,
+      "kind": "dynamic-import",
+      "specifier": "./account-auth.mjs?v=errors-3"
+    },
+    {
+      "file": "frontend/js/npc-visuals.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "three/addons/utils/BufferGeometryUtils.js"
+    },
+    {
+      "file": "frontend/js/npc-visuals.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./primitive-pool.mjs"
+    },
+    {
+      "file": "frontend/js/npc-voices.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./npc-portuguese.mjs"
+    },
+    {
+      "file": "frontend/js/performance-monitor.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./gpu-timer.mjs"
+    },
+    {
+      "file": "frontend/js/player-nameplate.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./nobility.mjs"
+    },
+    {
+      "file": "frontend/js/player-avatar.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./avatar-cloth.mjs"
+    },
+    {
+      "file": "frontend/js/player-avatar.mjs",
+      "line": 4,
+      "kind": "asset-url",
+      "specifier": "../assets/guedessec.png"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./avatar-wardrobe.mjs"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./peer-video.mjs"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./config.mjs"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./emotion-reactions.mjs?v=audio-3"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "./nobility-ui.mjs?v=auth-2"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "./daily-rewards.mjs?v=auth-2"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "./typing-presence.mjs"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 8,
+      "kind": "import",
+      "specifier": "./accessory-inventory.mjs"
+    },
+    {
+      "file": "frontend/js/social-actions-ui.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./social-action-catalog.mjs"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./avatar-wardrobe.mjs"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./nobility-ui.mjs?v=auth-2"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./daily-rewards.mjs?v=auth-2"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./account-auth.mjs?v=errors-3"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "./accessory-inventory.mjs"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 42,
+      "kind": "dynamic-import",
+      "specifier": "three"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 42,
+      "kind": "dynamic-import",
+      "specifier": "three/addons/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 42,
+      "kind": "dynamic-import",
+      "specifier": "./player-avatar.mjs?v=equipment-6"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 42,
+      "kind": "dynamic-import",
+      "specifier": "./avatar-appearance.mjs?v=equipment-24"
+    },
+    {
+      "file": "frontend/js/user-home.mjs",
+      "line": 42,
+      "kind": "dynamic-import",
+      "specifier": "./avatar-editor-preview.mjs?v=equipment-9"
+    },
+    {
+      "file": "backend/account-auth.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./supabase-project.mjs"
+    },
+    {
+      "file": "frontend/react/main.jsx",
+      "line": 1,
+      "kind": "import",
+      "specifier": "react"
+    },
+    {
+      "file": "frontend/react/main.jsx",
+      "line": 2,
+      "kind": "import",
+      "specifier": "react-dom/client"
+    },
+    {
+      "file": "frontend/react/main.jsx",
+      "line": 3,
+      "kind": "import",
+      "specifier": "react-dom"
+    },
+    {
+      "file": "frontend/react/main.jsx",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./LandingPage.jsx"
+    },
+    {
+      "file": "frontend/react/main.jsx",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../js/landing.mjs?v=react-1"
+    },
+    {
+      "file": "backend/billiards.mjs",
+      "line": 1,
+      "kind": "export",
+      "specifier": "../frontend/js/billiards-engine.mjs"
+    },
+    {
+      "file": "backend/avatar.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-wardrobe.mjs"
+    },
+    {
+      "file": "backend/avatar.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "../frontend/js/accessory-catalog.mjs"
+    },
+    {
+      "file": "backend/daily-rewards.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../frontend/js/nobility.mjs"
+    },
+    {
+      "file": "backend/daily-rewards.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./supabase-project.mjs"
+    },
+    {
+      "file": "backend/progression.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../frontend/js/nobility.mjs"
+    },
+    {
+      "file": "backend/room-world.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./billiards.mjs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "./account-auth.mjs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "./progression.mjs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "./daily-rewards.mjs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "node:http"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "node:fs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "node:path"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 8,
+      "kind": "import",
+      "specifier": "node:url"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 9,
+      "kind": "import",
+      "specifier": "./room-world.mjs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 10,
+      "kind": "import",
+      "specifier": "../api/rooms.mjs"
+    },
+    {
+      "file": "backend/server.mjs",
+      "line": 13,
+      "kind": "asset-url",
+      "specifier": "../.env"
+    },
+    {
+      "file": "backend/social-actions.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../frontend/js/social-action-catalog.mjs"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../backend/avatar.mjs"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "../backend/progression.mjs"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:crypto"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/room-world.mjs"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../backend/disconnect-grace.mjs"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../backend/social-actions.mjs"
+    },
+    {
+      "file": "api/rooms.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../frontend/js/social-action-catalog.mjs"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../tools/legacy-typing-reference.mjs"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:fs"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:perf_hooks"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../tools/performance-fixtures.mjs"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../frontend/js/npc-typing-pose.mjs"
+    },
+    {
+      "file": "scripts/benchmark-three-performance.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../frontend/js/collider-index.mjs"
+    },
+    {
+      "file": "scripts/lib/png.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:zlib"
+    },
+    {
+      "file": "scripts/build-react.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "esbuild"
+    },
+    {
+      "file": "scripts/audit-code.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "eslint"
+    },
+    {
+      "file": "scripts/audit-code.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "scripts/audit-code.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:path"
+    },
+    {
+      "file": "scripts/audit-code.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "node:crypto"
+    },
+    {
+      "file": "scripts/prepare-frontend.mjs",
+      "line": 2,
+      "kind": "asset-url",
+      "specifier": "../.env"
+    },
+    {
+      "file": "scripts/prepare-frontend.mjs",
+      "line": 5,
+      "kind": "dynamic-import",
+      "specifier": "./build-react.mjs"
+    },
+    {
+      "file": "scripts/generate-nobility.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "scripts/generate-nobility.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "../frontend/js/nobility.mjs"
+    },
+    {
+      "file": "scripts/generate-nobility.mjs",
+      "line": 3,
+      "kind": "asset-url",
+      "specifier": "../frontend/assets/nobility/"
+    },
+    {
+      "file": "scripts/preview-hair.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "scripts/preview-hair.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./lib/png.mjs"
+    },
+    {
+      "file": "scripts/preview-hair.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../frontend/js/hair-geometry.mjs"
+    },
+    {
+      "file": "scripts/preview-hair.mjs",
+      "line": 57,
+      "kind": "asset-url",
+      "specifier": "../artifacts/"
+    },
+    {
+      "file": "scripts/preview-hair.mjs",
+      "line": 57,
+      "kind": "asset-url",
+      "specifier": "../artifacts/hair-preview.png"
+    },
+    {
+      "file": "tests/auth-errors.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/auth-errors.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/auth-errors.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/auth-errors.mjs"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/accessory-catalog.mjs"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../frontend/js/accessory-models.mjs"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-equipment.mjs"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../backend/avatar.mjs"
+    },
+    {
+      "file": "tests/accessories.test.mjs",
+      "line": 8,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/avatar-body.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/avatar-body.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/avatar-body.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-body.mjs"
+    },
+    {
+      "file": "tests/avatar-feet.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/avatar-feet.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/avatar-feet.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tests/avatar-feet.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "three/addons/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "tests/avatar-feet.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../frontend/js/player-avatar.mjs"
+    },
+    {
+      "file": "tests/avatar.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/avatar.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/avatar.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/avatar.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/avatar.mjs"
+    },
+    {
+      "file": "tests/billiards.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/billiards.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/billiards.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/room-world.mjs"
+    },
+    {
+      "file": "tests/billiards.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/billiards.mjs"
+    },
+    {
+      "file": "tests/billiards.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "./lib/png.mjs"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../frontend/js/accessory-catalog.mjs"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../frontend/js/accessory-models.mjs"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 46,
+      "kind": "asset-url",
+      "specifier": "../artifacts/"
+    },
+    {
+      "file": "scripts/preview-accessories.mjs",
+      "line": 46,
+      "kind": "asset-url",
+      "specifier": "../artifacts/accessory-preview.png"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:zlib"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../scripts/lib/png.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../frontend/js/terminal-screen.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-portraits.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 8,
+      "kind": "import",
+      "specifier": "../frontend/js/character-hover.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 9,
+      "kind": "import",
+      "specifier": "../frontend/js/room-audio.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 10,
+      "kind": "import",
+      "specifier": "../frontend/js/daylight.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 11,
+      "kind": "import",
+      "specifier": "../frontend/js/light-budget.mjs"
+    },
+    {
+      "file": "tests/cleanup-regressions.test.mjs",
+      "line": 12,
+      "kind": "import",
+      "specifier": "../frontend/js/mobile-contact-shadows.mjs"
+    },
+    {
+      "file": "tests/collider-index.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/collider-index.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/collider-index.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/collider-index.mjs"
+    },
+    {
+      "file": "tests/disconnect-grace.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/disconnect-grace.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/disconnect-grace.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/disconnect-grace.mjs"
+    },
+    {
+      "file": "tests/disconnect-grace.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/cors.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/cors.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/cors.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:fs"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "node:url"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../frontend/js/emotion-reactions.mjs"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 14,
+      "kind": "asset-url",
+      "specifier": "../frontend/js/homelab.js"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 26,
+      "kind": "asset-url",
+      "specifier": "../frontend/js/homelab.js"
+    },
+    {
+      "file": "tests/emotion-reactions.test.mjs",
+      "line": 35,
+      "kind": "asset-url",
+      "specifier": "../frontend/js/homelab.js"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "node:crypto"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "@electric-sql/pglite"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../backend/daily-rewards.mjs"
+    },
+    {
+      "file": "tests/daily-rewards.test.mjs",
+      "line": 16,
+      "kind": "asset-url",
+      "specifier": "../supabase/migrations/202611050001_daily_xp.sql"
+    },
+    {
+      "file": "tests/frame-clock.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/frame-clock.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/frame-clock.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/frame-clock.mjs"
+    },
+    {
+      "file": "tests/friend-room.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/friend-room.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/friend-room.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/gpu-timer.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/gpu-timer.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/gpu-timer.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/gpu-timer.mjs"
+    },
+    {
+      "file": "tests/hair-geometry.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/hair-geometry.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/hair-geometry.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/hair-geometry.mjs"
+    },
+    {
+      "file": "tests/hair-geometry.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/hair-profile.mjs"
+    },
+    {
+      "file": "tests/interaction-picking.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/interaction-picking.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/interaction-picking.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/interaction-picking.mjs"
+    },
+    {
+      "file": "tests/hair-profile.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/hair-profile.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/hair-profile.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/hair-profile.mjs"
+    },
+    {
+      "file": "tests/npc-mind.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/npc-mind.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/npc-mind.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/npc-mind.mjs"
+    },
+    {
+      "file": "tests/npc-mind.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/npc-dialogue.mjs"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/nobility.mjs"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../backend/progression.mjs"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/peer-signaling.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/peer-signaling.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/peer-signaling.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/peer-video.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/peer-video.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/peer-video.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:events"
+    },
+    {
+      "file": "tests/peer-video.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/peer-video.mjs"
+    },
+    {
+      "file": "tests/npc-visuals.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/npc-visuals.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/npc-visuals.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tests/npc-visuals.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/npc-visuals.mjs"
+    },
+    {
+      "file": "tests/performance-monitor.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/performance-monitor.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/performance-monitor.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/performance-monitor.mjs"
+    },
+    {
+      "file": "tests/public-room.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/public-room.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/public-room.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:fs/promises"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "esbuild"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "react"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "react-dom/server"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 8,
+      "kind": "asset-url",
+      "specifier": "../frontend/react/LandingPage.jsx"
+    },
+    {
+      "file": "tests/room-loading.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/room-loading.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/room-loading.test.mjs",
+      "line": 25,
+      "kind": "dynamic-import",
+      "specifier": "../frontend/js/room-loading.mjs?runner-normal"
+    },
+    {
+      "file": "tests/room-loading.test.mjs",
+      "line": 49,
+      "kind": "dynamic-import",
+      "specifier": "../frontend/js/room-loading.mjs?runner-retry"
+    },
+    {
+      "file": "tests/room-world.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/room-world.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/room-world.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/room-world.mjs"
+    },
+    {
+      "file": "tests/screen-depth.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/screen-depth.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/screen-depth.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/screen-depth.mjs"
+    },
+    {
+      "file": "tests/seating.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/seating.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/seating.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/seating.mjs"
+    },
+    {
+      "file": "tests/social-actions-ui.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/social-actions-ui.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/social-actions-ui.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/social-actions-ui.mjs"
+    },
+    {
+      "file": "tests/server.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/server.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/server.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/server.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/room-world.mjs"
+    },
+    {
+      "file": "tests/speech-bubble.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/speech-bubble.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/speech-bubble.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/speech-bubble.mjs"
+    },
+    {
+      "file": "tests/supabase-project.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/supabase-project.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/supabase-project.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../backend/supabase-project.mjs"
+    },
+    {
+      "file": "tests/supabase-project.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/account-auth.mjs"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "three/addons/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "../frontend/js/player-avatar.mjs"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-actions.mjs"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../frontend/js/social-action-catalog.mjs"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 8,
+      "kind": "import",
+      "specifier": "../backend/social-actions.mjs"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 9,
+      "kind": "import",
+      "specifier": "../frontend/js/social-actions-ui.mjs"
+    },
+    {
+      "file": "tests/social-actions.test.mjs",
+      "line": 10,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "../tools/legacy-typing-reference.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 5,
+      "kind": "import",
+      "specifier": "three/addons/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 6,
+      "kind": "import",
+      "specifier": "../frontend/js/primitive-pool.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 7,
+      "kind": "import",
+      "specifier": "../frontend/js/repeated-meshes.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 8,
+      "kind": "import",
+      "specifier": "../frontend/js/npc-typing-pose.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 9,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-appearance.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 10,
+      "kind": "import",
+      "specifier": "../frontend/js/avatar-editor-preview.mjs"
+    },
+    {
+      "file": "tests/three-performance.test.mjs",
+      "line": 11,
+      "kind": "import",
+      "specifier": "../tools/performance-fixtures.mjs"
+    },
+    {
+      "file": "tests/typing-presence.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/typing-presence.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/typing-presence.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/typing-presence.mjs"
+    },
+    {
+      "file": "tests/typing-presence.test.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../backend/server.mjs"
+    },
+    {
+      "file": "tests/world-loading.test.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "node:test"
+    },
+    {
+      "file": "tests/world-loading.test.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "node:assert/strict"
+    },
+    {
+      "file": "tests/world-loading.test.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/world-loading.mjs"
+    },
+    {
+      "file": "tools/performance-fixtures.mjs",
+      "line": 1,
+      "kind": "import",
+      "specifier": "three"
+    },
+    {
+      "file": "tools/performance-fixtures.mjs",
+      "line": 2,
+      "kind": "import",
+      "specifier": "three/addons/geometries/RoundedBoxGeometry.js"
+    },
+    {
+      "file": "tools/performance-fixtures.mjs",
+      "line": 3,
+      "kind": "import",
+      "specifier": "../frontend/js/house-exterior.mjs"
+    },
+    {
+      "file": "tools/performance-fixtures.mjs",
+      "line": 4,
+      "kind": "import",
+      "specifier": "../frontend/js/primitive-pool.mjs"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/landing.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/character-menu.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/character-orbit.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/accessories.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/online-room.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/billiards.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/homelab.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/mobile.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/room-social.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/nobility.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/css/daily-rewards.css"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/js/editor-panel.js"
+    },
+    {
+      "file": "index.html",
+      "kind": "html",
+      "specifier": "./frontend/js/react-app.js"
+    }
+  ],
+  "missing": [],
+  "dynamicReferences": [
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2112,
+      "kind": "asset-url",
+      "expression": "new URL('../assets/'+file,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2945,
+      "kind": "asset-url",
+      "expression": "new URL(reaction.image,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 2971,
+      "kind": "asset-url",
+      "expression": "new URL(`../assets/nobility/${title.id}.svg`,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/homelab.js",
+      "line": 4943,
+      "kind": "asset-url",
+      "expression": "new URL(reaction.audio,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/nobility-ui.mjs",
+      "line": 13,
+      "kind": "asset-url",
+      "expression": "new URL(`../assets/nobility/${title.id}.svg`,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/player-nameplate.mjs",
+      "line": 10,
+      "kind": "asset-url",
+      "expression": "new URL(`../assets/nobility/${title.id}.svg`,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/reaction-assets.mjs",
+      "line": 7,
+      "kind": "asset-url",
+      "expression": "new URL(path,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 240,
+      "kind": "asset-url",
+      "expression": "new URL(reaction.image,import.meta.url)"
+    },
+    {
+      "file": "frontend/js/shared-room.mjs",
+      "line": 375,
+      "kind": "asset-url",
+      "expression": "new URL(reaction.image,import.meta.url)"
+    },
+    {
+      "file": "tests/nobility.test.mjs",
+      "line": 24,
+      "kind": "asset-url",
+      "expression": "new URL(`../frontend/assets/nobility/${title.id}.svg`,import.meta.url)"
+    },
+    {
+      "file": "tests/react-landing.test.mjs",
+      "line": 11,
+      "kind": "dynamic-import",
+      "expression": "import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`)"
+    }
+  ],
+  "duplicateBodies": [
+    [
+      {
+        "file": "tests/disconnect-grace.test.mjs",
+        "line": 39,
+        "name": "(callback)"
+      },
+      {
+        "file": "tests/server.test.mjs",
+        "line": 15,
+        "name": "(callback)"
+      }
+    ]
+  ],
+  "findings": []
+}

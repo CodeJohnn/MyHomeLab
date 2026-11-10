@@ -1,7 +1,7 @@
 // CPU geometry QA, not a substitute for the in-game WebGL material/animation check.
 import * as THREE from 'three';
 import {mkdir,writeFile} from 'node:fs/promises';
-import {deflateSync} from 'node:zlib';
+import {encodeRgbaPng} from './lib/png.mjs';
 import {accessoryCatalog} from '../frontend/js/accessory-catalog.mjs';
 import {createAccessoryVisual} from '../frontend/js/accessory-models.mjs';
 const tile=220,tileHeight=230,columns=7,width=tile*columns,height=tileHeight*Math.ceil(accessoryCatalog.length/columns);
@@ -42,10 +42,6 @@ for(let itemIndex=0;itemIndex<accessoryCatalog.length;itemIndex++){
   }
   label(item.id,col*tile+10,row*tileHeight+208);resource.release();
 }
-function crc32(bytes){let crc=0xffffffff;for(const byte of bytes){crc^=byte;for(let i=0;i<8;i++)crc=(crc>>>1)^((crc&1)?0xedb88320:0);}return (crc^0xffffffff)>>>0;}
-function chunk(type,bytes){const name=Buffer.from(type),size=Buffer.alloc(4),crc=Buffer.alloc(4);size.writeUInt32BE(bytes.length);crc.writeUInt32BE(crc32(Buffer.concat([name,bytes])));return Buffer.concat([size,name,bytes,crc]);}
-const header=Buffer.alloc(13);header.writeUInt32BE(width);header.writeUInt32BE(height,4);header[8]=8;header[9]=6;
-const scanlines=Buffer.alloc((width*4+1)*height);for(let y=0;y<height;y++)pixels.copy(scanlines,y*(width*4+1)+1,y*width*4,(y+1)*width*4);
-const png=Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',header),chunk('IDAT',deflateSync(scanlines)),chunk('IEND',Buffer.alloc(0))]);
+const png=encodeRgbaPng(width,height,pixels);
 await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});await writeFile(new URL('../artifacts/accessory-preview.png',import.meta.url),png);
 console.log('artifacts/accessory-preview.png — 26 real accessory meshes, CPU geometry preview.');

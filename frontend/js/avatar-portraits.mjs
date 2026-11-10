@@ -33,16 +33,27 @@ export function createAvatarPortraits({THREE,renderer,getCharacter}){
   }
   return {
     get(member){
+      if(disposed)return Promise.resolve(null);
       const key=JSON.stringify(member.avatar||{});
       if(cache.has(key))return Promise.resolve(cache.get(key));
-      if(!pending.has(key))pending.set(key,new Promise(resolve=>requestAnimationFrame(()=>{
-        let portrait=null;
-        try{if(!disposed)portrait=capture(member);}catch(error){console.warn('Retrato indisponível:',error);}
-        if(portrait){cache.set(key,portrait);if(cache.size>24)cache.delete(cache.keys().next().value);}
-        pending.delete(key);resolve(portrait);
-      })));
-      return pending.get(key);
+      if(!pending.has(key)){
+        let complete;
+        const job={promise:new Promise(resolve=>{complete=resolve;}),resolve:value=>complete(value),frame:null};
+        pending.set(key,job);
+        job.frame=requestAnimationFrame(()=>{
+          let portrait=null;
+          try{if(!disposed)portrait=capture(member);}catch(error){console.warn('Retrato indisponível:',error);}
+          if(portrait){cache.set(key,portrait);if(cache.size>24)cache.delete(cache.keys().next().value);}
+          pending.delete(key);job.resolve(portrait);
+        });
+      }
+      return pending.get(key).promise;
     },
-    dispose(){disposed=true;target.dispose();cache.clear();}
+    dispose(){
+      if(disposed)return;
+      disposed=true;
+      for(const job of pending.values()){cancelAnimationFrame(job.frame);job.resolve(null);}
+      pending.clear();target.dispose();cache.clear();
+    }
   };
 }

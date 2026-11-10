@@ -1,4 +1,4 @@
-import {nobleTitle,nobleLabel,nobleCrestSvg,noblePromotion} from './nobility.mjs';
+import {nobleTitle,nobleLabel,noblePromotion} from './nobility.mjs';
 import {apiUrl} from './config.mjs';
 let configuration;
 export async function progressionAccountHeaders(){

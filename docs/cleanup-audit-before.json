@@ -1,0 +1,267 @@
+[
+  {
+    "file": "frontend/js/character-hover.mjs",
+    "messages": [
+      {
+        "ruleId": "no-unused-vars",
+        "line": 5,
+        "column": 93,
+        "message": "'active' is assigned a value but never used."
+      }
+    ]
+  },
+  {
+    "file": "frontend/js/homelab.js",
+    "messages": [
+      {
+        "ruleId": "no-unused-vars",
+        "line": 56,
+        "column": 130,
+        "message": "'wood' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 56,
+        "column": 304,
+        "message": "'blue' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 56,
+        "column": 325,
+        "message": "'glass' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 155,
+        "column": 13,
+        "message": "'grout' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 675,
+        "column": 15,
+        "message": "'hub' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 684,
+        "column": 13,
+        "message": "'pump' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 926,
+        "column": 16,
+        "message": "'ethernetCable' is defined but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 1060,
+        "column": 13,
+        "message": "'matrixMat' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 1061,
+        "column": 13,
+        "message": "'websiteMaterials' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 1326,
+        "column": 11,
+        "message": "'previewMonitorId' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 1367,
+        "column": 16,
+        "message": "'setMatrix' is defined but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 1427,
+        "column": 19,
+        "message": "'id' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 26,
+        "message": "'shirt' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 32,
+        "message": "'shirtLight' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 43,
+        "message": "'pants' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 49,
+        "message": "'hair' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 54,
+        "message": "'shoeMat' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 69,
+        "message": "'studs' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 75,
+        "message": "'naturalHair' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 110,
+        "message": "'johnLimb' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 135,
+        "message": "'johnCartoonHead' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2699,
+        "column": 151,
+        "message": "'johnTorso' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2722,
+        "column": 15,
+        "message": "'isSuit' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 2887,
+        "column": 13,
+        "message": "'assemblyFan' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 3249,
+        "column": 13,
+        "message": "'colliderBox' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 3654,
+        "column": 13,
+        "message": "'recentNpcConversations' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 3655,
+        "column": 11,
+        "message": "'chatWait' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 3655,
+        "column": 25,
+        "message": "'chatIndex' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 3655,
+        "column": 41,
+        "message": "'chatTurn' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 3655,
+        "column": 55,
+        "message": "'chatLead' is assigned a value but never used."
+      }
+    ]
+  },
+  {
+    "file": "frontend/js/nobility-ui.mjs",
+    "messages": [
+      {
+        "ruleId": "no-unused-vars",
+        "line": 1,
+        "column": 31,
+        "message": "'nobleCrestSvg' is defined but never used."
+      }
+    ]
+  },
+  {
+    "file": "frontend/js/player-avatar.mjs",
+    "messages": [
+      {
+        "ruleId": "no-unused-vars",
+        "line": 6,
+        "column": 54,
+        "message": "'metal' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 156,
+        "column": 13,
+        "message": "'johnMouth' is assigned a value but never used."
+      }
+    ]
+  },
+  {
+    "file": "frontend/js/room-audio.mjs",
+    "messages": [
+      {
+        "ruleId": "no-unused-vars",
+        "line": 36,
+        "column": 63,
+        "message": "'nextNote' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 36,
+        "column": 74,
+        "message": "'nextKey' is assigned a value but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 56,
+        "column": 12,
+        "message": "'note' is defined but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 61,
+        "column": 12,
+        "message": "'keyClick' is defined but never used."
+      },
+      {
+        "ruleId": "no-unused-vars",
+        "line": 89,
+        "column": 12,
+        "message": "'rockBeat' is defined but never used."
+      },
+      {
+        "ruleId": "no-useless-return",
+        "line": 109,
+        "column": 43,
+        "message": "Unnecessary return statement."
+      }
+    ]
+  }
+]

@@ -3,7 +3,7 @@ import {clothProfile,softenFabric} from './avatar-cloth.mjs';
 export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anisotropy=1}){
   const guedesLogoUrl=new URL('../assets/guedessec.png',import.meta.url).href;
   const M=(color,metalness=0,roughness=.72)=>new THREE.MeshStandardMaterial({color,metalness,roughness});
-  const black=M('#151d25',.2,.42),white=M('#dce5e7'),metal=M('#39434b',.65,.35);
+  const black=M('#151d25',.2,.42),white=M('#dce5e7');
   function box(g,w,h,d,m,x=0,y=0,z=0,r=0){const geo=r?new RoundedBoxGeometry(w,h,d,2,Math.min(r,w/2-.001,h/2-.001,d/2-.001)):new THREE.BoxGeometry(w,h,d);const mesh=new THREE.Mesh(geo,m);mesh.position.set(x,y,z);mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh;}
   function sphere(g,r,m,x,y,z){const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,isMobile?16:18,12),m);mesh.position.set(x,y,z);mesh.castShadow=true;g.add(mesh);return mesh;}
   function cyl(g,r,h,m,x,y,z,segments=24){const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),m);mesh.position.set(x,y,z);mesh.castShadow=true;g.add(mesh);return mesh;}
@@ -153,7 +153,7 @@ export function createPlayerAvatar({THREE,RoundedBoxGeometry,isMobile=false,anis
       }
       box(johnCartoonHead,.04,.006,.008,hair,0,.025,.21,.002);
       const johnNose=sphere(johnCartoonHead,.023,skin,0,-.021,.19);johnNose.scale.set(.9,.9,1.15);
-      const johnMouth=box(johnCartoonHead,.047,.005,.008,M('#754838'),0,-.077,.167,.002);
+      box(johnCartoonHead,.047,.005,.008,M('#754838'),0,-.077,.167,.002);
       // Capuz continuo com abertura frontal; a superficie nao cruza o rosto.
       hairCap.visible=true;
       const hoodMaterial=M('#080808',.02,.96),hoodLining=M('#151515',.02,1);

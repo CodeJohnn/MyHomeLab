@@ -14,7 +14,8 @@ export function daylightAt(hour){
   const a=frames[i-1],b=frames[i],raw=(h-a[0])/(b[0]-a[0]),t=raw*raw*(3-2*raw);
   return {hour:h,sky:a[1]+(b[1]-a[1])*t,sun:a[2]+(b[2]-a[2])*t,background:a[3]+(b[3]-a[3])*t,exposure:a[4]+(b[4]-a[4])*t,skyA:a[5],skyB:b[5],sunA:a[6],sunB:b[6],blend:t};
 }
+const saoPauloClock=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
 export function saoPauloTime(date=new Date()){
-  const parts=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date);
+  const parts=saoPauloClock.formatToParts(date);
   const values=Object.fromEntries(parts.map(p=>[p.type,p.value]));return {hour:Number(values.hour)+Number(values.minute)/60+Number(values.second)/3600,label:values.hour+':'+values.minute};
 }
