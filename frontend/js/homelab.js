@@ -22,6 +22,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
     import {loadReactionImage} from './reaction-assets.mjs';
     import {updateEquipment} from './avatar-equipment.mjs';
     import {mergeNpcHair} from './npc-visuals.mjs';
+    import {createNpcWardrobe,uniformTorsoGeometry,fittedNpcLimb} from './npc-uniforms.mjs';
     import {createNpcMind} from './npc-mind.mjs';
     import {pairActions,actionDuration,smoothAction} from './social-action-catalog.mjs';
     import {createSocialActions,poseSocialSession} from './social-actions-ui.mjs';
@@ -2673,6 +2674,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       const {applyAvatarAppearance,disposeAvatarAppearance}=await import('./avatar-appearance.mjs?v=equipment-24');
       const {createAvatarEditorPreview}=await import('./avatar-editor-preview.mjs?v=equipment-9');
       const npcs = [];
+      const npcWardrobe=createNpcWardrobe(THREE);
       const npcMind=createNpcMind();
       let nextNpcThink=0,nextSimulatedEvent=120000,simulatedEventSequence=0,lastNpcAnnouncement=-Infinity,lastObservedIncident=null;
       function createNpc(name, skinColor, outfitColor, x, z, style, hairStyle=style) {
@@ -2680,27 +2682,30 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
         root.position.set(x, 0, z);
         root.rotation.y = -.35;
         scene.add(root);
-        const fabricColor=new THREE.Color(outfitColor).lerp(new THREE.Color('#202831'),.32);
-        const skinMat = M(skinColor), outfit = M(fabricColor), trousers = M(style === 'curly' ? '#303443' : '#222b36');
-        const darkHair = M(style==='casual'?'#191b24':style==='technician'?'#35251e':'#241b20'), boots = M('#242b33');
+        const uniform=npcWardrobe(npcs.length);root.userData.uniform=uniform.look.id;
+        const skinMat = M(skinColor), outfit = uniform.sleeve, trousers = uniform.pants;
+        const darkHair = M(style==='casual'?'#191b24':style==='technician'?'#35251e':'#241b20'), boots = uniform.shoe;
         const eyeWhiteMat=M('#eeeae2',0,.42),irisMat=M(style==='curly'?'#79643f':'#59422d',0,.4),earMat=M(new THREE.Color(skinColor).multiplyScalar(.87));
         skinMat.roughness=.78;outfit.roughness=.89;trousers.roughness=.94;darkHair.roughness=.87;boots.roughness=.7;
-        const bodyProfile=[[.145,0],[.153,.018],[.155,.04],[.153,.075],[.16,.18],[.174,.27],[.185,.34],[.175,.4],[.09,.47]].map(([r,y])=>new THREE.Vector2(r,y));
-        const torso=new THREE.Mesh(new THREE.LatheGeometry(bodyProfile,20),outfit);torso.position.y=.8;torso.scale.z=.69;torso.castShadow=true;root.add(torso);
+        const bodyProfile=[[.145,0],[.153,.018],[.155,.04],[.153,.075],[.16,.18],[.174,.27],[.185,.34],[.175,.4],[.064,.47]].map(([r,y])=>new THREE.Vector2(r,y));
+        const torso=new THREE.Mesh(uniformTorsoGeometry(THREE,bodyProfile),uniform.torso);torso.position.y=.8;torso.scale.z=.69;torso.castShadow=true;root.add(torso);
         function softLimb(parent,width,length,depth,material,x,y,z) {
           const mesh=new THREE.Mesh(primitivePool.capsule(1,6,4,10),material);
           mesh.scale.set(width/2,length/8,depth/2);mesh.position.set(x,y,z);mesh.castShadow=true;parent.add(mesh);return mesh;
         }
-        const coatLayer=new THREE.Group();coatLayer.name='npcCoat';coatLayer.scale.x=.88;root.add(coatLayer);
-        addBlackLabCoat(coatLayer,{color:fabricColor.clone().multiplyScalar(.72),trim:fabricColor.clone().lerp(new THREE.Color('#c4cbd0'),.28)});
         const npcArms = [], npcLegs = [], npcKnees = [], npcElbows = [], eyes = [];
-        if(style==='curly') {
-          const skirtProfile=[[.229,-.135],[.235,-.119],[.218,-.055],[.189,.065],[.175,.135]].map(([r,y])=>new THREE.Vector2(r,y));
-          const skirt=new THREE.Mesh(new THREE.LatheGeometry(skirtProfile,20),M('#303443',0,.92));
-          skirt.position.set(0,.705,0);skirt.scale.z=.75;skirt.castShadow=true;root.add(skirt);
-          const waistband=new THREE.Mesh(new THREE.CylinderGeometry(.177,.177,.035,24),outfit);waistband.position.y=.835;waistband.scale.z=.75;root.add(waistband);
-        } else softLimb(root,.33,.19,.23,trousers,0,.75,0);
+        const pelvis=sphere(root,1,trousers,0,.76,0);pelvis.name='npcPelvis';pelvis.scale.set(.155,.09,.115);
         cyl(root, .065, .1, skinMat, 0, 1.32, 0);
+        // The hood stays above the shoulder blades; no loose hem across the hips.
+        if(uniform.look.id==='hoodie'){
+          const hood=sphere(root,.09,outfit,0,1.255,-.07);hood.scale.set(1.12,.65,.7);
+        }
+        if(uniform.look.id==='shirt'||uniform.look.id==='jacket'){
+          for(const side of [-1,1]){
+            const collar=box(root,.06,.025,.07,uniform.trim,side*.049,1.257,.033,.005);
+            collar.rotation.z=side*-.3;
+          }
+        }
         const head = new THREE.Group();
         head.position.y = 1.59; head.scale.setScalar(1.32);
         root.add(head);
@@ -2717,29 +2722,24 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
           const earInner=sphere(head,.019,earMat,side*.179,-.004,.022);earInner.scale.set(.30,.85,.45);
           const brow=sphere(head,.029,darkHair,side*.066,.079,.174);brow.scale.set(1,.20,.28);brow.rotation.z=side*-.08;
           const leg = new THREE.Group(); leg.position.set(side * .105, .735, 0); root.add(leg); npcLegs.push(leg);
-          softLimb(leg,.14,.33,.155,style==='curly'?skinMat:trousers,0,-.15,0);
+          fittedNpcLimb(THREE,primitivePool,leg,trousers,{width:.14,depth:.155,span:.3,name:'npcThigh'});
           const knee = new THREE.Group(); knee.position.y = -.3; leg.add(knee); npcKnees.push(knee);
-          softLimb(knee,.137,.35,.15,style==='curly'?skinMat:trousers,0,-.16,0);
-          if(style==='curly') {
-            softLimb(knee,.15,.28,.16,boots,0,-.205,0);
-            cyl(knee,.078,.025,boots,0,-.08,0);
-            for(let lace=0;lace<5;lace++)box(knee,.06,.006,.009,metal,0,-.12-lace*.035,.081,.001);
-            box(knee,.15,.03,.27,boots,0,-.408,.055,.007);
-          }
-          const shoe=sphere(knee,.1,boots,0,-.36,.055);shoe.scale.set(.88,.7,1.48);box(knee,.175,.025,.29,boots,0,-.417,.055,.012);
+          fittedNpcLimb(THREE,primitivePool,knee,trousers,{width:.137,depth:.15,span:.32,name:'npcShin'});
+          const shoe=sphere(knee,.1,boots,0,-.36,.055);shoe.scale.set(.88,.7,1.48);box(knee,.175,.025,.29,uniform.trim,0,-.417,.055,.012);
           const arm = new THREE.Group();
           arm.position.set(side * .184, 1.2, 0);
           arm.rotation.z = side * .08;
           root.add(arm); npcArms.push(arm);
-          softLimb(arm,.13,.25,.145,outfit,0,-.1,0);
+          fittedNpcLimb(THREE,primitivePool,arm,outfit,{width:.13,depth:.145,span:.22,name:'npcUpperSleeve'});
           const elbow=new THREE.Group();elbow.position.y=-.22;arm.add(elbow);npcElbows.push(elbow);
-          sphere(arm,.065,outfit,0,0,0);
-          sphere(elbow,.052,outfit,0,0,0);
-          softLimb(elbow,.102,.27,.115,outfit,0,-.125,0);
+          fittedNpcLimb(THREE,primitivePool,elbow,uniform.look.id==='tee'?skinMat:outfit,{width:.102,depth:.115,span:.25,name:'npcForearm'});
           const hand=sphere(elbow,.048,skinMat,0,-.27,0);hand.scale.set(.78,1,.6);
           sphere(elbow,.022,skinMat,-side*.032,-.26,.02);
           for(let finger=0;finger<4;finger++)softLimb(elbow,.012,.036,.014,skinMat,-.02+finger*.014,-.306,.008);
-          const cuff=new THREE.Mesh(new THREE.TorusGeometry(.052,.005,5,14),outfit);cuff.rotation.x=Math.PI/2;cuff.position.y=-.23;elbow.add(cuff);
+          if(uniform.look.id!=='tee'){
+            const cuff=new THREE.Mesh(primitivePool.cylinder(.053,.025,12),uniform.trim);
+            cuff.scale.z=.115/.102;cuff.position.y=-.235;elbow.add(cuff);
+          }
         }
         const nose=sphere(head,.023,skinMat,0,-.012,.182);nose.scale.set(.78,.92,1.04);
         const lipColor=M(skinColor);lipColor.color.multiply(new THREE.Color('#a76a6b'));
