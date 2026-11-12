@@ -22,6 +22,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
     import {loadReactionImage} from './reaction-assets.mjs';
     import {updateEquipment} from './avatar-equipment.mjs';
     import {mergeNpcHair} from './npc-visuals.mjs';
+    import {createSolderWorkshop,solderCycle} from './solder-workshop.mjs';
     import {createNpcWardrobe,uniformTorsoGeometry,fittedNpcLimb} from './npc-uniforms.mjs';
     import {createNpcMind} from './npc-mind.mjs';
     import {pairActions,actionDuration,smoothAction} from './social-action-catalog.mjs';
@@ -2860,6 +2861,12 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       // Uma segunda placa na borda acessível da bancada.
       box(solderBoard,.32,.012,.19,M('#236c4a'),-.12,1.085,-.25);
       for(let chip=0;chip<3;chip++)box(solderBoard,.045,.018,.055,M('#18232c'),-.21+chip*.09,1.1,-.25);
+      const solderWorkshop=createSolderWorkshop({THREE,bench:byId.mesaL.g,board:solderBoard,box,cyl,M,isMobile});
+      const precisionTarget=new THREE.Object3D();byId.mesaL.g.add(precisionTarget);
+      const precisionStation={userData:{keyboard:precisionTarget}},precisionOffset=new THREE.Vector3(.145,.063,.02),precisionTip=new THREE.Vector3();
+      const precisionRig={root:solderNpc.root,arms:[solderNpc.arms[1]],forearms:[solderNpc.forearms[1]],upperLength:.22,lowerLength:.4075};
+      addEventListener('pagehide',()=>solderWorkshop.dispose(),{once:true});
+
 
 
       let edit = false, selected = null, dragging = false, camDrag = false, oldX = 0, oldY = 0, pitch = .74, yaw = Math.PI / 4, zoom = 1, near = null; const ray = new THREE.Raycaster(), pointer = new THREE.Vector2(), plane = new THREE.Plane(), hit = new THREE.Vector3(), offset = new THREE.Vector3(); const keys = new Set();       const list = document.getElementById('list'), selText = document.getElementById('selected'), addPicture = document.getElementById('addPicture'), pictureFile = document.getElementById('pictureFile'), pictureStatus = document.getElementById('pictureStatus'); for (const o of objects) { const b = document.createElement('button'); b.textContent = o.label; b.onclick = () => select(o); list.append(b); o.button = b }
@@ -3709,6 +3716,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
       }
       const poseNpcTyping=createTypingPoseSolver(THREE);
       function updateNpcs(dt, t) {
+        solderWorkshop.reset(t/1000);
         if (edit) return;
         if(t>=nextNpcThink&&!document.hidden){
           nextNpcThink=t+1000;
@@ -3853,20 +3861,50 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
                 npc.workTime=(npc.workTime||0)+dt;
                 const workStage=Math.floor(npc.workTime/12)%6;
                 const assembling=workStage!==0;
-                const inspecting=npc.workTime%11>8;
+                const cycle=solderCycle(npc.workTime);
+                const inspecting=assembling?npc.workTime%11>8:cycle.stage==='inspect';
                 assemblyPc.visible=assembling;solderBoard.visible=!assembling;
                 assemblyPc.position.set(work.tx,0,work.tz);
                 assemblyPc.rotation.y=work.angle;
                 poseNpcTyping(npc,solderStation,t*(inspecting?.08:assembling?.7:.35));
                 npc.head.rotation.x=inspecting?.03:.18;
-                solderTool.visible=!assembling&&!inspecting;
+                solderTool.visible=!assembling&&cycle.held;
                 assemblyTool.visible=assembling&&!inspecting;
                 if(assembling&&!inspecting){
                   // Instalação, parafusos, cabos e teste têm ritmos diferentes.
                   npc.forearms[1].rotateY(Math.sin(npc.workTime*(workStage===3?12:4))*(workStage===3?.35:.12));
                   npc.head.rotation.y=Math.sin(npc.workTime*.8)*.07;
                 }
-                if(updateClientCall(npc,dt,t)){solderTool.visible=false;assemblyTool.visible=false;}
+                const onCall=updateClientCall(npc,dt,t);
+                if(onCall){solderTool.visible=false;assemblyTool.visible=false;}
+                if(!assembling&&!onCall){
+                  // Solve the right arm to the actual iron tip, not to a typing wrist.
+                  solderWorkshop.contact.set(work.tx+.035,1.117,work.tz+.02);
+                  if(cycle.contact){
+                    solderWorkshop.contact.x+=Math.sin(npc.workTime*2)*.006;
+                    solderWorkshop.contact.z+=Math.cos(npc.workTime*1.5)*.004;
+                  }
+                  precisionTarget.position.copy(solderWorkshop.contact);
+                  precisionTarget.position.x+=(1-cycle.reach)*.15;
+                  precisionTarget.position.y+=cycle.lift;
+                  // The single-arm IK solver adds this offset to the keyboard origin.
+                  precisionTarget.position.sub(precisionOffset);
+                  poseNpcTyping(precisionRig,precisionStation,0);
+                  npc.head.rotation.x=cycle.stage==='inspect'?.06:.18;
+                  solderTool.updateWorldMatrix(true,false);
+                  solderTool.localToWorld(precisionTip.set(0,-.4075,0));
+                  byId.mesaL.g.localToWorld(solderWorkshop.world.copy(solderWorkshop.contact));
+                  const touching=cycle.contact&&solderTool.visible&&precisionTip.distanceToSquared(solderWorkshop.world)<.000144;
+                  solderWorkshop.update(npc.workTime,touching);
+                  const distance=avatar.position.distanceTo(npc.root.position);
+                  if(touching)interactionAudio.play('solder',distance);
+                  if(npc.lastWorkshopStage!==cycle.stage){
+                    if(cycle.stage==='pickup')interactionAudio.play('tool',distance);
+                    if(cycle.stage==='inspect')interactionAudio.play('equipment',distance);
+                    npc.lastWorkshopStage=cycle.stage;
+                  }
+                }
+                if(assembling&&!onCall&&workStage===3&&!inspecting)interactionAudio.play('tool',avatar.position.distanceTo(npc.root.position));
                 assemblyTestLed.material.color.set(workStage===5?'#4de6a0':'#26343b');
                 assemblyRam.position.y=workStage===2?1.13+Math.max(0,1-(npc.workTime%12)/7)*.10:1.13;
                 assemblyDrive.position.x=workStage===4?.09+Math.max(0,1-(npc.workTime%12)/7)*.09:.09;

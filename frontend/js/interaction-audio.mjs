@@ -12,8 +12,11 @@ export function createInteractionAudio(){
   function tone(frequency,duration,volume,delay=0){const osc=ctx.createOscillator(),gain=ctx.createGain(),t=ctx.currentTime+delay;osc.frequency.setValueAtTime(frequency,t);osc.frequency.exponentialRampToValueAtTime(frequency*.65,t+duration);gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);osc.connect(gain);gain.connect(master);osc.start(t);osc.stop(t+duration);osc.onended=()=>{osc.disconnect();gain.disconnect();};}
   function play(kind,distance=0){
     if(!settings.enabled||document.hidden||!ctx||ctx.state!=='running')return;
-    const now=ctx.currentTime,cooldown={typing:.075,step:.32,mouse:.2,coffee:1.8,fridge:.5}[kind]||.1;
+    const now=ctx.currentTime,cooldown={typing:.075,step:.32,mouse:.2,coffee:1.8,fridge:.5,solder:.65,tool:1.1,equipment:2}[kind]||.1;
     if(now-(last[kind]??-100)<cooldown)return;last[kind]=now;const attenuation=Math.max(0,1-distance/5);if(!attenuation)return;
+    if(kind==='solder')noise(3200,.08,.018*attenuation);
+    if(kind==='tool'){noise(1800,.035,.035*attenuation);tone(380,.045,.012*attenuation);}
+    if(kind==='equipment'){tone(1150,.055,.025*attenuation);tone(1450,.07,.018*attenuation,.09);}
     if(kind==='typing'){
       const variation=.85+Math.random()*.3;
       noise(1100*variation,.014,.05*attenuation,0,'lowpass');
