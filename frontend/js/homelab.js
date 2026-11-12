@@ -2753,27 +2753,21 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
             const lock=sphere(head,.075,darkHair,side*.165,-.055,-.01);lock.scale.set(.40,2.65,.85);
           }
           const fringe=sphere(head,.13,darkHair,-.025,.13,.09);fringe.scale.set(1.12,.32,.58);fringe.rotation.z=-.12;
-        } else if (style === 'curly') {
-          // Cachos volumosos ao redor do topo e das laterais, sem cobrir o rosto.
-          for (let row = 0; row < 5; row++) {
-            for (let i = 0; i < 12; i++) {
-              const angle = i / 12 * Math.PI * 2;
-              const radius = row < 2 ? .13 + row * .045 : .19;
-              const curlX = Math.cos(angle) * radius;
-              const curlZ = Math.sin(angle) * radius;
-              if (row > 1 && curlZ > .08) continue;
-              if(name==='Vitória' && curlZ<-.07) {
-                // Cachos mais altos e rasos na nuca para liberar o encosto.
-                if(row>=3)continue;
-                const curl=sphere(head,.057,darkHair,curlX,.20-row*.05,Math.max(curlZ,-.115));
-                curl.scale.z=.55;
-              }else{
-                const curl=sphere(head,.057,darkHair,curlX,.16-row*.065,curlZ);
-                curl.scale.set(.94,1.08,.88);curl.rotation.z=Math.sin(angle)*.25;
-              }
+        } else if (hairStyle === 'curly') {
+          // Continuous scalp under the curls prevents visible bald gaps. Sample
+          // an ellipsoid instead of stacking detached rings or flattening the nape.
+          const scalp=new THREE.Mesh(new THREE.SphereGeometry(.19,20,12,0,Math.PI*2,0,1.7),darkHair);
+          scalp.position.set(0,.018,-.012);scalp.scale.set(.98,1.08,.92);head.add(scalp);
+          for(let row=0;row<4;row++){
+            const polar=.25+row*.39,ring=Math.sin(polar),count=8+row*4;
+            for(let i=0;i<count;i++){
+              const angle=(i+(row%2)*.5)/count*Math.PI*2;
+              const z=-.012+.175*ring*Math.cos(angle);
+              if(row>=2&&z>.065)continue; // Clear forehead, eyes and face.
+              const curl=sphere(head,.038,darkHair,.19*ring*Math.sin(angle),.018+.205*Math.cos(polar),z);
+              curl.scale.set(1,.92,1);curl.rotation.y=angle;
             }
           }
-          sphere(head, .065, darkHair, 0, .18, 0);
         } else {
           const cap=new THREE.Mesh(new THREE.SphereGeometry(.185,24,16,0,Math.PI*2,0,1.35),darkHair);cap.position.set(0,.018,-.015);head.add(cap);
           if(style==='casual') {

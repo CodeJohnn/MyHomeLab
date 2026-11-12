@@ -32,6 +32,17 @@ test('production NPC surfaces remain attached and finite through locomotion, sea
   const create=build(THREE,scene,npcs,pool,false,M,M('#111111'),M('#ffffff'),M('#888888'),wardrobe,mergeNpcHair,uniformTorsoGeometry,fittedNpcLimb);
   ['curly','casual','military','technician','curly'].forEach((style,i)=>create('NPC '+i,'#ba9988','#ff00ff',i,0,style));
   const solver=createTypingPoseSolver(THREE);
+  // The curly crown must remain covered between individual curls.
+  const curly=npcs[0],hair=curly.head.getObjectByName('npcHair');
+  curly.root.updateMatrixWorld(true);
+  for(const polar of [.1,.5,.9])for(let i=0;i<24;i++){
+    const angle=i/24*Math.PI*2;
+    const direction=new THREE.Vector3(Math.sin(polar)*Math.cos(angle),Math.cos(polar),Math.sin(polar)*Math.sin(angle));
+    const origin=curly.head.localToWorld(direction.clone().multiplyScalar(.5).add(new THREE.Vector3(0,.018,-.012)));
+    const inward=direction.clone().negate().transformDirection(curly.head.matrixWorld);
+    assert.ok(new THREE.Raycaster(origin,inward).intersectObject(hair).length>0,'curly crown has a hole');
+  }
+
   for(const npc of npcs){
     assert.equal(npc.root.getObjectByName('npcCoat'),undefined);
     const parents=new Map();npc.root.traverse(n=>{if(n.isMesh)parents.set(n,n.parent);});
