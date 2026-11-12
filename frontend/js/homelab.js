@@ -2725,7 +2725,7 @@ import {nobleCrestUrl} from './nobility-effects.mjs';
           fittedNpcLimb(THREE,primitivePool,leg,trousers,{width:.14,depth:.155,span:.3,name:'npcThigh'});
           const knee = new THREE.Group(); knee.position.y = -.3; leg.add(knee); npcKnees.push(knee);
           fittedNpcLimb(THREE,primitivePool,knee,trousers,{width:.137,depth:.15,span:.32,name:'npcShin'});
-          const shoe=sphere(knee,.1,boots,0,-.36,.055);shoe.scale.set(.88,.7,1.48);box(knee,.175,.025,.29,uniform.trim,0,-.417,.055,.012);
+          const shoe=sphere(knee,.1,boots,0,-.36,.055);shoe.scale.set(.88,.7,1.48);
           const arm = new THREE.Group();
           arm.position.set(side * .184, 1.2, 0);
           arm.rotation.z = side * .08;
